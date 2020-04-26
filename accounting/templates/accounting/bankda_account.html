@@ -1,0 +1,121 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/admin_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">계좌관리</h1>
+
+<div class="row mb-4">
+	<div class="col-md-12">
+		<div class="table-responsive">
+			<table class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
+				<thead class="thead-light text-center">
+					<tr>
+						<th><input type="checkbox"></th>
+						<th>번호</th>
+						<th>계좌별명</th>
+						<th>계좌구분</th>
+						<th>은행명</th>
+						<th>계좌번호</th>
+						<th>계좌등록</th>
+						<th>계좌삭제</th>
+					</tr>
+				</thead>
+				
+				<tbody>
+					{% for account in accounts %}
+					<tr>
+						<td class="text-center"><input type="checkbox" name="check_list[]" value="{{ owner.id }}"></td>
+						<td class="text-center">{{ account.id }}</td>
+						<td>{{ account.renames }}</td>
+						<td>{% if account.bkdiv == 'C' %}법인{% elif account.bkdiv == 'P' %}개인{% endif %}</td>
+						<td>{{ account.bank }}</td>
+						<td>{{ account.account_number }}</td>
+						<td class="text-center">
+							<form name="bankda_join_form" action="https://ssl.bankda.com/partnership/user/account_add.php" method="post" target="_blank">
+								{% csrf_token %}
+								<input type="hidden" name="directAccess" value="y">
+								<input type="hidden" name="partner_id" value="vizun21">
+								<input type="hidden" name="service_type" value="basic">
+								<input type="hidden" name="user_id" value="{{ account.business.owner.profile.user.username }}">
+								<input type="hidden" name="user_pw" value="{{ account.business.owner.profile.user.password|slice:"34:" }}">
+								<input type="hidden" name="Command" value="update">
+								<input type="hidden" name="bkdiv" value="{{ account.bkdiv }}">
+								<input type="hidden" name="bkcode" value="{{ account.bank.code }}">
+								<input type="hidden" name="bkacctno" value="{{ account.account_number }}">
+								<input type="hidden" name="bkacctpno_pw" value="{{ account.account_pw }}">
+								<input type="hidden" name="Mjumin_1" value="{{ account.business.owner.owner_reg_number1 }}">
+								<input type="hidden" name="Mjumin_2" value="0000000">
+								<input type="hidden" name="Bjumin_1" value="{{ account.business.reg_number|slice:":3" }}">
+								<input type="hidden" name="Bjumin_2" value="{{ account.business.reg_number|slice:"4:6" }}">
+								<input type="hidden" name="Bjumin_3" value="{{ account.business.reg_number|slice:"7:" }}">
+								<input type="hidden" name="webid" value="{{ account.webid }}">
+								<input type="hidden" name="webpw" value="{{ account.webpw }}">
+								<input type="hidden" name="renames" value="{{ account.renames }}">
+								<input type="hidden" name="char_set" value="utf-8">
+								<input type="submit" value="등록">
+							</form>
+						</td>
+						<td class="text-center">
+							<input type="hidden" name="user_id" id="id_{{ account.pk }}" value="{{ account.business.owner.profile.user.username }}">
+							<input type="hidden" name="user_pw" id="pw_{{ account.pk }}" value="{{ account.business.owner.profile.user.password|slice:"34:" }}">
+							<input type="hidden" name="bkacctno" id="acctno_{{ account.pk }}" value="{{ account.account_number }}">
+							<input id="{{ account.pk }}" name="withdraw" type="button" value="삭제" class="btn btn-primary btn-sm">
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+$('input:button[name=withdraw]').click(function() {
+	if(confirm("DB와 뱅크다의 계좌정보가 모두 삭제됩니다. 삭제하시겠습니까?")) {
+	var acctpk = this.id;
+	$.ajax({
+		type: "POST",
+		url: "https://ssl.bankda.com/partnership/user/account_del.php",
+		data: {
+			'directAccess': 'y',
+			'partner_id': "vizun21",
+			'service_type': "basic",
+			'user_id': $('#id_'+acctpk).val(),
+			'user_pw': $('#pw_'+acctpk).val(),
+			'bkacctno': $('#acctno_'+acctpk).val(),
+			'Command': "update"
+		},
+		dataType: "html",
+		success: function(response) {
+			if( response == "ok" ) {
+				alert("삭제완료");
+				var form = document.createElement("form");
+				
+				form.setAttribute("charset", "UTF-8");
+				form.setAttribute("method", "POST");
+				form.setAttribute("action", "/account/delete/"+acctpk+"/");
+
+				var hiddenField = document.createElement("input");
+				hiddenField.setAttribute("type", "hidden");
+				hiddenField.setAttribute("name", "csrfmiddlewaretoken");
+				hiddenField.setAttribute("value", "{{ csrf_token }}");
+				form.appendChild(hiddenField);
+
+				document.body.appendChild(form);
+				
+				form.submit();
+			}
+			else {
+				alert("일치하는 이용자정보가 없습니다.");
+			}
+		},
+		error: function(request, status, error) {
+			alert(request.status);
+		}
+	});
+	}
+});
+</script>
+{% endblock %}

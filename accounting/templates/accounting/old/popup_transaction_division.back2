@@ -1,0 +1,136 @@
+{% extends 'accounting/popup_base.html' %}
+
+{% block content %}
+<div class="table-responsive">
+	<div class="list">
+		<table id="tr-table" class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
+			<thead class="thead-light text-center">
+				<tr>
+					<th>은행명</th>
+					<th>계좌번호</th>
+					<th>거래일자</th>
+					<th>계정명</th>
+					<th>세목</th>
+					<th>적요</th>
+					<th>금액</th>
+				</tr>
+			</thead>
+			<tbody class="text-center" id="tr-tbody">
+				<tr name="tr1">
+					<td>{{ transaction.Bkname }}</td>
+					<td>{{ transaction.Bkacctno }}</td>
+					<td>{{ transaction.Bkdate|date:"Y-m-d" }}</td>
+					<td class="cloneTd1">
+						{% if transaction.Bkoutput == 0 %}
+						<select name="item_list" id="item_list[0]" onchange="javascript:changeItem(0);">
+							<option value="">--------------</option>
+							{% for item in input_items %}
+							<option value="{{ item.id }}"
+							{% for selected_spi in selected_spi_list %}
+							{% if forloop.counter == outer_counter %}
+							{% if item.id == selected_spi %}
+							selected
+							{% endif %}
+							{% endif %}
+							{% endfor %}>{{ item }}</option>
+							{% endfor %}
+						</select>
+						{% elif transaction.Bkinput == 0 %}
+						<select name="item_list" id="item_list[0]">
+							<option value="">--------------</option>
+							{% for item in output_items %}
+							<option value="{{ item.id }}"
+							{% for selected_spi in selected_spi_list %}
+							{% if forloop.counter == outer_counter %}
+							{% if item.id == selected_spi %}
+							selected
+							{% endif %}
+							{% endif %}
+							{% endfor %}>{{ item }}</option>
+							{% endfor %}
+						</select>
+						{% endif %}
+						<a href="" class="btn btn-primary btn-sm">선택</a>
+					</td>
+					<td class="cloneTd2">
+						<select name="subdivision_list" id="subdivision_list[0]">
+							<option value="">--------------</option>
+							{% for subdivision in subdivisions %}
+							<option value="{{ subdivision.id }}">{{ subdivision }}</option>
+							{% endfor %}
+						</select>
+					</td>
+					<td class="cloneTd3"><input type="text" name="Bkjukyo" id="Bkjukyo" value="{{ transaction.Bkjukyo }}"></td>
+					<td class="text-right cloneTd4"><input type="text" name="Bkinout" id="Bkinout" value="{% if transaction.Bkinput %}{{ transaction.Bkinput }}{% elif transaction.Bkoutput %}{{ transaction.Bkoutput }}{% endif %}"></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<button type="submit">변경</button>
+	<button id="btn-add-row">추가</button>
+</div>
+<script type="text/javascript">
+var index = 1;
+$('#btn-add-row').click(function() {
+	$.ajax({
+		type: "POST",
+		url: {% url 'add_row' %},
+		data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'Bkcode': '{{ Bkcode }}'},
+		dataType: "json",
+		success: function(response) {
+			if(!response.is_regis) {
+				var cloneEle1 = $('#tr-tbody .cloneTd1').last().clone();
+				var cloneEle2 = $('#tr-tbody .cloneTd2').last().clone();
+				var cloneEle3 = $('#tr-tbody .cloneTd3').last().clone();
+				var cloneEle4 = $('#tr-tbody .cloneTd4').last().clone();
+				$('#tr-tbody').append('<tr></tr>')
+				$('#tr-tbody tr').last().append('<td></td><td></td><td></td>').append(cloneEle1).append(cloneEle2).append(cloneEle3).append(cloneEle4);
+				/*	
+				$('.cloneTd1 #item_list').last().attr("name", "item_list["+index+"]");
+				$('.cloneTd2 #subdivision_list').last().attr("name", "subdivision_list["+index+"]");
+				$('.cloneTd3 #Bkjukyo').last().attr("name", "Bkjukyo["+index+"]");
+				$('.cloneTd4 #Bkinout').last().attr("name", "Bkinout["+index+"]");
+				*/
+				$('.cloneTd1 select[name=item_list]').last().attr("id", "item_list["+index+"]");
+				$('.cloneTd2 select[name=subdivision_list]').last().attr("id", "subdivision_list["+index+"]");
+				$('.cloneTd3 #Bkjukyo').last().attr("value", "");
+				$('.cloneTd4 #Bkinout').last().attr("value", "");
+				index += 1;
+			}
+		},
+	});
+});
+/*
+$('#item_list').change(function() {
+//name=item_list[0]..., id=item_list
+	$.ajax({
+		type: "POST",
+		url: {% url 'extract_subdivision' %},
+		data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'item_list': $('#item_list').val()},
+		dataType: "json",
+		success: function(response) {
+			$('#subdivision_list').empty();
+			$('#subdivision_list').append(response.html_string);
+		},
+	});
+});
+
+$('select[name*=item_list]').change(function() {
+//name=item_list, id=item_list[0]...
+	var i = 0
+	item_list = document.getElementById("item_list["+i+"]").value;
+	$.ajax({
+		type: "POST",
+		url: {% url 'extract_subdivision' %},
+		data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'item_list': item_list},
+		dataType: "json",
+		success: function(response) {
+			subdivision = document.getElementById("subdivision_list["+i+"]");
+			//subdivision.html(response.html_string);
+			$('select[name*=subdivision_list]').html(response.html_string);
+		},
+	});
+});
+*/
+</script>
+{% endblock %}

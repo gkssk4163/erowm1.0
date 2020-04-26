@@ -1,0 +1,59 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/admin_menu.html' %}
+{% endblock %}
+
+{% block content %}
+
+<h1 class="mb-3">대리점관리</h1>
+
+<div class="row">
+	<div class="col-md-12">
+		<div class="search float-right">
+			<form action="" method="get">
+				<select name="where">
+					<option value="name">상호</option>
+					<option value="owner_name">대표자명</option>
+				</select>
+				<input type="text" name="keyword"/>
+				<input type="submit" value="검색" />
+			</form>
+		</div>
+	</div>
+</div>
+
+<div class="row mb-4">
+	<div class="col-md-12">
+		<div class="table-responsive">
+			<table class="table table-bordered table-hover table-sm text-nowrap">
+				<thead class="thead-light text-center">
+					<tr>
+						<th><input type="checkbox"></th>
+						<th>번호</th>
+						<th>상호</th>
+						<th>대표자명</th>
+						<th>전화번호</th>
+						<th>수정</th>
+						<th>삭제</th>
+					</tr>
+				</thead>
+				
+				<tbody>
+					{% for a in agency %}
+					<tr>
+						<td class="text-center"><input type="checkbox" name="check_list[]" value="{{ a.id }}"></td>
+						<td class="text-center">{{ a.id }}</td>
+						<td>{{ a.name }}</td>
+						<td>{{ a.owner_name }}</td>
+						<td>{{ a.cellphone }}</td>
+						<td class="text-center"><a class="btn btn-primary btn-sm" href="{% url 'agency_edit' pk=a.pk %}">수정</a></td>
+						<td class="text-center"><a class="btn btn-primary btn-sm" href="{% url 'agency_delete' pk=a.pk %}" onClick='return confirm("해당 대리점의 영업사원 모두 같이 삭제됩니다.\n정말로 삭제하시겠습니까?")'>삭제</a></td>
+					</tr>
+					{% endfor %}
+			</table>
+			<a class="float-right btn btn-outline-primary btn-sm" href="{% url 'agency_create' %}">대리점등록</a>
+		</div>
+	</div>
+</div>
+{% endblock %}

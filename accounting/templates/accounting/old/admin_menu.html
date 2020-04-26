@@ -1,0 +1,49 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+	      <li class="nav-item {{ user_list_page }}">
+	  <a class="nav-link" href="{% url 'user_list' %}">사용승인관리</a>
+	</li>
+	<li class="nav-item {{ user_transform_page }}">
+		<a class="nav-link" href="{% url 'user_transform' %}">회계관리지원</a>
+	</li>
+	<li class="nav-item {{ sales_list_page }}">
+		<a class="nav-link" href="{% url 'sales_list' %}">영업사원관리</a>
+	</li>
+	<li class="nav-item {{ agency_list_page }}">
+		<a class="nav-link" href="{% url 'agency_list' %}">대리점관리</a>
+	</li>
+	<!--
+	<li class="nav-item {{ bankda_page }}">
+		<a class="nav-link" href="{% url 'bankda_join' %}">뱅크다</a>
+	</li>
+	-->
+	<li class="nav-item {{ bankda_account_page }}">
+		<a class="nav-link" href="{% url 'bankda_account' %}">뱅크다계좌</a>
+	</li>
+	<li class="nav-item">
+		<a class="nav-link" href="#">입금관리</a>
+	</li>
+	<li class="nav-item dropdown">
+	  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">프로그램설정</a>
+	  <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+		  <a class="dropdown-item" href="{% url 'spi_list' %}">관항목등록</a>
+		  <!--<a class="dropdown-item" href="{% url 'other_settings' %}">DB테이블동기화</a>-->
+	  </div>
+	</li>
+	<li class="nav-item dropdown">
+	  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">양식출력</a>
+	  <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+	    <a class="dropdown-item" href="#">대리점관리</a>
+	    <a class="dropdown-item" href="#">사원관리대장</a>
+	    <a class="dropdown-item" href="#">입금관리대장</a>
+	    <a class="dropdown-item" href="#">거래처별입금</a>
+	    <a class="dropdown-item" href="#">수수료정산</a>
+	  </div>
+	</li>
+      </ul>
+    </div>
+</nav>

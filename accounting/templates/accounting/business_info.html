@@ -1,0 +1,61 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+        {% include 'accounting/menu.html' %}
+{% endblock %}
+	
+{% block content %}
+<h1 class="mb-3">사업장관리</h1>
+
+<div class="row mb-4">
+	<div class="col-md-12">
+		<div class="table-responsive">
+			<table class="table table-bordered table-sm text-nowrap">
+				<tbody>
+				<tr>
+					<th class="td1">사업명</th>
+					<td>{{ business.name }}</td>
+					<th class="td1">사업종류</th>
+					<td>{{ business.type3 }}</td>
+				</tr>
+				<tr>
+					<th class="td1">사업장명</th>
+					<td>{{ business.place_name }}</td>
+					<th class="td1">사업자등록번호</th>
+					<td>{{ business.reg_number }}</td>
+				</tr>
+				<tr>
+					<th class="td1">업태</th>
+					<td>{{ business.type1 }}</td>
+					<th class="td1">업종</th>
+					<td>{{ business.type2 }}</td>
+				</tr>
+				<tr>
+					<th class="td1">대표자성명</th>
+					<td>{{ business.owner_name }}</td>
+					<th class="td1">대표자주민번호</th>
+					<td>{{ business.owner_reg_number1 }}-{{ business.owner_reg_number2 }}</td>
+				</tr>
+				<tr>
+					<th class="td1">이메일</th>
+					<td>{{ business.email }}</td>
+					<th class="td1">핸드폰번호</th>
+					<td>{{ business.cellphone }}</td>
+				</tr>
+				<tr>
+					<th class="td1">전화번호</th>
+					<td>{{ business.phone }}</td>
+					<th class="td1">팩스</th>
+					<td>{{ business.fax }}</td>
+				</tr>
+				<tr>
+					<th class="td1">주소</th>
+					<td colspan=3>[{{ business.zip_number }}] {{ business.address }}, {{ business.detailed_address }}</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+		<a href="{% url 'business_edit' pk=business.pk%}" class="float-right btn btn-outline-primary btn-sm">수정</a>
+	</div>
+</div>
+{% endblock %}

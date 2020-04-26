@@ -1,0 +1,126 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+{% load humanize %}
+<div class="row">
+	<div class="col-md-12 mt-1">
+		<form method="GET">
+			<table class="table table-sm table-bordered">
+				<colgroup>
+					<col width="10%"/>
+					<col />
+					<col width="10%"/>
+				</colgroup>
+				<tr>
+					<td rowspan="2">구분선택</td>
+					<td>
+						<input type="radio" id="type1" name="s_type" value="1" {% if s_type == '1' %}checked{% endif %}/><label for="type1">년도별</label>&nbsp;&nbsp;&nbsp;
+						<input type="radio" id="type2" name="s_type" value="2" {% if s_type == '2' %}checked{% endif %}/><label for="type2">월별</label>
+						<br/>
+						<select name="year">
+							{% for y in year_range %}
+							<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+							{% endfor %}
+						</select>
+						<select name="month" id="month" style="display: none;" disabled>
+							{% for m in month_range %}
+							<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+							{% endfor %}
+						</select>
+					</td>
+					<td rowspan="2">
+						<input type="submit" class="btn btn-primary btn-sm py-0" value="조회">
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+</div>
+<div class="row mb-4">
+	<div class="col-md-12">
+		<center><h1 class="mt-3 mb-3">{{ year }}년 {% if budget_type == 'revenue' %}세입{% else %}세출{% endif %}결산서</h1></center>
+		<div class="table-responsive">
+			<table class="table table-bordered table-sm">
+				<thead class="thead-light text-center th-nowrap">
+					<tr>
+						<th colspan="6" width="60%">과목</th>
+						<th rowspan="2" class="align-middle">예산액</th>
+						<th rowspan="2" class="align-middle">예산현액</th>
+						<th rowspan="2" class="align-middle">{% if budget_type == 'revenue' %}수납액{% elif budget_type == 'expenditure' %}지출액{% endif %}</th>
+						<th rowspan="2" class="align-middle">{% if budget_type == 'revenue' %}미납액{% elif budget_type == 'expenditure' %}잔액{% endif %}</th>
+					</tr>
+					<tr>
+						<th colspan="2" width="20%">관</th>
+						<th colspan="2" width="20%">항</th>
+						<th colspan="2" width="20%">목</th>
+					</tr>
+					<tr>
+						<th colspan="6">총계</th>
+						<th class="text-right">{{ total_budget|intcomma }}</th>
+						<th class="text-right">{{ now_budget|intcomma }}</th>
+						<th class="text-right">{{ total_sum|intcomma }}</th>
+						<th class="text-right">{{ total_difference|intcomma }}</th>
+					</tr>
+				</thead>
+				<tbody class="text-center td-align-middle">
+					{% for subsection in subsection_list %}
+					<tr>
+						<td rowspan="{{ subsection.count }}">{{ subsection.code }}00</td>
+						<td rowspan="{{ subsection.count }}">{{ subsection.context }}</td>
+						{% for paragraph in paragraph_list %}
+						{% if paragraph.subsection == subsection %}
+						<td rowspan="{{ paragraph.count }}">{{ subsection.code }}{{ paragraph.code }}0</td>
+						<td rowspan="{{ paragraph.count }}">{{ paragraph.context }}</td>
+						{% for item in item_list %}
+						{% if item.paragraph == paragraph %}
+						<td>{{ subsection.code }}{{ paragraph.code }}{{ item.code }}</td>
+						<td style="white-space:nowrap;">{{ item.context }}</td>
+						<td class="text-right">{{ item.total_budget|intcomma }}</td>
+						<td class="text-right">{{ item.now_budget|intcomma }}</td>
+						<td class="text-right">{{ item.total_sum|intcomma }}</td>
+						<td class="text-right">{{ item.total_difference|intcomma }}</td>
+					</tr></tr>
+						{% endif %}
+						{% endfor %}
+						{% endif %}
+						{% endfor %}
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+	var s_type = $('input[name="s_type"]:checked').val();
+	if (s_type == 1) {
+		$('#month').css('display', 'none');
+		$('#month').attr('disabled', 'disabled');
+	}
+	else if (s_type == 2) {
+		$('#month').removeAttr("style");
+		$('#month').removeAttr("disabled");
+	}
+});
+
+$('input:radio[name="s_type"]').click(function () {
+	var s_type = $('input[name="s_type"]:checked').val();
+	if (s_type == 1) {
+		$('#month').css('display', 'none');
+		$('#month').attr('disabled', 'disabled');
+	}
+	else if (s_type == 2) {
+		$('#month').removeAttr("style");
+		$('#month').removeAttr("disabled");
+	}
+});
+
+</script>
+
+{% endblock %}
+

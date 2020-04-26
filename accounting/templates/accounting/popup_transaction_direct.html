@@ -1,0 +1,133 @@
+{% extends 'accounting/popup_base.html' %}
+
+{% block content %}
+{% load humanize %}
+<div class="table-responsive">
+	<form name="writeForm" method="POST" action="{% url 'regist_transaction_direct' %}">
+	{% csrf_token %}
+		<table id="tr-table" class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
+			<thead class="thead-light text-center">
+				<tr>
+					<th>{{ transactionform.Bkdate.label }}</th>
+					<th>선택</th>
+					<th>{{ transactionform.item.label }}</th>
+					<th>{{ transactionform.Bkjukyo.label }}</th>
+					<th>금액</th>
+				</tr>
+			</thead>
+			<tbody class="text-center" id="tr-tbody">
+				<tr>
+					<td>{{ transactionform.Bkdate }}</td>
+					<td>
+						<input type="radio" id="input" name="inout" value="input" checked/><label for="input">수입</label>
+						<input type="radio" id="output" name="inout" value="output"/><label for="output">지출<label>
+					</td>
+					<td>{{ transactionform.item }}</td>
+					<td>{{ transactionform.Bkjukyo }}</td>
+					<td>
+						{{ transactionform.Bkinput }}
+						{{ transactionform.Bkoutput }}
+					</td>
+				</tr>
+				<tr>
+					<th>비고</th>
+					<td colspan="5"><input type="text" name="remark" size="50"/></td>
+				</tr>
+			</tbody>
+		</table>
+	</form>
+</div>
+<button type="button" class="float-right" onclick="writeCheck();">등록</button>
+<script type="text/javascript">
+$(document).ready(function() {
+	var inoutType = $('input[name="inout"]:checked').val();
+	$.ajax({
+		type: "GET",
+		url: {% url 'change_item_option' %},
+		data: { 'inoutType': inoutType, 'year': {{ year }}, 'month':{{ month}} },
+		dataType: "json",
+		success: function(response) {
+			$("#id_item option").remove();
+			$("#id_item").append(response.item);
+		}
+	});
+});
+$('input[name="Bkdate"]').change(function () {
+	var inoutType = $('input[name="inout"]:checked').val();
+	var dateArr = this.value.split('-');
+	$.ajax({
+		type: "GET",
+		url: {% url 'change_item_option' %},
+		data: { 'inoutType': inoutType, 'year': dateArr[0], 'month': dateArr[1] },
+		dataType: "json",
+		success: function(response) {
+			$("#id_item option").remove();
+			$("#id_item").append(response.item);
+		}
+	});
+});
+$('input:radio[name="inout"]').click(function () {
+	var inoutType = $('input[name="inout"]:checked').val();
+	var dateArr = $('input[name="Bkdate"]').val().split('-');
+	$.ajax({
+		type: "GET",
+		url: {% url 'change_item_option' %},
+		data: { 'inoutType': inoutType, 'year': dateArr[0], 'month': dateArr[1] },
+		dataType: "json",
+		success: function(response) {
+			if (inoutType == "input") {
+				$('#id_Bkinput').removeAttr("style");
+				$('#id_Bkinput').val('');
+				$('#id_Bkoutput').css('display', 'none');
+				$('#id_Bkoutput').val(0);
+			}
+			else if (inoutType == "output") {
+				$('#id_Bkinput').css('display', 'none');
+				$('#id_Bkinput').val(0);
+				$('#id_Bkoutput').removeAttr("style");
+				$('#id_Bkoutput').val('');
+			}
+			$("#id_item option").remove();
+			$("#id_item").append(response.item);
+		}
+	});
+});
+
+$(function () {
+	$("#id_Bkdate").datepicker({
+		monthNamesShort: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+		dayNamesMin: ['일','월','화','수','목','금','토'],
+		changeYear: true,
+		changeMonth: true,
+		showMonthAfterYear: true,
+		dateFormat: "yy-mm-dd"
+	});
+});
+
+function writeCheck() {
+	var f = document.writeForm;
+
+	if(!f.item.value) {
+		alert("계정명을 선택해주세요");
+		f.item.focus();
+		return;
+	}
+	if(!f.Bkjukyo.value) {
+		alert("적요를 입력해주세요");
+		f.Bkjukyo.focus();
+		return;
+	}
+	if(f.inout.value == "input" && !f.Bkinput.value) {
+		alert("금액을 입력해주세요");
+		f.Bkinput.focus();
+		return;
+	}
+	if(f.inout.value == "output" && !f.Bkoutput.value) {
+		alert("금액을 입력해주세요");
+		f.Bkoutput.focus();
+		return;
+	}
+	f.submit();
+}
+</script>
+{% endblock %}

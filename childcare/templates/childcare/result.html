@@ -1,0 +1,66 @@
+{% extends 'childcare/iframe_base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="responseMessage">
+	<table class="table-bordered table-sm text-nowrap mb-1">
+		<tbody>
+			<tr>
+				<td>응답코드</td>
+				<td>{{ status_code }}</td>
+			</tr>
+			<tr>
+				<td>응답메시지</td>
+				<td>{{ content }}</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+<table class="table table-bordered table-hover table-sm text-nowrap mb-0">
+	<thead class="thead-light text-center">
+		<tr>
+			{% if item_list %}
+			<th>구분<small>(세입:1, 세출:2)</small></th>
+			<th>계정코드</th>
+			<th>합계금액</th>
+			<th>전표개수</th>
+			<th>계정명</th>
+			{% else %}
+			{% for column in column_list %}
+			<th>{{ column }}</th>
+			{% endfor %}
+			{% endif %}
+		</tr>
+	</thead>
+	<tbody>
+		{% for budget in budget_list %}
+		<tr>
+			<td>{% if budget.item.paragraph.subsection.type == "수입" %}1{% else %}2{% endif %}</td>
+			<td>{{ budget.item.paragraph.subsection.code }}{{ budget.item.paragraph.code }}{{ budget.item.code }}</td>
+			<td>{{ budget.price }}</td>
+			<td>{{ budget.row }}</td>
+		</tr>
+		{% endfor %}
+		{% for item in item_list %}
+		<tr>
+			<td>{% if item.paragraph.subsection.type == "수입" %}1{% else %}2{% endif %}</td>
+			<td>{{ item.paragraph.subsection.code }}{{ item.paragraph.code }}{{ item.code }}</td>
+			<td>{{ item.total_sum }}</td>
+			<td>{{ item.count }}</td>
+			<td>{{ item.context }}</td>
+		</tr>
+		{% endfor %}
+		{% for record in record_list %}
+		<tr>
+			{% for col in record %}
+			{% if forloop.counter <= 2 %}
+			<td>{{ col|default:"" }}</td>
+			{% else %}
+			<td>{{ col|default:""|intcomma }}</td>
+			{% endif %}
+			{% endfor %}
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endblock %}

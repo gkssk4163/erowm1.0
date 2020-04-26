@@ -1,0 +1,145 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+	<h1>계좌등록</h1>
+	<form name="writeForm" id="writeForm" method="POST">
+		{% csrf_token %}
+		<input type="hidden" name="command" value="edit">
+		<input type="hidden" name="acctpk" value="{{ acctpk }}">
+		<table class="table table-sm">
+		{% if form.errors %}
+		<tr>
+			<td colspan=2><p>{{ form.errors|striptags }}</p></td>
+		</tr>
+		{% endif %}
+		{% for hidden in form.hidden_fields %}
+		{{ hidden }}
+		{% endfor %}
+		{% for field in form.visible_fields %}
+			<tr>
+				<td>
+				{{ field.label }}
+				{% if field.field.required %}
+				<span class="field-required">*</span>
+				{% endif %}
+				</td>
+				<td>
+				{{ field }}
+				</td>
+			<tr>
+			{% if field.errors %}
+			<tr>
+				<td></td>
+				<td>
+				<span class="field-error">
+				{{ field.errors|striptags }}
+				</span>
+				</td>
+			</tr>
+			{% endif %}
+		{% endfor %}
+		</table>
+		<!--<button type="submit" class="save btn btn-outline-primary">등록</button>-->
+		<button class="btn btn-outline-primary" type="submit">등록</button>
+		<button type="button" class="btn btn-outline-primary" onclick="cancelCheck();">취소</button>
+	</form>
+<script type="text/javascript">
+$(document).ready(function() {
+	var bankId = $('#id_bank').value
+	if( bankId == '04' || bankId == '26' || bankId == '28' || bankId == '31' || bankId == '48' || bankId == '91' ) {
+		$('#id_webid').removeAttr('disabled');
+		$('#id_webid').attr('required', 'required');
+		$('#id_webpw').removeAttr('disabled');
+		$('#id_webpw').attr('required', 'required');
+	}
+	else {
+		$('#id_webid').attr('disabled', true);
+		$('#id_webid').removeAttr('required');
+		$('#id_webid').val('');
+		$('#id_webpw').attr('disabled', true);
+		$('#id_webpw').removeAttr('required');
+		$('#id_webpw').val('');
+	}
+});
+$('#id_bank').change(function() {
+	if( this.value == '04' || this.value == '26' || this.value == '28' || this.value == '31' || this.value == '48' || this.value == '91' ) {
+		$('#id_webid').removeAttr('disabled');
+		$('#id_webid').attr('required', 'required');
+		$('#id_webpw').removeAttr('disabled');
+		$('#id_webpw').attr('required', 'required');
+	}
+	else {
+		$('#id_webid').attr('disabled', true);
+		$('#id_webid').removeAttr('required');
+		$('#id_webid').val('');
+		$('#id_webpw').attr('disabled', true);
+		$('#id_webpw').removeAttr('required');
+		$('#id_webpw').val('');
+	}
+});
+</script>
+<!--
+<script type="text/javascript">
+$('#btn-regist-account').click(function() {
+	var formData = $("#writeForm").serialize();
+	var f = document.writeForm;
+	$.ajax({
+		type: "POST",
+		url: {% url 'account_check' %},
+		data: formData,
+		dataType: "json",
+		success: function(response) {
+			//alert(response.username+"\n"+response.password+"\n"+response.Mjumin_1+"\n"+response.Bjumin_1+"\n"+response.Bjumin_2+"\n"+response.Bjumin_3);
+			if ( response.account_check == 1 ) {
+				$("#regist_done").val(response.account_check);
+				$.ajax({
+					type: "POST",
+					url: "https://ssl.bankda.com/partnership/user/account_fix.php",
+					data: {
+						'directAccess': 'y',
+						'partner_id': "vizun21",
+						'service_type': "basic",
+						'user_id': response.username,
+						'user_pw': response.password,
+						'Command': "update",
+						'bkdiv': $("input:radio[name=bkdiv]:checked").val(),
+						'bkcode': $("#id_bank").val(),
+						'bkacctno': $("#id_account_number").val(),
+						'bkacctno_pw': $("#id_account_pw").val(),
+						'Mjumin_1': response.Mjumin_1,
+						'Mjumin_2': "0000000",
+						'Bjumin_1': response.Bjumin_1,
+						'Bjumin_2': response.Bjumin_2,
+						'Bjumin_3': response.Bjumin_3,
+						'webid': $("#id_webid").val(),
+						'webpw': $("#id_webpw").val(),
+						'renames': $("#id_renames").val(),
+						'char_set': "utf-8"
+					},
+					dataType: "html",
+					success: function(data) {
+						if( data == "ok" )
+							f.submit();
+						else 
+							alert(data);
+					},
+					error: function(request, status, error) {
+						//alert("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
+						f.submit();
+					}
+				});
+			}
+			else {
+				$("#regist_done").val('');
+				f.submit();
+			}
+		}
+	});
+});
+</script>
+-->
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+	<div class="col-md-12">
+		<h1>예산출력</h1>
+		<form name="yearForm" method="POST" target="_blank">
+			{% csrf_token %}
+			<table cellpadding="5" border="1">
+				<tr>
+					<td>년도선택</td>
+					<td>
+						<select name="year">
+							{% for y in year_range %}
+							<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+							{% endfor %}
+						</select>년
+					</td>
+				</tr>
+			</table>
+			<div style="padding:10px">
+				<input type="button" onclick="yearPost('{% url 'print_budget_all' %}');" value="전체출력">
+				<input type="button" onclick="yearPost('{% url 'print_yearly_budget' budget_type='revenue' %}');" value="세입예산서">
+				<input type="button" onclick="yearPost('{% url 'print_yearly_budget' budget_type='expenditure' %}');" value="세출예산서">
+				<input type="button" onclick="yearPost('{% url 'print_yearly_budget' budget_type='supplementary_revenue' %}');" value="추경세입예산서">
+				<input type="button" onclick="yearPost('{% url 'print_yearly_budget' budget_type='supplementary_expenditure' %}');" value="추경세출예산서">
+			</div>
+		</form>
+	</div>
+</div>
+<script type="text/javascript">
+function yearPost(url) {
+	var f = document.yearForm;
+	f.action = url;
+	f.submit();
+}
+function termPost(url) {
+	var f = document.termForm;
+	f.action = url;
+	f.submit();
+}
+function checkDate() {
+	$(function () {
+		var f = document.termForm;
+		$.ajax({
+			type: "POST",
+			url: {% url 'check_date' %},
+			data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'year': f.year.value, 'month': f.month.value, 'year2': f.year2.value, 'month2': f.month2.value},
+			dataType: "json",
+			success: function(response) {
+				if(response.error_message) {
+					alert(response.error_message);
+				}
+				f.year.value = response.year;
+				f.year2.value = response.year2;
+				f.month.value = response.month;
+				f.month2.value = response.month2;
+			},
+		});
+	});
+}
+</script>
+{% endblock %}
+

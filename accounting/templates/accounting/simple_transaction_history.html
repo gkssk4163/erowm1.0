@@ -1,0 +1,51 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+	<div class="table-responsive">
+		<table class="table table-bordered table-hover table-sm">
+			<thead class="thead-light text-center">
+			<tr>
+			<th>번호</th>
+			<th>출납일</th>
+			<th>구분</th>
+			<th>계정명</th>
+			<th>세목</th>
+			<th>적요</th>
+			<th>입금</th>
+			<th>출금</th>
+			<th>잔액</th>
+			</tr>
+			</thead>
+			
+			<tbody>
+			{% for dt in data %}
+			<tr>
+				<td class="text-center">{{ forloop.counter }}</td>
+				{% for d in dt %}
+				<td>{{ d }}</td>
+				{% if forloop.counter == 1 %}
+				<td>{% if dt.2 != 0 %}수입{% elif dt.3 != 0 %}지출{% endif %}</td>
+				<td><input type="text"/></td>
+				<td><input type="text"/></td>
+				{% endif %}
+				{% endfor %}
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+</div>
+<ul class="pagination justify-content-center">
+	{% if data.has_previous %}
+	<li class="page-item"><a class="page-link" href="{% url 'transaction_history' pk=business.pk %}?page={{ data.previous_page_number }}">이전</a></li>
+	{% endif %}
+	<li class="page-item"><a class="page-link" href="{% url 'transaction_history' pk=business.pk %}?page={{ data.number }}">{{ data.number }}</a></li>
+	{% if data.has_next %}
+	<li class="page-item"><a class="page-link" href="{% url 'transaction_history' pk=business.pk %}?page={{ data.next_page_number }}">다음</a></li>
+	{% endif %}
+</ul>
+{% endblock %}

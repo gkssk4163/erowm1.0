@@ -1,0 +1,97 @@
+{% extends 'accounting/popup_base.html' %}
+
+{% block content %}
+<div class="table-responsive">
+	<div class="list">
+		<table id="tr-table" class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
+			<thead class="thead-light text-center">
+				<tr>
+					<th>은행명</th>
+					<th>계좌번호</th>
+					<th>거래일자</th>
+					<th>계정명</th>
+					<th>세목</th>
+					<th>적요</th>
+					<th>금액</th>
+				</tr>
+			</thead>
+			<tbody class="text-center" id="tr-tbody">
+				<tr>
+					<td>{{ transaction.Bkname }}</td>
+					<td>{{ transaction.Bkacctno }}</td>
+					<td>{{ transaction.Bkdate|date:"Y-m-d" }}</td>
+					<td>
+						{% if transaction.Bkoutput == 0 %}
+						<select name="item_list" id="item_list">
+							<option value="">--------------</option>
+							{% for item in input_items %}
+							<option value="{{ item.id }}"
+							{% for selected_spi in selected_spi_list %}
+							{% if forloop.counter == outer_counter %}
+							{% if item.id == selected_spi %}
+							selected
+							{% endif %}
+							{% endif %}
+							{% endfor %}>{{ item }}</option>
+							{% endfor %}
+						</select>
+						{% elif transaction.Bkinput == 0 %}
+						<select name="item_list" id="item_list">
+							<option value="">--------------</option>
+							{% for item in output_items %}
+							<option value="{{ item.id }}"
+							{% for selected_spi in selected_spi_list %}
+							{% if forloop.counter == outer_counter %}
+							{% if item.id == selected_spi %}
+							selected
+							{% endif %}
+							{% endif %}
+							{% endfor %}>{{ item }}</option>
+							{% endfor %}
+						</select>
+						{% endif %}
+					</td>
+					<td>
+						<select name="subdivision_list" id="subdivision_list">
+							<option value="">--------------</option>
+							{% for subdivision in subdivisions %}
+							<option value="{{ subdivision.id }}">{{ subdivision }}</option>
+							{% endfor %}
+						</select>
+					</td>
+					<td><input type="text" value="{{ transaction.Bkjukyo }}"></td>
+					<td class="text-right"><input type="text" value="{% if transaction.Bkinput %}{{ transaction.Bkinput }}{% elif transaction.Bkoutput %}{{ transaction.Bkoutput }}{% endif %}"></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<button type="submit">변경</button>
+	<button id="btn-add-row">추가</button>
+</div>
+	<script type="text/javascript">
+	$('#btn-add-row').click(function() {
+		$.ajax({
+			type: "POST",
+			url: {% url 'add_row' %},
+			data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'Bkcode': '{{ Bkcode }}'},
+			dataType: "json",
+			success: function(response) {
+				if(!response.is_regis)
+					$('#tr-table').append($('#tr-table tr').last().clone());
+			},
+		});
+	});
+	$('#item_list').change(function() {
+		$.ajax({
+			type: "POST",
+			url: {% url 'extract_subdivision' %},
+			data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'item_list': $('#item_list').val()},
+			dataType: "json",
+			success: function(response) {
+				$('#subdivision_list').empty();
+				$('#subdivision_list').append(response.html_string);
+			},
+		});
+	});
+	</script>
+{% endblock %}

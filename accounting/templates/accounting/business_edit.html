@@ -1,0 +1,44 @@
+{% extends 'accounting/base.html' %}
+
+{% block content %}
+<h1 class="mb-3">사업등록</h1>
+
+<div class="row mb-4">
+	<div class="col-md-12">
+		<form method="POST" class="business-form">
+			{% csrf_token %}
+			<table class="table table-sm">
+				{% for field in form %}
+				<tr>
+					<td>
+						{{ field.label }}
+						{% if field.field.required %}
+						<span class="field-required">*</span>
+						{% endif %}
+					</td>
+					<td>
+						{{ field }}
+						{% if field.name == 'zip_number' %}
+						<input type="button" class="btn btn-primary btn-zip-search" onclick="ZipSearchDaumPostcode()" value="우편번호 찾기">
+						{% endif %}
+					</td>
+					</tr>
+					{% if field.errors %}
+					<tr>
+						<td></td>
+						<td>
+							<span class="field-error">
+								{{ field.errors|striptags }}
+							</span>
+						</td>
+					</tr>
+					{% endif %}
+					{% endfor %}
+			</table>
+			<button type="submit" class="save btn btn-outline-primary">등록</button>
+			<button type="button" class="btn btn-outline-primary" onclick="cancelCheck();">취소</button>
+		</form>
+	</div>
+</div>
+{% include 'accounting/zip_search.html' %}
+{% endblock %}

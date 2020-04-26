@@ -1,0 +1,65 @@
+{% extends 'accounting/popup_base.html' %}
+
+{% block content %}
+{% load humanize %}
+<div class="table-responsive">
+	<form name="listForm" method="POST" action="{% url 'regist_returned_transaction' %}">
+	{% csrf_token %}
+		<input type="hidden" name="month" value="{{ month }}">
+		<input type="hidden" name="acctid" value="{{ acct.id }}">
+		<input type="hidden" name="Bkid" value="{{ transaction.Bkid }}">
+		<input type="hidden" name="Bkdate" value="{{ Bkdate }}">
+		<table id="tr-table" class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
+			<thead class="thead-light text-center">
+				<tr>
+					<th>은행명</th>
+					<th>계좌번호</th>
+					<th>거래일자</th>
+					<th>계정명</th>
+					<th>적요</th>
+					<th>금액</th>
+				</tr>
+			</thead>
+			<tbody class="text-center" id="tr-tbody">
+				<tr>
+					<td>{{ acct.bank.name }}</td>
+					<td>{{ acct.account_number }}</td>
+					<td>{{ transaction.Bkdate|date:"Y-m-d" }}</td>
+					<td>
+						<select name="item">
+							<option value="">--------------------</option>
+							{% for item in item_list %}
+							<option value="{{ item.id }}">{{ item }}</option>
+							{% endfor %}
+						</select>
+					</td>
+					<td><input type="text" name="Bkjukyo" id="Bkjukyo" size="15" value="{{ transaction.Bkjukyo }}"></td>
+					<td class="text-right">{% if transaction.Bkinput %}{{ transaction.Bkinput|intcomma }}{% elif transaction.Bkoutput %}{{ transaction.Bkoutput|intcomma }}{% endif %}</td>
+				</tr>
+				<tr>
+					<td>비고</td>
+					<td colspan="5"><input type="text" name="remark" size="50"></td>
+			</tbody>
+		</table>
+	</form>
+</div>
+<button type="button" class="float-right" onclick="writeCheck();">등록</button>
+<script type="text/javascript">
+var index = 1;
+function writeCheck() {
+	var f = document.listForm;
+
+	if(!f.item.value) {
+		alert("계정명을 선택해주세요");
+		f.item.focus();
+		return;
+	}
+	if(!f.Bkjukyo.value) {
+		alert("적요를 입력해주세요");
+		f.Bkjukyo.focus();
+		return;
+	}
+	f.submit();
+}
+</script>
+{% endblock %}

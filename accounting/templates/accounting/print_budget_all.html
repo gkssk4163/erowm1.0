@@ -1,0 +1,12 @@
+{% extends 'accounting/print_base.html' %}
+{% load humanize %}
+
+{% block content %}
+
+<!--표지-->
+{% include 'accounting/_budget_cover.html' %}
+
+{% include 'accounting/_budget_general.html' %}
+
+
+{% endblock %}

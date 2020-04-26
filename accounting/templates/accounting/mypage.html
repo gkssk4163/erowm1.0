@@ -1,0 +1,53 @@
+{% extends 'accounting/base.html' %}
+
+{% block content %}
+<h1 class="mb-3">내정보관리</h1>
+
+<div class="row mb-4">
+	<div class="col-md-12">
+	<div class="table-responsive">
+	<p class="text-info"><strong>※ 정보를 등록해두시면  사업등록할 때 정보가 자동으로 입력됩니다.</strong></p>
+	<table class="table table-bordered">
+		<tr>
+			<th class="td1">사업장명</th>
+			<td>{{ owner.place_name }}</td>
+			<th class="td1">사업자등록번호</th>
+			<td>{{ owner.reg_number }}</td>
+		</tr>
+		<tr>
+			<th class="td1">업태</th>
+			<td>{{ owner.type1 }}</td>
+			<th class="td1">업종</th>
+			<td>{{ owner.type2 }}</td>
+		</tr>
+		<tr>
+			<th class="td1">대표자성명</th>
+			<td>{{ owner.name }}</td>
+			<th class="td1">대표자주민번호</th>
+			<td>{{ owner.owner_reg_number1 }}-{{owner.owner_reg_number2 }}</td>
+		</tr>
+		<tr>
+			<th class="td1">이메일</th>
+			<td>{{ owner.email }}</td>
+			<th class="td1">핸드폰번호</th>
+			<td>{{ owner.cellphone }}</td>
+		</tr>
+		<tr>
+			<th class="td1">전화번호</th>
+			<td>{{ owner.phone }}</td>
+			<th class="td1">팩스</th>
+			<td>{{ owner.fax }}</td>
+		</tr>
+		<tr>
+			<th class="td1">주소</th>
+			<td colspan=3>[{{ owner.zip_number }}] {{ owner.address }}, {{ owner.detailed_address }}</td>
+		</tr>
+	</table>
+	</div>
+	<div class="clearfix">
+		<a href="{% url 'business_list' %}" class="float-left btn btn-outline-primary">사업목록</a>
+		<a href="{% url 'mypage_edit' %}" class="float-right btn btn-outline-primary">수정</a>
+	</div>
+	</div>
+</div>
+{% endblock %}

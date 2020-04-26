@@ -1,0 +1,78 @@
+{% extends 'accounting/popup_base.html' %}
+
+{% block content %}
+<div class="row">
+	<div class="col-md-12">
+		<div class="list">
+			<form name="listForm">
+				<input type="hidden" name="row" value="{{ row }}">
+				<div class="table-responsive">
+					<table id="tr-table" class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
+						<thead class="thead-light text-center">
+							<tr>
+								<!--<th>사업종류</th>-->
+								<th>구분</th>
+								<th colspan=2>관</th>
+								<th colspan=2>항</th>
+								<th colspan=2>목</th>
+								<th>선택</th>
+								<th>세목</th>
+							</tr>
+						</thead>
+						<tbody class="text-center" id="tr-tbody">
+							{% for spi in spi_list %}
+							<tr>
+								<!--<td class="text-center" style="white-space: nowrap;">{{ spi.0 }}</td>-->
+								<td class="text-center" style="white-space: nowrap;">{{ spi.3 }}</td>
+								<td class="text-center" style="white-space: nowrap;">{{ spi.1 }}</td>
+								<td width="10%" class="text-center" style="word-break;break-all;">{{ spi.2|default:"" }}</td>
+								<td class="text-center" style="white-space: nowrap;">{{ spi.4|default:"" }}</td>
+								<td width="15%" class="text-center" style="word-break;break-all;">{{ spi.5|default:"" }}</td>
+								<td class="text-center" style="white-space: nowrap;">{{ spi.6|default:"" }}</td>
+								<td width="10%" class="text-center" style="word-break;break-all;">{{ spi.7|default:"" }}</td>
+								<td class="text-center" >{% if spi.7 %}<a href="javascript:select_item({{ spi.8|default:'' }}, '{{ spi.7|default:'' }}');" class="btn btn-primary btn-sm">선택</a>{% endif %}</td>
+								<td class="p-0">
+									<table width="100%" frame=void>
+										{% for subdivision in subdivisions %}
+										{% if spi.8 == subdivision.item.id %}
+										<tr>
+											<td>{{ subdivision.code }}</td>
+											<td>{{ subdivision.context }}</td>
+											<td class="text-center" ><a href="javascript:select_subdivision({{ subdivision.item.id }},'{{ subdivision.item.context }}', {{ subdivision.id }}, '{{ subdivision.context }}');" class="btn btn-primary btn-sm">선택</a></td>
+										</tr>
+										{% endif %}
+										{% endfor %}
+									</table>
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function select_item(id, context) {
+	var f = opener.document.listForm;
+	
+	f.itemId_list[{{ index }}].value = id;
+	f.item_list[{{ index }}].value = context;
+	f.subdivisionId_list[{{ index }}].value = -1;
+	f.subdivision_list[{{ index }}].value = '';
+
+	window.close();
+}
+function select_subdivision(id, context, sub_id, sub_context) {
+	var f = opener.document.listForm;
+	
+	f.itemId_list[{{ index }}].value = id;
+	f.item_list[{{ index }}].value = context;
+	f.subdivisionId_list[{{ index }}].value = sub_id;
+	f.subdivision_list[{{ index }}].value = sub_context;
+
+	window.close();
+}
+</script>
+{% endblock %}

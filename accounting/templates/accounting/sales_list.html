@@ -1,0 +1,78 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/admin_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">영업사원관리</h1>
+
+<div class="row">
+	<div class="col-md-12">
+		<div class="search float-right">
+			<form action="" method="get">
+				<select name="where">
+					<option value="name">이름</option>
+					<option value="agency">대리점</option>
+				</select>
+				<input type="text" name="keyword"/>
+				<input type="submit" value="검색" />
+			</form>
+		</div>
+	</div>
+</div>
+
+<div class="row mb-4">
+	<div class="col-md-12">
+		<form action="{% url 'agency_change' %}" method="POST">
+			{% csrf_token %}
+			<div class="col-md-12 bg-light p-2">
+				대리점선택
+				<select name="select_agency">
+					<option value="" selected>--선택--</option>
+					{% for a in agency %}
+					<option value="{{ a.id }}">{{ a.name }}</option>
+					{% endfor %}
+				</select>
+				<input type="submit" value="변경" />
+				<a class="float-right btn btn-outline-primary btn-sm" href="{% url 'sales_create' %}">사원등록</a>
+			</div>
+			<div class="table-responsive">
+				<table class="table table-bordered table-hover table-sm text-nowrap">
+					<thead class="thead-light text-center">
+						<tr>
+							<th><input type="checkbox"></th>
+							<th>번호</th>
+							<th>이름</th>
+							<th>아이디</th>
+							<th>연락처</th>
+							<th>입사일자</th>
+							<th>최종접속일</th>
+							<th>대리점</th>
+							<th>수정</th>
+							<th>삭제</th>
+						</tr>
+					</thead>
+					
+					<tbody>
+						{% for s in sales %}
+						<tr>
+							<td class="text-center"><input type="checkbox" name="check_list[]" value="{{ s.id }}"></td>
+							<td class="text-center">{{ s.id }}</td>
+							<td>{{ s.name }}</td>
+							<td>{{ s.profile.user.username }}</td>
+							<td>{{ s.cellphone }}</td>
+							<td>{{ s.jdate|date:"Y-m-d" }}</td>
+							<td>{{ s.profile.user.last_login|date:"Y-m-d" }}</td>
+							<td>{{ s.agency }}</td>
+							<td class="text-center"><a class="btn btn-primary btn-sm" href="{% url 'sales_edit' pk=s.id %}">수정</a></td>
+							<td class="text-center"><a class="btn btn-primary btn-sm" href="{% url 'sales_delete' pk=s.id %}" onClick='return confirm("정말로 삭제하시겠습니까?")'>삭제</a></td>
+						</tr>
+						{% endfor %}
+				</table>
+			</div>
+		</form>
+		<a class="float-right btn btn-outline-primary btn-sm mr-2" href="{% url 'sales_create' %}">사원등록</a>
+	</div>
+</div>
+{% endblock %}

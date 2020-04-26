@@ -1,0 +1,151 @@
+{% extends 'accounting/popup_base.html' %}
+
+{% block content %}
+
+<div class="division_list">
+	<div class="table-responsive">
+		<form name="listForm" method="POST" action="{% url 'regist_division' %}">
+		{% csrf_token %}
+		<input type="hidden" name="row" id="row" value=1>
+		<input type="hidden" name="month" value="{{ month }}">
+		<input type="hidden" name="Bkid" value="{{ Bkid }}">
+		<input type="hidden" name="Bkacctno" value="{{ transaction.Bkacctno }}">
+		<input type="hidden" name="Bkname" value="{{ transaction.Bkname }}">
+		<input type="hidden" name="Bkdate" value="{{ transaction.Bkdate|date:"Y-m-d" }}">
+		<input type="hidden" name="inoutType" id="inoutType" value={% if transaction.Bkinput > 0 %}"input"{% elif transaction.Bkoutput > 0 %}"output"{% endif %}>
+		<input type="hidden" name="itemId_list" id="itemId_list">
+		<input type="hidden" name="item_list" id="item_list">
+		<input type="hidden" name="subdivisionId_list" id="subdivisionId_list">
+		<input type="hidden" name="subdivision_list" id="subdivision_list">
+		<input type="hidden" name="Bkjukyo" id="Bkjukyo">
+		<input type="hidden" name="Bkinout" id="Bkinout">
+
+		<table id="tr-table" class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
+			<thead class="thead-light text-center">
+				<tr>
+					<th>은행명</th>
+					<th>계좌번호</th>
+					<th>거래일자</th>
+					<th>계정명</th>
+					<th>세목</th>
+					<th>적요</th>
+					<th>금액</th>
+				</tr>
+			</thead>
+			<tbody class="text-center" id="tr-tbody">
+				<tr>
+					<td>{{ transaction.Bkname }}</td>
+					<td>{{ transaction.Bkacctno }}</td>
+					<td>{{ transaction.Bkdate|date:"Y-m-d" }}</td>
+					<td class="cloneTd1">
+						<input type="hidden" name="itemId_list" id="itemId_list">
+						<input type="text" name="item_list" id="item_list" size="10" readonly>
+						<a id="select_item_url" href="#" onclick="javascript:open_popup(1);" class="btn btn-primary btn-sm">선택</a>
+					</td>
+					<td class="cloneTd2">
+						<input type="hidden" name="subdivisionId_list" id="subdivisionId_list">
+						<input type="text" name="subdivision_list" id="subdivision_list" size="10" readonly>
+					</td>
+					<td class="cloneTd3"><input type="text" name="Bkjukyo" id="Bkjukyo" size="15" value="{{ transaction.Bkjukyo }}"></td>
+					<td class="text-right cloneTd4"><input type="text" name="Bkinout" id="Bkinout" size="10" value="{% if transaction.Bkinput %}{{ transaction.Bkinput }}{% elif transaction.Bkoutput %}{{ transaction.Bkoutput }}{% endif %}" onchange="calc();" onkeypress="return onlyNumber(event);"></td>
+				</tr>
+			</tbody>
+		</table>
+		거래금액 : 
+		<input type="text" name="total" value="{{ total }}" size="10" readonly>
+		분할합계 : 
+		<input type="text" name="sum" size="10" value="{{ total }}" readonly>
+		차액 : 
+		<input type="text" name="difference" size="10" value="0" readonly>
+		</form>
+	</div>
+	<button id="btn-add-row" class="btn btn-sm btn-primary">추가</button>
+	<button type="button" class="float-right btn btn-sm btn-primary" onclick="writeCheck();">등록</button>
+</div>
+<script type="text/javascript">
+var index = 1;
+function writeCheck() {
+	var f = document.listForm;
+
+	for (var i=1; i<=f.row.value; i++) {
+		if(!f.itemId_list[i].value) {
+			alert("계정명을 선택해주세요");
+			f.item_list[i].focus();
+			return;
+		}
+		if(!f.Bkjukyo[i].value) {
+			alert("적요를 입력해주세요");
+			f.Bkjukyo[i].focus();
+			return;
+		}
+		if(!f.Bkinout[i].value) {
+			alert("금액을 입력해주세요");
+			f.Bkinout[i].focus();
+			return;
+		}
+	}
+
+	if (f.total.value != f.sum.value) {
+		alert("거래금액과 분할거래의 합이 일치하지 않습니다. 수정후 다시 등록해주세요.");
+		return;
+	}
+	//alert("검증완료");
+	f.submit();
+}
+
+function open_popup(index) {
+	var row = document.getElementById("row").value;
+	var inoutType = document.getElementById("inoutType").value;
+	return window.open('{% url "popup_select_item" %}?index='+index+'&row='+row+'&inoutType='+inoutType, '계정선택','width=900, height=800, scrollbars=1');
+}
+
+$('#btn-add-row').click(function() {
+	$.ajax({
+		type: "POST",
+		url: {% url 'add_row' %},
+		data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'Bkid': '{{ Bkid }}', 'page': "popup_transaction_division"},
+		dataType: "json",
+		success: function(response) {
+			if(!response.is_regis) {
+				var cloneEle1 = $('#tr-tbody .cloneTd1').last().clone();
+				var cloneEle2 = $('#tr-tbody .cloneTd2').last().clone();
+				var cloneEle3 = $('#tr-tbody .cloneTd3').last().clone();
+				var cloneEle4 = $('#tr-tbody .cloneTd4').last().clone();
+				$('#tr-tbody').append('<tr></tr>')
+				$('#tr-tbody tr').last().append('<td></td><td></td><td></td>').append(cloneEle1).append(cloneEle2).append(cloneEle3).append(cloneEle4).find('input[type="text"]').val("");
+				var f = document.listForm;
+				document.getElementById("row").value = parseInt(f.row.value)+1;
+				$('.cloneTd1 #select_item_url').last().attr("onclick", "javascript:open_popup("+f.row.value+");");
+			}
+		},
+	});
+});
+
+function calc() {
+	var f = document.listForm;
+	var sum = 0;
+	var total = {{ total }};
+
+	for(var i=1; i<f.row.value; i++) {
+		total -= Number(f.Bkinout[i].value);
+	}
+	if ( total < 0 ) f.Bkinout[f.row.value].value = 0;
+	else f.Bkinout[f.row.value].value = total;
+
+	for(var i=1; i<=f.row.value; i++) {
+		sum += Number(f.Bkinout[i].value);
+	}
+	f.sum.value = sum;
+	f.difference.value = f.total.value-f.sum.value;
+}
+
+function onlyNumber(event) {
+	var key = event.keyCode
+	if(key >= 48 && key <= 57) {
+		return;
+	} else {
+		return false;
+	}
+}
+</script>
+{% endblock %}

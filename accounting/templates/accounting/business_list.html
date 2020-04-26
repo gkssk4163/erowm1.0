@@ -1,0 +1,39 @@
+{% extends 'accounting/base.html' %}
+
+{% block content %}
+<div class="table-responsive">
+	<table class="table table-bordered table-hover table-sm text-nowrap">
+		<thead class="thead-light text-center">
+		<tr>
+		<th>사업종류</th>
+		<th>사업명</th>
+		<th>사업장명</th>
+		<th>사업자등록번호</th>
+		<th>대표자명</th>
+		<th>업태</th>
+		<th>업종</th>
+		<th>수정</th>
+		<th>전환</th>
+		</tr>
+		</thead>
+		
+		<tbody>
+		{% for list in lists %}
+		<tr>
+		<td>{{ list.type3 }}</td>
+		<td>{{ list.name }}</td>
+		<td>{{ list.place_name }}</td>
+		<td>{{ list.reg_number }}</td>
+		<td>{{ list.owner_name }}</td>
+		<td>{{ list.type1 }}</td>
+		<td>{{ list.type2 }}</td>
+		<td class="text-center"><a class="btn btn-primary btn-sm py-0" href="{% url 'business_edit' pk=list.pk %}">수정</a>
+		<td class="text-center"><a class="btn btn-primary btn-sm py-0" href="{% url 'transform_business' pk=list.pk %}">전환</a></td>
+		</tr>
+		{% endfor %}
+	</table>
+</div>
+<div>
+	<a class="btn btn-outline-primary" href="{% url 'business_create' %}">사업등록</a>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">업로드파일 양식 다운로드</h1>
+
+<div class="row">
+	{% for upload_file in upload_files %}
+	<a href="{{ upload_file.file.url }}" class="btn btn-outline-primary mr-2" download>{{ upload_file.title }}</a>
+	{% endfor %}
+</div>
+{% endblock %}
+

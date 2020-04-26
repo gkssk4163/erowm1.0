@@ -1,0 +1,49 @@
+<nav class="navbar navbar-expand-md navbar-dark bg-primary">
+	<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+		<span class="navbar-toggler-icon"></span>
+	</button>
+
+	<div class="collapse navbar-collapse" id="navbarSupportedContent">
+		<ul class="navbar-nav mr-auto">
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle {{ business_management }}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">사업장관리</a>
+				<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+					<a class="dropdown-item {{ business_info_page }}" href="{% url 'business_info' %}">사업장정보</a>
+				</div>
+			</li>
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle {{ accounting_management }}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">회계관리</a>
+				<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+					<a class="dropdown-item {{ transaction_history_page }}" href="{% url 'transaction_history' %}">거래내역</a>
+					<a class="dropdown-item {{ account_list }}" href="{% url 'account_list' %}">은행계좌관리</a>
+					<a class="dropdown-item {{ subdivision_list }}" href="{% url 'subdivision_list' %}">세목등록</a>
+					<a class="dropdown-item {{ monthly_print }}" href="{% url 'monthly_print' %}">월별출력</a>
+					<a class="dropdown-item {{ close_list }}" href="{% url 'close_list' %}">마감등록</a>
+				</div>
+			</li>
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle {{ budget_management }}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">예산관리</a>
+				<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+					<a class="dropdown-item {{ revenue_budget_page }}" href="{% url 'annual_budget' budget_type='revenue' %}">세입예산등록</a>
+					<a class="dropdown-item {{ expenditure_budget_page }}" href="{% url 'annual_budget' budget_type='expenditure' %}">세출예산등록</a>
+					<a class="dropdown-item {{ supplementary_revenue_page }}" href="{% url 'annual_budget' budget_type='supplementary_revenue_1' %}">추경세입예산등록</a>
+					<a class="dropdown-item {{ supplementary_expenditure_page }}" href="{% url 'annual_budget' budget_type='supplementary_expenditure_1' %}">추경세출예산등록</a>
+				</div>
+			</li>
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle {{ settlement_management }}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">결산관리</a>
+				<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+					<a class="dropdown-item {{ revenue_settlement_page }}" href="{% url 'budget_settlement' budget_type='revenue' %}">세입결산</a>
+					<a class="dropdown-item {{ expenditure_settlement_page }}" href="{% url 'budget_settlement' budget_type='expenditure' %}">세출결산</a>
+					<a class="dropdown-item {{ print_settlement_page }}" href="{% url 'print_settlement' %}">결산서출력</a>
+				</div>
+			</li>
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle {{ download }}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">파일양식 다운로드</a>
+				<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+					<a class="dropdown-item {{ download }}" href="{% url 'file_download' %}">파일양식</a>
+				</div>
+			</li>
+		</ul>
+	</div>
+</nav>

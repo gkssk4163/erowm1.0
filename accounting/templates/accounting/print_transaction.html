@@ -1,0 +1,58 @@
+{% extends 'accounting/print_base.html' %}
+{% load humanize %}
+
+{% block content %}
+{% for ym in ym_range %}
+{% for transaction in ym.transaction %}
+<div class="page">
+	<center><h1>현금출납장</h1></center>
+	<div style="float:left;width:50%;">
+		<p style="margin:2px 2px">{{ year }}년 {{ month }}월 - {{ year2 }}년 {{ month2 }}월</p>
+	</div>
+	<div style="float:left;width:50%;text-align:right">
+		<p style="margin:2px 2px">(단위 : 원)</p>
+	</div>
+	<table width="100%" height="100%" style="border-collapse:collapse;" border="1" cellpadding="2" class="th-nowrap td-nowrap">
+		<thead>
+			<tr>
+				<th>월/일</th>
+				<th>증빙서번호</th>
+				<th>목</th>
+				<th>적요</th>
+				<th>수입금액</th>
+				<th>지출금액</th>
+				<th>잔액</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for transaction in transaction %}
+			{% if transaction.Bkdate|date:"Y-m" == ym.ym %}
+			<tr>
+				<td style="text-align:center;">{{ transaction.Bkdate|date:"n/j" }}</td>
+				<td style="text-align:center;">{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}</td>
+				<td>{{ transaction.item.context }}</td>
+				<td>{{ transaction.Bkjukyo }}</td>
+				<td style="text-align:right;">{{ transaction.Bkinput|intcomma }}</td>
+				<td style="text-align:right;">{{ transaction.Bkoutput|intcomma }}</td>
+				<td style="text-align:right;">{{ transaction.Bkjango|intcomma }}</td>
+			</tr>
+			{% endif %}
+			{% endfor %}
+			<tr style="font-weight:bold">
+				<td colspan="4" style="text-align:center;">월계</td>
+				<td style="text-align:right;">{{ ym.total_input|intcomma }}</td>
+				<td style="text-align:right;">{{ ym.total_output|intcomma }}</td>
+				<td></td>
+			</tr>
+			<tr style="font-weight:bold">
+				<td colspan="4" style="text-align:center;">누계</td>
+				<td style="text-align:right;">{{ ym.accumulated_input|intcomma }}</td>
+				<td style="text-align:right;">{{ ym.accumulated_output|intcomma }}</td>
+				<td></td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+{% endfor %}
+{% endfor %}
+{% endblock %}

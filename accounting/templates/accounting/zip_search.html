@@ -1,0 +1,33 @@
+<script src="http://dmaps.daum.net/map_js_init/postcode.v2.js"></script>
+
+<script>
+function ZipSearchDaumPostcode() {
+	new daum.Postcode({
+		oncomplete: function(data) {
+			var fullAddr = '';
+			var extraAddr = '';
+
+			if(data.userSelectedType === 'R') {
+				fullAddr = data.roadAddress;
+			} else {
+				fullAddr = data.jibunAddres;
+			}
+
+			if(data.userSelectedType === 'R') {
+				if(data.bname !== '') {
+					extraAddr += data.bname;
+				}
+				if(data.buildingName !== '') {
+					extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+				}
+				fullAddr += (extraAddr !== '' ? ' (' + extraAddr + ')' : '');
+			}
+
+			document.getElementById('id_zip_number').value = data.zonecode;
+			document.getElementById('id_address').value = fullAddr;
+
+			document.getElementById('id_detailed_address').focus();
+		}
+	}).open();
+}
+</script>

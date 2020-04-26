@@ -1,0 +1,11 @@
+<div class="content container-fluid">
+	<form name="accountForm" method="POST" action="{% url 'change_main_account' %}">
+	{% csrf_token %}
+	<div class="list">
+	{% for list in acct_list %}
+	<input type="radio" name="acctid" value="{{ list.id }}" {% if list.main %}checked{% endif %}>{{ list.account_number }}<br>
+	{% endfor %}
+	</div>
+	<button type="submit">변경</button>
+	</form>
+</div>

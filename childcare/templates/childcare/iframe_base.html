@@ -1,0 +1,30 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>erowm - 회계프로그램</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="{% static 'css/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <!-- Page Content -->
+    <div class="container" style="font-size:10pt">
+      {% block content %}
+      {% endblock %}
+    </div>
+    <!-- /.container -->
+
+</body>
+
+</html>

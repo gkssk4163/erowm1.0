@@ -1,0 +1,65 @@
+{% extends 'accounting/popup_base.html' %}
+
+{% block content %}
+{% load humanize %}
+<div class="table-responsive">
+	<form name="writeForm" method="POST" action="{% url 'edit_transaction' %}">
+		{% csrf_token %}
+		<input type="hidden" name="pk" value="{{ pk }}"/>
+		<table id="tr-table" class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
+			<thead class="thead-light text-center">
+				<tr>
+					<th>{{ transactionform.Bkdate.label }}</th>
+					<th>{{ transactionform.item.label }}</th>
+					<th>{{ transactionform.Bkjukyo.label }}</th>
+					<th>금액</th>
+				</tr>
+			</thead>
+			<tbody class="text-center" id="tr-tbody">
+				<tr>
+					<td>{{ transactionform.Bkdate }}</td>
+					<td>{{ transactionform.item }}</td>
+					<td>{{ transactionform.Bkjukyo }}</td>
+					<td>
+						{{ transactionform.Bkinput }}
+						{{ transactionform.Bkoutput }}
+					</td>
+				</tr>
+				<tr>
+					<th>비고</th>
+					<td colspan="4"><input type="text" name="remark" size="50"/></td>
+				</tr>
+			</tbody>
+		</table>
+	</form>
+</div>
+<button type="button" class="float-right" onclick="writeCheck();">등록</button>
+
+<script type="text/javascript">
+function writeCheck() {
+	var f = document.writeForm;
+
+	if(!f.item.value) {
+		alert("계정명을 선택해주세요");
+		f.item.focus();
+		return;
+	}
+	if(!f.Bkjukyo.value) {
+		alert("적요를 입력해주세요");
+		f.Bkjukyo.focus();
+		return;
+	}
+	if(f.Bkinput && !f.Bkinput.value) {
+		alert("금액을 입력해주세요");
+		f.Bkinput.focus();
+		return;
+	}
+	if(f.Bkoutput && !f.Bkoutput.value) {
+		alert("금액을 입력해주세요");
+		f.Bkoutput.focus();
+		return;
+	}
+	f.submit();
+}
+</script>
+{% endblock %}

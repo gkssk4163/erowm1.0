@@ -1,0 +1,158 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/admin_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">사용승인관리</h1>
+
+<div class="row">
+	<div class="col-md-12">
+		<div class="search float-right">
+			<form action="" method="get">
+				<select name="where">
+					<option value="place_name">상호</option>
+					<option value="name">대표</option>
+					<option value="sales">취급자</option>
+				</select>
+				<input type="text" name="keyword"/>
+				<input type="submit" value="검색" />
+			</form>
+		</div>
+	</div>
+</div>
+
+<div class="row mb-4">
+	<div class="col-md-12">
+		<form action="{% url 'sales_change' %}" method="POST" onSubmit="return submitCheck(this);">
+			{% csrf_token %}
+			<div class="col-md-12 bg-light">
+				인증관리
+				<select name="select_auth">
+					<option value="" selected>--선택--</option>
+					<option value=0>회원인증</option>
+					<option value=1>인증보류</option>
+				</select>
+				취급자선택
+				<select name="select_sales">
+					<option value="" selected>--선택--</option>
+					{% for s in sales %}
+					<option value="{{ s.id }}">{{ s.name }}</option>
+					{% endfor %}
+				</select>
+				<input type="submit" value="변경" />
+			</div>
+			<div class="table-responsive">
+				<table class="table table-bordered table-hover table-sm th-nowrap td-nowrap mb-3">
+					<thead class="thead-light text-center text-nowrap">
+						<tr>
+							<th><input type="checkbox"></th>
+							<th>번호</th>
+							<th>회원상태</th>
+							<th>상호</th>
+							<th>대표</th>
+							<th>아이디</th>
+							<th>연락처</th>
+							<th>가입일</th>
+							<th>최종접속일</th>
+							<th>취급자</th>
+							<th>삭제</th>
+						</tr>
+					</thead>
+		
+					<tbody class="text-nowrap">
+						{% for owner in owners %}
+						<tr>
+							<td class="text-center"><input type="checkbox" name="check_list[]" value="{{ owner.id }}"></td>
+							<td class="text-center">{{ owner.id }}</td>
+							<td class="text-center">{% if owner.is_demo %}인증보류{% else %}회원인증{% endif %}</td>
+							<td>{{ owner.place_name }}</td>
+							<td>{{ owner.name }}</td>
+							<td>{{ owner.profile.user.username }}</td>
+							<td>{{ owner.cellphone }}</td>
+							<td>{{ owner.profile.user.date_joined|date:"Y-m-d" }}</td>
+							<td>{{ owner.profile.user.last_login|date:"Y-m-d" }}</td>
+							<td>{{ owner.sales }}</td>
+							<td>
+								<input type="hidden" id="{{ owner.profile.user.username }}_pw" name="user_pw" value="{{ owner.profile.user.password|slice:"34:" }}">
+								<input id="{{ owner.profile.user.username }}" name="withdraw" type="button" value="삭제" class="btn btn-primary btn-sm">
+							</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</form>
+	</div>
+</div>
+<script type="text/javascript">
+function submitCheck(f) {
+	if (f.select_auth.value == '') {
+		alert('회원상태를 선택해주세요.');
+		f.select_auth.focus();
+		return false;
+	}
+	if (f.select_sales.value == '') {
+		alert('취급자를 선택해주세요.');
+		f.select_sales.focus();
+		return false;
+	}
+	if (!$('input[name="check_list[]"]').is(":checked")) {
+		alert('회원을 선택해주세요.');
+		return false;
+	}
+}
+
+$('input:button[name=withdraw]').click(function() {
+	if(confirm("DB와 뱅크다의 회원정보가 모두 삭제됩니다. 삭제하시겠습니까?")) {
+	var username = this.id;
+	$.ajax({
+		type: "POST",
+		url: "https://ssl.bankda.com/partnership/user/user_withdraw.php",
+		data: {
+			'directAccess': 'y',
+			'partner_id': "vizun21",
+			'service_type': "basic",
+			'user_id': username,
+			'user_pw': $('#'+username+'_pw').val(),
+			'command': "excute"
+		},
+		dataType: "html",
+		success: function(response) {
+			if( response == "ok" ) {
+				alert("삭제완료");
+				var form = document.createElement("form");
+				
+				form.setAttribute("charset", "UTF-8");
+				form.setAttribute("method", "POST");
+				form.setAttribute("action", "{% url 'user_delete' %}");
+
+				var hiddenField = document.createElement("input");
+				hiddenField.setAttribute("type", "hidden");
+				hiddenField.setAttribute("name", "csrfmiddlewaretoken");
+				hiddenField.setAttribute("value", "{{ csrf_token }}");
+				form.appendChild(hiddenField);
+
+				var hiddenField = document.createElement("input");
+				hiddenField.setAttribute("type", "hidden");
+				hiddenField.setAttribute("name", "username");
+				hiddenField.setAttribute("value", username);
+				form.appendChild(hiddenField);
+				
+				document.body.appendChild(form);
+				
+				form.submit();
+			}
+			else {
+				alert("일치하는 이용자정보가 없습니다.");
+			}
+		},
+		error: function(request, status, error) {
+			alert(request.status);
+		}
+	});
+	}
+});
+</script>
+{% endblock %}

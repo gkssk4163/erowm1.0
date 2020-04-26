@@ -1,0 +1,67 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/admin_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">관항목관리</h1>
+
+<div class="row mb-4">
+	<div class="col-md-12">
+		<ul class="nav nav-tabs">
+			{% for institution in institution_list %}
+			<li class="nav-item">
+				<a class="nav-link active" href="?institution_name={{ institution }}">{{ institution }}</a>
+			</li>
+			{% endfor %}
+		</ul>
+	</div>
+	<div class="col-md-12 table-responsive">
+		<table class="table table-bordered table-sm">
+			<thead class="thead-light text-center text-nowrap">
+				<tr>
+					<th><input type="checkbox"></th>
+					<th>년도</th>
+					<th>사업종류</th>
+					<th>구분</th>
+					<th colspan=2>관</th>
+					<th colspan=2>항</th>
+					<th colspan=2>목</th>
+					<th>내역</th>
+				</tr>
+			</thead>
+
+			<tbody class="text-center">
+				{% for subsection in subsection_list %}
+				<tr>
+					<td rowspan="{{ subsection.count }}" class="text-center align-middle"><input type="checkbox" name="check_list[]" value="{{ spi.1 }}{{ spi.4|default:"" }}{{ spi.6|default:"" }}"></td>
+					<td rowspan="{{ subsection.count }}" class="align-middle">{{ subsection.year }}</td>
+					<td rowspan="{{ subsection.count }}" class="align-middle">{{ subsection.institution }}</td>
+					<td rowspan="{{ subsection.count }}" class="align-middle">{{ subsection.type }}</td>
+					<td rowspan="{{ subsection.count }}" class="align-middle">{{ subsection.code }}</td>
+					<td rowspan="{{ subsection.count }}" class="align-middle"><a href="{% url 'subsection_edit' pk=subsection.pk %}">{{ subsection.context }}</a></td>
+					{% for paragraph in paragraph_list %}
+					{% if paragraph.subsection == subsection %}
+					
+					<td rowspan="{{ paragraph.count }}" class="align-middle">{{ paragraph.code }}</td>
+					<td rowspan="{{ paragraph.count }}" class="align-middle"><a href="{% url 'paragraph_edit' pk=paragraph.pk %}">{{ paragraph.context }}</a></td>
+					{% for item in item_list %}
+					{% if item.paragraph == paragraph %}
+					<td class="align-middle">{{ item.code }}</td>
+					<td class="align-middle"><a href="{% url 'item_edit' pk=item.pk %}">{{ item.context }}</a></td>
+					<td class="align-middle">{{ item.text }}</td>
+				</tr>
+				{% endif %}
+				{% endfor %}
+				{% endif %}
+				{% endfor %}
+				{% endfor %}
+			</tbody>
+		</table>
+		<a class="btn btn-outline-primary" href="{% url 'subsection_create' %}">관등록</a>
+		<a class="btn btn-outline-primary" href="{% url 'paragraph_create' %}">항등록</a>
+		<a class="btn btn-outline-primary" href="{% url 'item_create' %}">목등록</a>
+	</div>
+</div>
+{% endblock %}

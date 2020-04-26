@@ -1,0 +1,67 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/admin_menu.html' %}
+{% endblock %}
+
+{% block content %}
+
+<h1 class="mb-3">사용자전환</h1>
+
+<div class="row">
+        <div class="col-md-12">
+		<div class="search float-right">
+			<form action="" method="get">
+				<select name="where">
+					<option value="" selected>--선택--</option>
+					<option value="place_name">상호</option>
+					<option value="name">대표</option>
+				</select>
+				<input type="text" name="keyword"/>
+				<input type="submit" value="검색" />
+			</form>
+		</div>
+	</div>
+</div>
+<div class="row mb-4">
+        <div class="col-md-12">
+		<div class="table-responsive">
+			<table class="table table-bordered table-hover table-sm text-nowrap">
+				<thead class="thead-light text-center">
+					<tr>
+						<th>번호</th>
+						<th>uid</th>
+						<th>상호</th>
+						<th>대표</th>
+						<th>아이디</th>
+						<th>연락처</th>
+						<th>가입일</th>
+						<th>최종접속일</th>
+						<th>전환</th>
+					</tr>
+				</thead>
+				
+				<tbody>
+					{% for owner in owners %}
+					<tr>
+						<td class="text-center">{{ forloop.counter }}</td>
+						<td class="text-center">{{ owner.profile.user.id }}</td>
+						<td>{{ owner.place_name }}</td>
+						<td>{{ owner.name }}</td>
+						<td>{{ owner.profile.user.username }}</td>
+						<td>{{ owner.cellphone }}</td>
+						<td>{{ owner.profile.user.date_joined|date:"Y-m-d" }}</td>
+						<td>{{ owner.profile.user.last_login|date:"Y-m-d" }}</td>
+						<td class="text-center"><a class="btn btn-primary btn-transform btn-sm" href="{% url 'transform' pk=owner.profile.user.pk %}">전환</a></td>
+					</tr>
+					{% endfor %}
+					{% if not owner_exists %}
+					<tr>
+						<td colspan=9 class="text-center"> 등록된 사업장이 없습니다.</td>
+					</tr>
+					{% endif %}
+			</table>
+		</div>
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>회계 프로그램</title>
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,
+                               minimum-scale=1.0,maximum-scale=1.0,
+                               user-scalable=no" />
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+		<link href="http://fonts.googleapis.com/earlyaccess/hanna.css" rel="stylesheet">
+		<link rel="stylesheet" href="{% static 'css/accounting.css' %}">
+		<script type="text/javascript" src="{% static 'js/main.js' %}"></script>
+		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+		<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	</head>
+	<body>
+		<div class="page-header">
+		{% if user.is_authenticated %}
+			<p class="top-menu">Hello {{ user.username }} <small>(<a href="{% url 'logout' %}">로그아웃</a>)</small></p>
+			{% if not business %}
+			<a href="{% url 'mypage' %}" class="top-menu">내정보</a>
+			{% else %}
+			<a href="{% url 'retransform_business' %}" class="top-menu btn btn-primary btn-sm">업무전환</a>
+			{% endif %}
+			{% if master_login %}
+			<a href="{% url 'retransform' %}" class="top-menu btn btn-primary btn-sm mx-1">사업장전환</a>
+			{% endif %}
+		{% else %}
+			<a href="{% url 'signup' %}" class="top-menu">회원가입</a>
+			<a href="{% url 'login' %}" class="top-menu">로그인</a>
+		{% endif %}
+		<h1><a href="{% if business %}{% url 'business_info' %}{% else %}{% url 'business_list' %}{% endif %}">LMS</a></h1>
+		</div>
+
+		{% block menu %}
+		{% endblock %}
+
+		<div class="content container-fluid" style="font-size:10pt">
+			{% block content %}
+			{% endblock %}
+		</div>
+		<hr>
+		<footer>
+			COPYRIGHT 2018. <a href="#">LMSYSTEMS</a>, All rights reserved.
+		</footer>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+	</body>
+</html>

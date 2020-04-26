@@ -1,0 +1,51 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">월별출력</h1>
+<div class="row mb-4">
+	<div class="col-md-12">
+		<form name="termForm" method="POST" target="_blank">
+			{% csrf_token %}
+			<table cellpadding="5" border="1" width="100%">
+				<tr>
+					<td>년월 설정</td>
+					<td>
+						<select name="year">
+							{% for y in year_range %}
+							<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+							{% endfor %}
+						</select>년
+						<select name="month">
+							{% for m in month_range %}
+							<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+							{% endfor %}
+						</select>월
+					</td>
+				</tr>
+			</table>
+		</form>
+		<div class="justify-content-around mt-2">
+			<input type="button" onclick="termPost('{% url 'monthly_print_all' %}');" value="전체출력">
+			<input type="button" onclick="termPost('{% url 'print_budget_settlement2' budget_type='revenue' %}');" value="세입결산출력">
+			<input type="button" onclick="termPost('{% url 'print_budget_settlement2' budget_type='expenditure' %}');" value="세출결산출력">
+			<input type="button" onclick="termPost('{% url 'print_transaction' %}');" value="현금출납장">
+			<input type="button" onclick="termPost('{% url 'print_general_ledger' %}');" value="총계정원장">
+			<input type="button" onclick="termPost('{% url 'print_voucher' voucher_type='revenue' %}');" value="수입결의서">
+			<input type="button" onclick="termPost('{% url 'print_returned_voucher' voucher_type='revenue' %}');" value="수입반납결의서">
+			<input type="button" onclick="termPost('{% url 'print_voucher' voucher_type='expenditure' %}');" value="지출결의서">
+			<input type="button" onclick="termPost('{% url 'print_returned_voucher' voucher_type='expenditure' %}');" value="지출반납결의서">
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+function termPost(url) {
+	var f = document.termForm;
+	f.action = url;
+	f.submit();
+}
+</script>
+{% endblock %}

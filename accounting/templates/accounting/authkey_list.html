@@ -1,0 +1,40 @@
+{% extends 'accounting/base.html' %}
+
+{% load static %}
+
+{% block menu %}
+        {% include 'accounting/menu.html' %}
+{% endblock %}
+	
+{% block content %}
+<h1 class="mb-3">인증키등록</h1>
+
+<div class="row">
+	<div class="col-md-12">
+		<div class="table-responsive">
+			<table class="table table-bordered table-hover table-sm">
+				<thead class="thead-light text-center">
+					<tr>
+						<th>인증키</th>
+						<th>수정</th>
+					</tr>
+				</thead>
+				
+				<tbody class="text-center">
+					{% if business.s_auth_key %}
+					<tr>
+						<td>{{ business.s_auth_key }}</td>
+						<td><a class="btn btn-primary btn-sm py-0" href="{% url 'authkey_edit' %}">수정</a>
+					</tr>
+					{% else %}
+					<tr>
+						<td colspan="2">등록된 인증키가 없습니다.</td>
+					</tr>
+					{% endif %}
+				</tbody>
+			</table>
+		</div>
+		<a class="btn btn-outline-primary float-right" href="{% url 'authkey_edit' %}">인증키등록</a>
+	</div>
+</div>
+{% endblock %}

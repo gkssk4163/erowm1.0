@@ -1,0 +1,65 @@
+{% extends 'accounting/print_base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="page">
+	<center><h1>{{ year }}년 {% if budget_type == 'revenue' %}세입{% else %}세출{% endif %}결산서</h1></center>
+	<div style="float:left;width:50%;">
+		<p style="margin:2px 2px">{{ year }}년 {{ month }}월 - {{ year2 }}년 {{ month2 }}월</p>
+	</div>
+	<div style="float:left;width:50%;text-align:right">
+		<p style="margin:2px 2px">(단위 : 원)</p>
+	</div>
+	<table width="100%" height="100%" style="border-collapse:collapse;" border="1" cellpadding="2" class="th-nowrap">
+		<thead>
+			<tr>
+				<th colspan="6" width="60%">과목</th>
+				<th rowspan="2" width="11%">예산액</th>
+				<th rowspan="2">예산현액</th>
+				<th rowspan="2" width="11%">{% if budget_type == 'revenue' %}수납액{% else %}지출액{% endif %}</th>
+				<th rowspan="2" width="11%">{% if budget_type == 'revenue' %}미납액{% else %}잔액{% endif %}</th>
+				<th rowspan="2" width="7%">비고</th>
+			</tr>
+			<tr>
+				<th colspan="2" width="20%">관</th>
+				<th colspan="2" width="20%">항</th>
+				<th colspan="2" width="20%">목</th>
+			</tr>
+			<tr>
+				<th colspan="6">총계</th>
+				<th style="text-align:right">{{ total_budget|intcomma }}</th>
+				<th style="text-align:right">{{ now_budget|intcomma }}</th>
+				<th style="text-align:right">{{ total_sum|intcomma }}</th>
+				<th style="text-align:right">{{ total_difference|intcomma }}</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody style="text-align:center">
+			{% for subsection in subsection_list %}
+			<tr>
+				<td rowspan="{{ subsection.count }}">{{ subsection.code }}</td>
+				<td rowspan="{{ subsection.count }}">{{ subsection.context }}</td>
+				{% for paragraph in paragraph_list %}
+				{% if paragraph.subsection == subsection %}
+				
+				<td rowspan="{{ paragraph.count }}">{{ subsection.code }}{{ paragraph.code }}</td>
+				<td rowspan="{{ paragraph.count }}">{{ paragraph.context }}</td>
+				{% for item in item_list %}
+				{% if item.paragraph == paragraph %}
+				<td>{{ subsection.code }}{{ paragraph.code }}{{ item.code }}</td>
+				<td style="white-space:nowrap;">{{ item.context }}</td>
+				<td style="text-align:right">{{ item.total_budget|intcomma }}</td>
+				<td style="text-align:right">{{ item.now_budget|intcomma }}</td>
+				<td style="text-align:right">{{ item.total_sum|intcomma }}</td>
+				<td style="text-align:right">{{ item.total_difference|intcomma }}</td>
+				<td></td>
+			</tr>
+			{% endif %}
+			{% endfor %}
+			{% endif %}
+			{% endfor %}
+			{% endfor %}
+		</tbody>
+	</table>
+</div>
+{% endblock %}

@@ -1,0 +1,424 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+        {% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+{% load humanize %}
+
+<h2 class="mb-3">보고서</h2>
+
+<div class="row mb-4">
+	<div class="col-md-12">
+	<div class="table-responsive">
+	<table class="table table-sm table-bordered text-nowrap">
+		<tr>
+			<td colspan="2">회계자료마감</td>
+		</tr>
+		<tr>
+			<td  style="width:10%">회계년월</td>
+			<td>
+				<select name="year" onChange="location='?year='+this.value+'&month={{ month }}&type={{ type }}';">
+					{% for y in y_range %}
+					<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+					{% endfor %}
+			</select>
+			<select name="month" onChange="location='?year={{ year }}&month='+this.value+'&type={{ type }}';">
+				{% for m in m_range %}
+				<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+				{% endfor %}
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td colspan="2"><a href="#" class="tr_slide full-width" id="row_1">마감정보<span class="float-right" id="span_row_1">▼</span></a></td>
+	</tr>
+	<tr style="display:none;" id="slide_row_1">
+		<td colspan="2">
+			<div class="table-responsive" style="display: none;">
+				<table class="table table-sm table-bordered text-center text-nowrap m-0">
+						<colgroup>
+							<col width="17%">
+							<col width="16%">
+							<col width="17%">
+							<col width="17%">
+							<col width="16%">
+							<col width="17%">
+						</colgroup>
+						<tr>
+							<td>자료마감여부</td>
+							<td>{% if deadline %}마감완료{% else %}마감미등록{% endif %}</td>
+							<td>조정마감여부</td>
+							<td></td>
+							<td>장부배송여부</td>
+							<td></td>
+						</tr>
+						<tr>
+							{% for data in data_list %}
+							{% if "기타필요경비" in data.context and data.paragraph.subsection.type == "수입" %}
+							<td>기타필요경비수입</td>
+							<td colspan="2">{{ data.settlement_amount|intcomma }}</td>
+							{% elif "기타필요경비" in data.context and data.paragraph.subsection.type == "지출" %}
+							<td>기타필요경비지출</td>
+							<td colspan="2">{{ data.settlement_amount|intcomma }}</td>
+							{% endif %}
+							{% endfor %}
+						</tr>
+						<tr>
+							{% for data in data_list %}
+							{% if "특별활동비" in data.context and data.paragraph.subsection.type == "수입" %}
+							<td>특별활동비수입</td>
+							<td colspan="2">{{ data.settlement_amount|intcomma }}</td>
+							{% elif "특별활동비" in data.context and data.paragraph.subsection.type == "지출" %}
+							<td>특별활동비지출</td>
+							<td colspan="2">{{ data.settlement_amount|intcomma }}</td>
+							{% endif %}
+							{% endfor %}
+						</tr>
+					</table>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2"><a href="#" class="tr_slide full-width" id="row_2">차입금<span class="float-right" id="span_row_2">▼</span></a></td>
+		</tr>
+		<tr style="display:none;" id="slide_row_2">
+			<td colspan="2">
+				<div class="table-responsive" style="display: none;">
+					<table class="table table-sm table-bordered text-center text-nowrap m-0">
+						<tr>
+							<td>수입</td>
+							<td>예산액</td>
+							<td>수입금액</td>
+							<td>적정여부</td>
+							<td>지출</td>
+							<td>예산액</td>
+							<td>지출금액</td>
+							<td>적정여부</td>
+						</tr>
+						<tr>
+							{% for data in data_list %}
+							{% if "단기" in data.context %}
+							{% if data.paragraph.subsection.type == "수입" %}
+							<td>단기차입금</td>
+							<td>{{ data.budget_amount|intcomma }}</td>
+							<td>{{ data.settlement_amount|intcomma }}</td>
+							{% if data.rate_of_change == '-' %}
+							{% if data.settlement_amount > 0 %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% else %}
+							<td><span></span></td>
+							{% endif %}
+							{% elif data.rate_of_change >= 0.95 and item.rate_of_change <= 1.05 %}
+							<td class="bg-success text-white"><span>적정</span></td>
+							{% elif data.rate_of_change >= 0.9 and item.rate_of_change <= 1.1 %}
+							<td class="bg-warning"><span>주의</span></td>
+							{% else %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% endif %}
+							{% endif %}
+							{% if data.paragraph.subsection.type == "지출" %}
+							<td>단기차입금상환</td>
+							<td>{{ data.budget_amount|intcomma }}</td>
+							<td>{{ data.settlement_amount|intcomma }}</td>
+							{% if data.rate_of_change == '-' %}
+							{% if data.settlement_amount > 0 %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% else %}
+							<td><span></span></td>
+							{% endif %}
+							{% elif data.rate_of_change >= 0.95 and item.rate_of_change <= 1.05 %}
+							<td class="bg-success text-white"><span>적정</span></td>
+							{% elif data.rate_of_change >= 0.9 and item.rate_of_change <= 1.1 %}
+							<td class="bg-warning"><span>주의</span></td>
+							{% else %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% endif %}
+							{% endif %}
+							{% endif %}
+							{% endfor %}
+						</tr>
+						<tr>
+							{% for data in data_list %}
+							{% if "장기" in data.context %}
+							{% if data.paragraph.subsection.type == "수입" %}
+							<td>장기차입금</td>
+							<td>{{ data.budget_amount|intcomma }}</td>
+							<td>{{ data.settlement_amount|intcomma }}</td>
+							{% if data.rate_of_change == '-' %}
+							{% if data.settlement_amount > 0 %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% else %}
+							<td><span></span></td>
+							{% endif %}
+							{% elif data.rate_of_change >= 0.95 and item.rate_of_change <= 1.05 %}
+							<td class="bg-success text-white"><span>적정</span></td>
+							{% elif data.rate_of_change >= 0.9 and item.rate_of_change <= 1.1 %}
+							<td class="bg-warning"><span>주의</span></td>
+							{% else %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% endif %}
+							{% endif %}
+							{% if data.paragraph.subsection.type == "지출" %}
+							<td>장기차입금상환</td>
+							<td>{{ data.budget_amount|intcomma }}</td>
+							<td>{{ data.settlement_amount|intcomma }}</td>
+							{% if data.rate_of_change == '-' %}
+							{% if data.settlement_amount > 0 %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% else %}
+							<td><span></span></td>
+							{% endif %}
+							{% elif data.rate_of_change >= 0.95 and data.rate_of_change <= 1.05 %}
+							<td class="bg-success text-white"><span>적정</span></td>
+							{% elif data.rate_of_change >= 0.9 and data.rate_of_change <= 1.1 %}
+							<td class="bg-warning"><span>주의</span></td>
+							{% else %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% endif %}
+							{% endif %}
+							{% endif %}
+							{% endfor %}
+						</tr>
+					</table>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2"><a href="#" class="tr_slide full-width" id="row_3">기타필요경비<span class="float-right" id="span_row_3">▼</span></a></td>
+		</tr>
+		<tr style="display:none;" id="slide_row_3">
+			<td colspan="2">
+				<div class="table-responsive" style="display: none;">
+					<table class="table table-sm table-bordered text-center text-nowrap m-0">
+						<tr>
+							<td>수입</td>
+							<td>예산액</td>
+							<td>수입금액</td>
+							<td>적정여부</td>
+							<td>지출</td>
+							<td>예산액</td>
+							<td>지출금액</td>
+							<td>적정여부</td>
+						</tr>
+						<tr>
+							{% for data in data_list %}
+							{% if "기타필요경비" in data.context %}
+							{% if data.paragraph.subsection.type == "수입" %}
+							<td>기타필요경비</td>
+							<td>{{ data.budget_amount|intcomma }}</td>
+							<td>{{ data.settlement_amount|intcomma }}</td>
+							{% if data.rate_of_change == '-' %}
+							{% if data.settlement_amount > 0 %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% else %}
+							<td><span></span></td>
+							{% endif %}
+							{% elif data.rate_of_change >= 0.95 and item.rate_of_change <= 1.05 %}
+							<td class="bg-success text-white"><span>적정</span></td>
+							{% elif data.rate_of_change >= 0.9 and item.rate_of_change <= 1.1 %}
+							<td class="bg-warning"><span>주의</span></td>
+							{% else %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% endif %}
+							{% endif %}
+							{% if data.paragraph.subsection.type == "지출" %}
+							<td>기타필요경비</td>
+							<td>{{ data.budget_amount|intcomma }}</td>
+							<td>{{ data.settlement_amount|intcomma }}</td>
+							{% if data.rate_of_change == '-' %}
+							{% if data.settlement_amount > 0 %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% else %}
+							<td><span></span></td>
+							{% endif %}
+							{% elif data.rate_of_change >= 0.95 and data.rate_of_change <= 1.05 %}
+							<td class="bg-success text-white"><span>적정</span></td>
+							{% elif data.rate_of_change >= 0.9 and data.rate_of_change <= 1.1 %}
+							<td class="bg-warning"><span>주의</span></td>
+							{% else %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% endif %}
+							{% endif %}
+							{% endif %}
+							{% endfor %}
+						</tr>
+					</table>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2"><a href="#" class="tr_slide full-width" id="row_4">특별활동비<span class="float-right" id="span_row_4">▼</span></a></td>
+		</tr>
+		<tr style="display:none;" id="slide_row_4">
+			<td colspan="2">
+				<div class="table-responsive" style="display: none;">
+					<table class="table table-sm table-bordered text-center text-nowrap m-0">
+						<tr>
+							<td>수입</td>
+							<td>예산액</td>
+							<td>수입금액</td>
+							<td>적정여부</td>
+							<td>지출</td>
+							<td>예산액</td>
+							<td>지출금액</td>
+							<td>적정여부</td>
+						</tr>
+						<tr>
+							{% for data in data_list %}
+							{% if "특별활동비" in data.context %}
+							{% if data.paragraph.subsection.type == "수입" %}
+							<td>특별활동비</td>
+							<td>{{ data.budget_amount|intcomma }}</td>
+							<td>{{ data.settlement_amount|intcomma }}</td>
+							{% if data.rate_of_change == '-' %}
+							{% if data.settlement_amount > 0 %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% else %}
+							<td><span></span></td>
+							{% endif %}
+							{% elif data.rate_of_change >= 0.95 and item.rate_of_change <= 1.05 %}
+							<td class="bg-success text-white"><span>적정</span></td>
+							{% elif data.rate_of_change >= 0.9 and item.rate_of_change <= 1.1 %}
+							<td class="bg-warning"><span>주의</span></td>
+							{% else %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% endif %}
+							{% endif %}
+							{% if data.paragraph.subsection.type == "지출" %}
+							<td>특별활동비</td>
+							<td>{{ data.budget_amount|intcomma }}</td>
+							<td>{{ data.settlement_amount|intcomma }}</td>
+							{% if data.rate_of_change == '-' %}
+							{% if data.settlement_amount > 0 %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% else %}
+							<td><span></span></td>
+							{% endif %}
+							{% elif data.rate_of_change >= 0.95 and data.rate_of_change <= 1.05 %}
+							<td class="bg-success text-white"><span>적정</span></td>
+							{% elif data.rate_of_change >= 0.9 and data.rate_of_change <= 1.1 %}
+							<td class="bg-warning"><span>주의</span></td>
+							{% else %}
+							<td class="bg-danger text-white"><span>경고</span></td>
+							{% endif %}
+							{% endif %}
+							{% endif %}
+							{% endfor %}
+						</tr>
+					</table>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2"><a href="#" class="tr_slide full-width" id="row_5">중복데이터<span class="float-right" id="span_row_5">▼</span></a></td>
+		</tr>
+		<tr style="display:none;" id="slide_row_5">
+			<td colspan="2">
+				<div class="table-responsive" style="display: none;">
+					<table class="table table-sm table-bordered text-center text-nowrap m-0">
+						<tr>
+							<td>출납일</td>
+							<td>구분</td>
+							<td>계정명</td>
+							<td>적요</td>
+							<td>거래금액</td>
+							<td>중복건</td>
+							<td>확인</td>
+						</tr>
+						{% if not duplicate_tr %}
+						<tr><td colspan="7">중복데이터가 없습니다.</td></tr>
+						{% endif %}
+						{% for duplicate in duplicate_tr %}
+						<tr>
+							<td>{{ duplicate.Bkdate }}</td>
+							<td>{{ duplicate.item__paragraph__subsection__type }}</td>
+							<td>{{ duplicate.item__context }}</td>
+							<td>{{ duplicate.Bkjukyo }}</td>
+							<td>{{ duplicate.price|intcomma }}</td>
+							<td>{{ duplicate.count }}</td>
+							<td></td>
+						</tr>
+						{% endfor %}
+					</table>
+				</div>
+			</td>
+		</tr>
+	</table>
+	</div>
+	</div>
+</div>
+
+<div class="row" style="padding-right:15px;padding-left:15px;">
+	<a href="?year={{ year }}&month={{ month }}&type=input" class="table-bordered text-center p-1" style="width:100px;border-right:0px;border-bottom:0px">세입</a>
+	<a href="?year={{ year }}&month={{ month }}&type=output" class="table-bordered text-center p-1" style="width:100px;border-bottom:0px">세출</a>
+</div>
+<div class="row mb-4">
+	<div class="col-md-12">
+	<div class="table-responsive">
+	<table class="table table-sm table-bordered text-center text-nowrap">
+		<tr>
+			<td>구분</td>
+			<td>목코드</td>
+			<td>계정명</td>
+			<td>월예산액</td>
+			<td>월결산액</td>
+			<td>증감비교</td>
+			<td>비율</td>
+			<td>참고사항</td>
+		</tr>
+		{% for item in item_list %}
+		<tr>
+			<td>{{ item.paragraph.subsection.type }}</td>
+			<td>{{ item.paragraph.subsection.code }}{{ item.paragraph.code }}{{ item.code }}</td>
+			<td>{{ item.context }}</td>
+			<td class="text-right">{{ item.budget_amount|intcomma }}</td>
+			<td class="text-right">{{ item.settlement_amount|intcomma }}</td>
+			<td>
+				{% if item.rate_of_change > 1 or item.rate_of_change == '-' and item.settlement_amount > 0 %}
+				<span class="text-danger">▲</span>
+				{% elif item.rate_of_change < 1 %}
+				<span class="text-primary">▼</span>
+				{% else %}
+				<span class="text-secondary">-</span>
+				{% endif %}
+			</td>
+			<td>{{ item.rate_of_change }}</td>
+			{% if item.rate_of_change == '-' %}
+				{% if item.settlement_amount > 0 %}
+			<td class="bg-danger text-white"><span>경고</span></td>
+				{% else %}
+			<td><span></span></td>
+				{% endif %}
+			{% elif item.rate_of_change >= 0.95 and item.rate_of_change <= 1.05 %}
+			<td class="bg-success text-white"><span>적정</span></td>
+			{% elif item.rate_of_change >= 0.9 and item.rate_of_change <= 1.1 %}
+			<td class="bg-warning"><span>주의</span></td>
+			{% else %}
+			<td class="bg-danger text-white"><span>경고</span></td>
+			{% endif %}
+		</tr>
+		{% endfor %}
+	</table>
+	</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+	$(".tr_slide").on('click', function() {
+		if($("#slide_"+this.id).css('display') == 'none') {
+			$("#slide_"+this.id).slideFadeTableRow(300, 'swing', function(){});
+			$("#span_"+this.id).html("▲");
+		}
+		else {
+			$("#slide_"+this.id).hideTableRow();
+			$("#span_"+this.id).html("▼");
+		}
+		return false;
+	});
+});
+</script>
+
+{% endblock %}

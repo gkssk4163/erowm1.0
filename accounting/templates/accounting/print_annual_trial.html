@@ -1,0 +1,39 @@
+{% extends 'accounting/print_base2.html' %}
+{% load humanize %}
+
+{% block content %}
+{% for item_list in data_list %}
+<div class="page">
+	<center><h1>{{ year }}년 연별시산표</h1></center>
+	<div style="text-align:right">
+		<p style="margin:2px 2px">(단위 : 원)</p>
+	</div>
+	<table width="100%" height="100%" style="border-collapse:collapse;" border="1" cellpadding="2">
+		<thead class="thead-light text-center th-nowrap">
+			<tr>
+				<th>코드</th>
+				<th>계정명</th>
+				<th>결산액</th>
+				{% for ym in ym_list %}
+				<th>{{ ym.y }}_{{ ym.m }}</th>
+				{% endfor %}
+				<th>총합계</th>
+			</tr>
+		</thead>
+		<tbody style="text-align:center">
+			{% for item in item_list %}
+			<tr>
+				<td style="white-space:nowrap;">{{ item.paragraph.subsection.code }}{{ item.paragraph.code }}{{ item.code }}</td>
+				<td style="white-space:nowrap;">{{ item.context }}</td>
+				<td style="text-align:right">{{ item.total_settlement|intcomma }}</td>
+				{% for ms in item.ms_list %}
+				<td style="text-align:right">{{ ms|intcomma }}</td>
+				{% endfor %}
+				<td style="text-align:right">{{ item.total_settlement|intcomma }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'accounting/base.html' %}
+
+{% block content %}
+<h1>내정보관리</h1>
+<div class="table-responsive">
+	<form method="POST">
+	{% csrf_token %}
+	<table class="table table-bordered">
+		<tr>
+			<td class="td1">사업장명</td>
+			<td>{{ form.place_name }}</td>
+			<td class="td1">사업자등록번호</td>
+			<td>{{ form.reg_number }}</td>
+		</tr>
+		<tr>
+			<td class="td1">업태</td>
+			<td>{{ form.type1 }}</td>
+			<td class="td1">업종</td>
+			<td>{{ form.type2 }}</td>
+		</tr>
+		<tr>
+			<td class="td1">대표자성명</td>
+			<td>{{ form.name }}</td>
+			<td class="td1">대표자주민번호</td>
+			<td>{{ form.owner_reg_number1 }}-{{form.owner_reg_number2 }}</td>
+		</tr>
+		<tr>
+			<td class="td1">이메일</td>
+			<td>{{ form.email }}</td>
+			<td class="td1">핸드폰번호</td>
+			<td>{{ form.cellphone }}</td>
+		</tr>
+		<tr>
+			<td class="td1">전화번호</td>
+			<td>{{ form.phone }}</td>
+			<td class="td1">팩스</td>
+			<td>{{ form.fax }}</td>
+		</tr>
+		<tr>
+			<td class="td1" rowspan=2>주소</td>
+			<td colspan=3>[{{ form.zip_number }}] <input type="button" class="btn btn-primary btn-zip-search" onclick="ZipSearchDaumPostcode()" value="우편번호 찾기"></td>
+		</tr>
+		<tr>
+			<td colspan=3>{{ form.address }}, {{ form.detailed_address }}</td>
+		</tr>
+		{% for field in form %}
+		{% if field.errors %}
+		<tr>
+			<td colspan=4>{{ field.label_tag }}{{ field.errors }}</td>
+		</tr>
+		{% endif %}
+		{% endfor %}
+	</table>
+	<div class="clearfix float-right">
+		<button type="submit" class="save btn btn-outline-primary">등록</button>
+		<a href="{% url 'mypage' %}" class="btn btn-outline-primary">취소</a>
+	</div>
+	</form>
+</div>
+	{% include 'accounting/zip_search.html' %}
+{% endblock %}

@@ -1,0 +1,479 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+        {% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+{% load humanize %}
+
+<h1 class="mb-3">거래내역</h1>
+
+<div class="row">
+	<div class="col-md-12">
+		<form name="TransactionForm" method="POST" action="{% url 'regist_transaction' %}" onSubmit="return submitCheck(this);">
+			{% csrf_token %}
+			<div class="col-md-3 mb-2">
+				<select name="year" onchange="location='{% url "transaction_history" %}?page=1&page2=1&year='+this.value+'&month={{month}}&acctid={{acctid}}';">
+					{% for y in year_range %}
+					<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+					{% endfor %}
+				</select>
+				<select name="month" onchange="location='{% url "transaction_history" %}?page=1&page2=1&year={{year}}&month='+this.value+'&acctid={{acctid}}';">
+					{% for m in month_range %}
+					<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<input type="hidden" name="page" value="{{ page }}">
+			<input type="hidden" name="page2" value="{{ page2 }}">
+			<div class="table-responsive">
+				<table class="table table-bordered table-hover table-sm text-nowrap">
+					<thead class="thead-light text-center">
+						<tr>
+							<th colspan=3>은행거래내역</th>
+							<th colspan=10 style="border-top:1px solid #ffffff;border-right:1px solid #ffffff;background:None;" class="text-left">
+								<a href="#" class="btn btn-primary btn-sm py-0" id="btn_returned_transaction">반납결의서</a>
+								<a href="#" class="btn btn-primary btn-sm py-0" onclick="window.open('{% url "popup_upload" %}?type=transaction', '파일업로드','width=500, height=200');">거래내역 엑셀 업로드</a>
+								<a href="#" class="btn btn-primary btn-sm py-0" onclick="window.open('{% url "popup_upload" %}?type=transaction2', '파일업로드','width=500, height=200');">거래내역 엑셀 업로드(날짜시간셀구분)</a>
+								<a href="#" class="btn btn-primary btn-sm py-0" onclick="window.open('{% url "popup_upload" %}?type=voucher', '파일업로드','width=500, height=200');">현금출납장 업로드</a>
+							</th>
+						</tr>
+						<tr>
+							<td colspan=13>
+								은행계좌 : 
+								<select name="acctid" onchange="location='{% url "transaction_history" %}?page=1&page2=1&year={{year}}&month={{month}}&acctid='+this.value;">
+									{% for acct in acct_list %}
+									<option value="{{ acct.id }}" {% if acct.id == acctid %}selected{% endif %}>[{{ acct.bank.name }}]{{ acct.account_number }}</option>
+									{% endfor %}
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th class="text-center"><input type="checkbox" id="select_all"></th>
+							<th>번호</th>
+							<th>출납일</th>
+							<th>구분</th>
+							<th>계정명</th>
+							<th>세목</th>
+							<th>적요</th>
+							<th>상대계정</th>
+							<th>자금원천</th>
+							<th>입금</th>
+							<th>출금</th>
+							<th>잔액</th>
+							<th>분할</th>
+						</tr>
+					</thead>
+					
+					<tbody>
+						{% for dt in data %}
+						{% with forloop.counter as outer_counter %}
+						<tr>
+							<td class="text-center">
+								<input type="hidden" name="transaction_list" value="{{ dt.Bkid }}" id="Bkid_{{ forloop.counter|add:"-1" }}">
+								{% if not dt.regdatetime %}
+								<input type="checkbox" name="tr_check_list" id="tr_check_list" class="checkbox" value="{{ forloop.counter|add:"-1" }}" {% for value in selected_check_list %}{% if value == outer_counter|add:"-1" %}checked{% endif %}{% endfor %}>
+								{% endif %}
+							</td>
+							<td class="text-center">{{ forloop.counter }}</td>
+							<td>
+								{% if dt.Bkdivision == 1 %}
+								{{ dt.Bkdate|date:"Y-m-d" }}
+								{% endif %}
+								<input type="hidden" name="Bkdate_list" id="Bkdate_{{ forloop.counter|add:"-1" }}" value="{{ dt.Bkdate|date:"Y-m-d" }}">
+							</td>
+							<td>{% if dt.Bkoutput == 0 %}수입{% elif dt.Bkinput == 0 %}지출{% endif %}</td>
+							<td>
+								{% if dt.regdatetime %}
+								<input type="hidden" name="item_list">
+								{{ dt.item|default:'' }}
+								{% else %}
+								{% if dt.Bkoutput == 0 %}
+								<select name="item_list" onchange="javascript:goPost();" style="width:150px">
+									<option value="">--------------</option>
+									{% for item in input_items %}
+									<option value="{{ item.id }}"
+		 {% for selected_spi in selected_item_list %}
+		 {% if forloop.counter == outer_counter %}
+		 {% if item.id == selected_spi %}
+		 selected
+		 {% endif %}
+		 {% endif %}
+		 {% endfor %}>{{ item }}</option>
+									{% endfor %}
+								</select>
+								{% elif dt.Bkinput == 0 %}
+								<select name="item_list" onchange="javascript:goPost();" style="width:150px">
+									<option value="">--------------</option>
+									{% for item in output_items %}
+									<option value="{{ item.id }}"
+		 {% for selected_spi in selected_item_list %}
+		 {% if forloop.counter == outer_counter %}
+		 {% if item.id == selected_spi %}
+		 selected
+		 {% endif %}
+		 {% endif %}
+		 {% endfor %}>{{ item }}</option>
+									{% endfor %}
+								</select>
+								{% endif %}
+								{% endif %}
+							</td>
+							<td>
+								{% if dt.regdatetime %}
+								<input type="hidden" name="subdivision_list" value="0">
+								{{ dt.subdivision|default:'' }}
+								{% else %}
+								{% for subdivisions in subdivision_list %}
+								{% if forloop.counter == outer_counter %}
+								{% if subdivisions %}
+								<select name="subdivision_list" style="width:150px">
+									<option value="0">--------------</option>
+									{% for subdivision in subdivisions %}
+									<option value="{{ subdivision.id }}"
+		 {% for selected_subdivision in selected_subdivision_list %}
+		 {% if forloop.counter == outer_counter %}
+		 {% if subdivision.id == selected_subdivision %}
+		 selected
+		 {% endif %}
+		 {% endif %}
+		 {% endfor %}>{{ subdivision }}</option>
+									{% endfor %}
+								</select>
+								{% else %}
+								<input type="hidden" name="subdivision_list" value="0">
+								{% endif %}
+								{% endif %}
+								{% endfor %}
+								{% endif %}
+							</td>
+							<td>
+								{% if dt.regdatetime %}
+								<input type="hidden" name="Bkjukyo_list">
+								{{ dt.sub_Bkjukyo|default:'' }}
+								{% else %}
+								<input type="text" name="Bkjukyo_list" value="{{ dt.Bkjukyo }}" style="width:150px">
+								{% endif %}
+							</td>
+							<td>
+								{% if dt.regdatetime %}
+								<input type="hidden" name="input_subsection_list" value="0">
+								{% if dt.relative_subsection %}
+								[{{ dt.relative_subsection.type }}]{{ dt.relative_subsection.context }}({{ dt.relative_subsection.code }})
+								{% endif %}
+								{% else %}
+								{% if dt.Bkinput == 0 %}
+								<select name="input_subsection_list" onchange="javascript:goPost();" style="width:150px">
+									<option value="0">--------------</option>
+									{% for subsection in input_subsections %}
+									<option value="{{ subsection.id }}"
+		 {% for selected_subsection in selected_subsection_list %}
+		 {% if forloop.counter == outer_counter %}
+		 {% if subsection.id == selected_subsection %}
+		 selected
+		 {% endif %}
+		 {% endif %}
+		 {% endfor %}>
+									[{{ subsection.type }}]{{ subsection.context }}({{ subsection.code }})</option>
+									{% endfor %}
+								</select>
+								{% else %}
+								<input type="hidden" name="input_subsection_list" value="0">
+								{% endif %}
+								{% endif %}
+							</td>
+							<td>
+								{% if dt.regdatetime %}
+								<input type="hidden" name="input_subdivision_list" value="0">
+								{{ dt.relative_item|default:'' }}
+								{% else %}
+								{% for relative_items in relative_item_list %}
+								{% if forloop.counter == outer_counter %}
+								{% if relative_items %}
+								<select name="input_subdivision_list" style="width:150px">
+									<option value="0">--------------</option>
+									{% for relative_item in relative_items %}
+									<option value="{{ relative_item.id }}"
+		 {% for selected_input_subdivision in selected_input_subdivision_list %}
+		 {% if forloop.counter == outer_counter %}
+		 {% if relative_item.id == selected_input_subdivision %}
+		 selected
+		 {% endif %}
+		 {% endif %}
+		 {% endfor %}>{{ relative_item }}</option>
+									{% endfor %}
+								</select>
+								{% else %}
+								<input type="hidden" name="input_subdivision_list" value="0">
+								{% endif %}
+								{% endif %}
+								{% endfor %}
+								{% endif %}
+							</td>
+							<td class="text-right">{{ dt.Bkinput|default:''|intcomma }}</td>
+							<td class="text-right">{{ dt.Bkoutput|default:''|intcomma }}</td>
+							<td class="text-right">
+								{% if dt.Bkdivision == 1 %}
+								{{ dt.Bkjango|default:'0'|intcomma }}
+								{% else %}
+								{{ dt.Bkjango|default:''|intcomma }}
+								{% endif %}
+							</td>
+							<td>
+								{% if not dt.regdatetime %}
+								<a href="#" onclick="window.open('{% url "popup_transaction_division" Bkid=dt.Bkid %}?month={{ month }}', '분할등록','width=1000, height=300, scrollbars=1');" class="btn btn-primary btn-sm py-0">분할</a>
+								{% elif dt.Bkdivision == 1 %}
+								<button type="button" class="btn btn-light btn-sm py-0" disabled>분할</button>
+								{% endif %}
+							</td>
+						</tr>
+						{% endwith %}
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			<input type="submit" class="btn btn-primary btn-sm px-3" value="등록">
+		</form>
+
+		<ul class="pagination justify-content-center">
+			{% if data.has_previous %}
+				{% if data.number > 6 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page=1&page2={{ page2 }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">1</a></li>
+			<li class="page-item"><p class="page-link">...</p></li>
+				{% endif %}
+				{% if data.number|add:"-5" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"-5" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&=acctid{{ acctid }}">{{ data.number|add:"-5" }}</a></li>
+				{% endif %}
+				{% if data.number|add:"-4" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"-4" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&=acctid{{ acctid }}">{{ data.number|add:"-4" }}</a></li>
+				{% endif %}
+				{% if data.number|add:"-3" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"-3" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&=acctid{{ acctid }}">{{ data.number|add:"-3" }}</a></li>
+				{% endif %}
+				{% if data.number|add:"-2" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"-2" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&=acctid{{ acctid }}">{{ data.number|add:"-2" }}</a></li>
+				{% endif %}
+				{% if data.number|add:"-1" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"-1" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&=acctid{{ acctid }}">{{ data.number|add:"-1" }}</a></li>
+				{% endif %}
+			{% endif %}
+			<li class="page-item"><a class="page-link bg-primary text-light" href="{% url 'transaction_history' %}?page={{ data.number }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data.number }}</a></li>
+			{% if data.has_next %}
+				{% if data.number|add:"1" <= data.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"1" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data.number|add:"1" }}</a></li>
+				{% endif %}
+				{% if data.number|add:"2" <= data.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"2" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data.number|add:"2" }}</a></li>
+				{% endif %}
+				{% if data.number|add:"3" <= data.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"3" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data.number|add:"3" }}</a></li>
+				{% endif %}
+				{% if data.number|add:"4" <= data.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"4" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data.number|add:"4" }}</a></li>
+				{% endif %}
+				{% if data.number|add:"5" <= data.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.number|add:"5" }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data.number|add:"5" }}</a></li>
+				{% endif %}
+				{% if data.paginator.num_pages|add:"-5" > data.number %}
+			<li class="page-item"><p class="page-link">...</p></li>
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ data.paginator.num_pages }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data.paginator.num_pages }}</a></li>
+				{% endif %}
+			{% endif %}
+		</ul>
+	</div>
+</div>
+<hr>
+<div class="row mb-4">
+	<div class="col-md-12">
+		<form name="writeForm" method="POST" action="">
+			{% csrf_token %}
+			<input type="hidden" name="page" value="{{ page }}">
+			<input type="hidden" name="page2" value="{{ page2 }}">
+			<input type="hidden" name="year" value="{{ year }}">
+			<input type="hidden" name="month" value="{{ month }}">
+			<input type="hidden" name="acctid" value="{{ acctid }}">
+			<div class="table-responsive">
+				<table class="table table-bordered table-hover table-sm text-nowrap">
+					<thead class="thead-light text-center">
+						<tr>
+							<th colspan=3>거래리스트</th>
+							<th colspan=11 style="background:None;border-top:1px solid #ffffff;border-right:1px solid #ffffff" class="text-left">
+								<a href="#" onclick="window.open('{% url "popup_transaction_direct" %}?year={{ year }}&month={{ month }}', '거래직접등록','width=1000, height=300');" class="btn btn-primary btn-sm py-0">직접등록</a>
+								<a href="{% url "tr_syn" %}?year={{ year }}&month={{ month }}&page={{page}}&page2={{page2}}&acctid={{acctid}}" class="btn btn-primary btn-sm py-0">거래내역잔액동기화</a>
+							</th>
+						</tr>
+						<tr>
+							<td colspan="14" style="border-top:0px;">
+								전월이월금 : {{ premonth_transfer_price }} | 수입계 : {{ total_input }} | 지출계 : {{ total_output }} | 잔액 : {{ jango }}
+							</td>
+						</tr>
+						<tr>
+							<th class="text-center"><input type="checkbox" id="select_all2"></th>
+							<th>번호</th>
+							<th>출납일</th>
+							<th>구분</th>
+							<th>계정명</th>
+							<th>세목</th>
+							<th>적요</th>
+							<th>상대계정</th>
+							<th>자금원천</th>
+							<th>입금</th>
+							<th>출금</th>
+							<th>잔액</th>
+							<th>수정</th>
+							<th>출력</th>
+						</tr>
+					</thead>
+					
+					<tbody>
+						{% for dt in data2 %}
+						<tr>
+							<td class="text-center">{% if dt.Bkdivision == 1 %}<input type="checkbox" name="check_list[]" class="checkbox2" value="{{ dt.Bkid }}">{% endif %}</td>
+							<td class="text-center">{{ forloop.counter }}</td>
+							<td>
+								{{ dt.Bkdate|date:"Y-m-d" }}
+								<input type="hidden" name="Bkdate_list2" value="{{ dt.Bkdate|date:"Y-m-d" }}">
+							</td>
+							<td>{% if dt.Bkinput != 0 %}수입{% elif dt.Bkoutput != 0 %}지출{% endif %}</td>
+							<td>{{ dt.item|default:"" }}</td>
+							<td>{{ dt.subdivision|default:"" }}</td>
+							<td>{{ dt.Bkjukyo }}{% if dt.remark %} - {{ dt.remark }}{% endif %}</td>
+							<td>
+								{% if dt.relative_subsection %}
+								[{{ dt.relative_subsection.type }}]{{ dt.relative_subsection.context }}({{ dt.relative_subsection.code }})
+								{% endif %}
+							</td>
+							<td>{{ dt.relative_item|default:"" }}</td>
+							<td class="text-right">{{ dt.Bkinput|default:''|intcomma }}</td>
+							<td class="text-right">{{ dt.Bkoutput|default:''|intcomma }}</td>
+							<td class="text-right">{{ dt.Bkjango|default:'0'|intcomma }}</td>
+							<td>
+								<a href="#" onclick="window.open('{% url "popup_transaction_edit" %}?pk={{dt.id}}', '거래수정','width=1000, height=300, scrollbars=1');" class="btn btn-primary btn-sm py-0">수정</a>
+							</td>
+							<td>
+								{% if dt.item.code != 0 %}
+								<a href="#" onclick="window.open('{% url "print_voucher2" %}?pk={{dt.id}}', '출력','width=800, height=500, scrollbars=1');" class="btn btn-primary btn-sm py-0">출력</a>
+								{% endif %}
+							</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</form>
+		<input type="button" class="btn btn-primary btn-sm px-3" value="삭제" onclick="javascript:goAction();">
+
+		<ul class="pagination justify-content-center">
+			{% if data2.has_previous %}
+				{% if data2.number > 6 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2=1&year={{ year }}&month={{ month }}&acctid={{ acctid }}">1</a></li>
+			<li class="page-item"><p class="page-link">...</p></li>
+				{% endif %}
+				{% if data2.number|add:"-5" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"-5" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"-5" }}</a></li>
+				{% endif %}
+				{% if data2.number|add:"-4" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"-4" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"-4" }}</a></li>
+				{% endif %}
+				{% if data2.number|add:"-3" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"-3" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"-3" }}</a></li>
+				{% endif %}
+				{% if data2.number|add:"-2" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"-2" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"-2" }}</a></li>
+				{% endif %}
+				{% if data2.number|add:"-1" > 0 %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"-1" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"-1" }}</a></li>
+				{% endif %}
+			{% endif %}
+			<li class="page-item"><a class="page-link bg-primary text-light" href="{% url 'transaction_history' %}?page2={{ data2.number }}&page={{ page }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number }}</a></li>
+			{% if data2.has_next %}
+				{% if data2.number|add:"1" <= data2.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"1" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"1" }}</a></li>
+				{% endif %}
+				{% if data2.number|add:"2" <= data2.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"2" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"2" }}</a></li>
+				{% endif %}
+				{% if data2.number|add:"3" <= data2.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"3" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"3" }}</a></li>
+				{% endif %}
+				{% if data2.number|add:"4" <= data2.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"4" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"4" }}</a></li>
+				{% endif %}
+				{% if data2.number|add:"5" <= data2.paginator.num_pages %}
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.number|add:"5" }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.number|add:"5" }}</a></li>
+				{% endif %}
+				{% if data2.paginator.num_pages|add:"-5" > data2.number %}
+			<li class="page-item"><p class="page-link">...</p></li>
+			<li class="page-item"><a class="page-link" href="{% url 'transaction_history' %}?page={{ page }}&page2={{ data2.paginator.num_pages }}&year={{ year }}&month={{ month }}&acctid={{ acctid }}">{{ data2.paginator.num_pages }}</a></li>
+				{% endif %}
+			{% endif %}
+		</ul>
+	</div>
+</div>
+
+<script type="text/javascript">
+function submitCheck(f) {
+	var cnt = $("input[name=tr_check_list]:checkbox:checked").length;
+	if( cnt == 0 ) {
+		alert('선택된 거래가 없습니다.');
+		return false;
+	}
+
+	var checkElements = $("input[name=tr_check_list]:checkbox:checked");
+	for(var i=0; checkElements[i]; i++) {
+		if ( !f.item_list[checkElements[i].value].value ) {
+			alert("계정명을 선택해주세요.");
+			f.item_list[checkElements[i].value].focus();
+			return false;
+		}
+		
+		if ( !f.Bkjukyo_list[checkElements[i].value].value ) {
+			alert("적요를 입력해주세요.");
+			f.Bkjukyo_list[checkElements[i].value].focus();
+			return false;
+		}
+	}
+}
+
+function goAction() {
+	var frm = document.writeForm;
+	frm.action = "{% url 'transaction_delete' %}";
+	frm.submit();
+}
+
+function goPost() {
+	var frm = document.TransactionForm;
+	frm.action = "{% url 'transaction_history' %}?page="+frm.page.value+"&page2="+frm.page2.value+"&year="+frm.year.value+"&month="+frm.month.value+"&acctid="+frm.acctid.value;
+	frm.submit();
+}
+
+$("#select_all").ready( function(){
+	$( "#select_all"). click( function() {
+		$( ".checkbox").prop( "checked", this.checked);
+	});
+});
+
+$("#select_all2").ready( function(){
+	$( "#select_all2"). click( function() {
+		$( ".checkbox2").prop( "checked", this.checked);
+	});
+});
+
+$("#btn_returned_transaction").click( function() {
+	var cnt = $("input[name=tr_check_list]:checkbox:checked").length;
+	if( cnt == 0 ) {
+		alert('선택된 거래가 없습니다.');
+	} else if ( cnt != 1 ) {
+		alert('거래를 하나만 선택해주세요.');
+	} else {
+		var val = $("input[name=tr_check_list]:checkbox:checked").val();
+		var code = $("#Bkid_"+val).val();
+		var Bkdate = $("#Bkdate_"+val).val();
+		console.log(val);
+		console.log(code);
+		window.open("{% url 'popup_returned_transaction' %}?Bkid="+code+"&acctid="+$("select[name=acctid]").val()+"&Bkdate="+Bkdate+"&month={{ month }}", '반납결의서','width=1000, height=300');
+	}
+});
+</script>
+{% endblock %}

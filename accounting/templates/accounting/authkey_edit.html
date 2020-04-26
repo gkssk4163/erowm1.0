@@ -1,0 +1,44 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+	<h1>인증키등록</h1>
+	<form name="writeForm" id="writeForm" method="POST">
+		{% csrf_token %}
+		<table class="table table-sm">
+			{% if form.errors %}
+			<tr>
+				<td colspan=2><p>{{ form.errors|striptags }}</p></td>
+			</tr>
+			{% endif %}
+			{% for field in form.visible_fields %}
+			<tr>
+				<td>
+				{{ field.label }}
+				{% if field.field.required %}
+				<span class="field-required">*</span>
+				{% endif %}
+				</td>
+				<td>
+				{{ field }}
+				</td>
+			<tr>
+			{% if field.errors %}
+			<tr>
+				<td></td>
+				<td>
+				<span class="field-error">
+				{{ field.errors|striptags }}
+				</span>
+				</td>
+			</tr>
+			{% endif %}
+		{% endfor %}
+		</table>
+		<input class="btn btn-outline-primary" type="submit" value="등록">
+		<button type="button" class="btn btn-outline-primary" onclick="cancelCheck();">취소</button>
+	</form>
+{% endblock %}

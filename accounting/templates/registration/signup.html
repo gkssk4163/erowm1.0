@@ -1,0 +1,173 @@
+{% extends 'registration/base.html' %}
+
+{% block content %}
+<h2>회원가입</h2>
+<div class="row col-md-3 form-center">
+	<div class="col-md-12">
+	
+	<!--Sign Up Form -->
+	<form name="signupForm" id="signupForm" class="form-horizontal" method="post" action="{% url 'signup' %}">
+	{% csrf_token %}
+	<!-- Username input -->
+	<div class="row control-group">
+		<div class="form-group">
+			{{ signupform.username.label }}
+			{{ signupform.username }}
+			<span class="field-error">
+			{{ signupform.username.errors|striptags }}
+			</span>
+		</div>
+	</div>
+
+	<!-- Password1 input -->
+	<div class="row control-group">
+		<div class="form-group">
+			{{ signupform.password1.label }}
+			{{ signupform.password1 }}
+			<span class="field-error">
+			{{ signupform.password1.errors|striptags }}
+			</span>
+		</div>
+	</div>
+
+	<!-- Password2 input -->
+	<div class="row control-group">
+		<div class="form-group">
+			{{ signupform.password2.label }}
+			{{ signupform.password2 }}
+			<span class="field-error">
+			{{ signupform.password2.errors|striptags }}
+			</span>
+		</div>
+	</div>
+
+	<!-- Email input -->
+	<div class="row control-group">
+		<div class="form-group">
+			{{ signupform.email.label }}
+			{{ signupform.email }}
+			<span class="field-error">
+			{{ signupform.email.errors|striptags }}
+			</span>
+		</div>
+	</div>
+
+	<!-- Name input -->
+	<div class="row control-group">
+		<div class="form-group">
+			{{ ownerform.name.label }}
+			{{ ownerform.name }}
+			<span class="field-error">
+			{{ ownerform.name.errors|striptags }}
+			</span>
+		</div>
+	</div>
+
+	<!-- Phone input -->
+	<div class="row control-group">
+		<div class="form-group">
+			{{ ownerform.phone.label }}
+			{{ ownerform.phone }}
+			<span class="field-error">
+			{{ ownerform.phone.errors|striptags }}
+			</span>
+		</div>
+	</div>
+
+	<!-- CellPhone input -->
+	<div class="row control-group">
+		<div class="form-group">
+			{{ ownerform.cellphone.label }}
+			{{ ownerform.cellphone }}
+			<span class="field-error">
+			{{ ownerform.cellphone.errors|striptags }}
+			</span>
+		</div>
+	</div>
+
+	<!-- BusinessName input -->
+	<div class="row control-group">
+		<div class="form-group">
+			{{ ownerform.place_name.label }}
+			{{ ownerform.place_name }}
+			<span class="field-error">
+			{{ ownerform.place_name.errors|striptags }}
+			</span>
+		</div>
+	</div>
+
+	<!-- 사업자등록번호 input -->
+	<div class="row control-group">
+		<div class="form-group">
+			{{ ownerform.reg_number.label }}
+			{{ ownerform.reg_number }}
+			<span class="field-error">
+			{{ ownerform.reg_number.errors|striptags }}
+			</span>
+		</div>
+	</div>
+
+	<!-- Button -->
+	<div class="row">
+		<div class="form-group">
+			<input class="btn btn-outline-primary" type="button" value="회원가입" id="btn-signup-bankda">
+			<hr>
+			<center>
+			Or <a href="{% url 'login' %}"><u>Log In</u></a>
+			if you have an account.
+			</center>
+		</div>
+	</div>
+	<input type="hidden" id="signup_done" name="signup_done"/>
+	</form>
+	</div>
+</div>
+<script type="text/javascript">
+$('#btn-signup-bankda').click(function() {
+	var formData = $("#signupForm").serialize();
+	var f = document.signupForm;
+	$.ajax({
+		type: "POST",
+		url: {% url 'id_check' %},
+		data: formData,
+		dataType: "json",
+		success: function(response) {
+			if ( response.id_check == 1 ) {
+				$("#signup_done").val(response.id_check);
+				$.ajax({
+					type: "POST",
+					url: "https://ssl.bankda.com/partnership/user/user_join_prs.php",
+					data: {
+						'directAccess': 'y',
+						'partner_id': "vizun21",
+						'partner_name': "이소프트",
+						'service_type': "basic",
+						'user_id': $('#id_username').val(),
+						'user_pw': response.password,
+						'user_name': $("#id_name").val(),
+						'user_tel': $("#id_cellphone").val(),
+						'user_email': $("#id_email").val(),
+						'char_set': "utf-8"
+					},
+					dataType: "html",
+					success: function(data) {
+						if( data == "ok" )
+							f.submit();
+						else 
+							alert(data);
+					},
+					error: function(request, status, error) {
+						alert("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
+						f.submit();
+					}
+				});
+			}
+			else {
+				$("#signup_done").val('');
+				f.submit();
+			}
+		}
+	});
+});
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/admin_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">기타설정</h1>
+
+<a href="{% url 'database_syn' %}" class="btn btn-outline-primary">TBLBANK동기화</a>
+<a href="{% url 'set_proofnum' %}" class="btn btn-outline-primary">증빙서번호설정</a>
+{% endblock %}

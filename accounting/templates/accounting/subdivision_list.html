@@ -1,0 +1,38 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+        {% include 'accounting/menu.html' %}
+{% endblock %}
+	
+{% block content %}
+<h1 class="mb-3">세목관리</h1>
+
+<div class="row">
+	<div class="col-md-12">
+		<div class="table-responsive">
+			<table class="table table-bordered table-hover table-sm">
+				<thead class="thead-light text-center">
+					<tr>
+						<th><input type="checkbox"></th>
+						<th>관항목코드</th>
+						<th>코드번호</th>
+						<th>내용</th>
+					</tr>
+				</thead>
+				
+				<tbody>
+					{% for subdivision in subdivisions %}
+					<tr>
+						<td class="text-center"><input type="checkbox" name="check_list[]" value="{{ subdivision.code }}"></td>
+						<td class="text-center">{{ subdivision.item }}</td>
+						<td class="text-center">{{ subdivision.code }}</td>
+						<td class="text-center">{{ subdivision.context }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		<a class="btn btn-outline-primary" href="{% url 'subdivision_create' %}">세목등록</a>
+	</div>
+</div>
+{% endblock %}

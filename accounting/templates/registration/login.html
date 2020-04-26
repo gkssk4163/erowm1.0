@@ -1,0 +1,40 @@
+{% extends 'registration/base.html' %}
+
+{% block content %}
+<h2 class="text-center">로그인</h2>
+{% if form.errors %}
+<p class="text-center">아이디와 비밀번호가 일치하지 않습니다. 다시 시도해주세요.</p>
+{% endif %}
+<div class="row col-md-12 form-center">
+	<div class="col-md-12 tab">
+		<ul>
+			<li class="selected is-left-side">로그인</li>
+			<li class="non-selected"><a href="#">아이디 찾기</a></li>
+			<li class="non-selected"><a href="#">비밀번호 찾기</a></li>
+		</ul>
+	</div>
+	<div class="col-md-12">
+	<form method="post" action="{% url 'login' %}">
+		{% csrf_token %}
+		<table cellpadding="10" border="1" rules="none" class="td-nowrap text-center" style="border:#dfdfdf solid 1px;" width="400">
+			<tr>
+				<td>아이디</td>
+				<td>{{ form.username }}</td>
+			</tr>
+			<tr>
+				<td>{{ form.password.label }}</td>
+				<td>{{ form.password }}</td>
+			</tr>
+			<tr>
+				<td colspan="2"><center><button class="btn btn-outline-primary" type="submit">Login</button></center></td>
+			</tr>
+			<tr>
+				<td colspan="2" style="font-size:10pt;" class="text-secondary text-center">아직 회원이 아니신가요? <a href="{% url 'signup' %}">회원가입</a></td>
+			</tr>
+		</table>
+		<input type="hidden" name="next" value="{{ next }}" />
+	</form>
+	</div>
+</div>
+{% endblock %}
+

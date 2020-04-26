@@ -1,0 +1,47 @@
+{% extends 'accounting/base.html' %}
+
+{% load static %}
+
+{% block menu %}
+        {% include 'accounting/menu.html' %}
+{% endblock %}
+	
+{% block content %}
+<h1 class="mb-3">계좌관리</h1>
+
+<div class="row">
+	<div class="col-md-12">
+		<div class="table-responsive">
+			<table class="table table-bordered table-hover table-sm">
+				<thead class="thead-light text-center">
+					<tr>
+						<th>주계좌</th>
+						<th>계좌별명</th>
+						<th>은행명</th>
+						<th>계좌번호</th>
+						<th>계좌구분</th>
+						<th>계좌상태</th>
+						<th>수정</th>
+					</tr>
+				</thead>
+				
+				<tbody>
+					{% for list in lists %}
+					<tr>
+						<td class="text-center">{% if list.main %}<img src="{% static 'image/small_check.png' %}" width="20" height="20">{% endif %}</td>
+						<td>{{ list.renames }}</td>
+						<td>{{ list.bank }}</td>
+						<td>{{ list.account_number }}</td>
+						<td>{% if list.bkdiv == 'C' %}법인{% elif list.bkdiv == 'P' %}개인{% endif %}</td>
+						<td>{{ list.act_status }}</td>
+						<td class="text-center"><a class="btn btn-primary btn-sm py-0" href="{% url 'account_edit' pk=list.pk %}">수정</a>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		<a class="btn btn-outline-primary" href="{% url 'account_create' %}">계좌등록</a>
+		<a class="btn btn-outline-primary float-right" href="#" onclick="window.open({% url 'popup_change_main_account' %}, 'window팝업','width=300, height=150');">주계좌변경</a>
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xxx="https://api.childcare.go.kr/route/soap/acntRpt/acRptStacnt.ws/acRptStacnt.ws">
+	<soap:Header></soap:Header>
+	<soap:Body>
+		<xxx:acRptStacnt>
+			<Request>
+				<S_AUTH_KEY>A56AE60160DB4FE98E8B445F18558AD2</S_AUTH_KEY>
+				<C_AUTH_KEY>FAB53436117CB394FDAFFE38C2676D77</C_AUTH_KEY>
+				<ACYEAR>2019</ACYEAR>
+				<STR>
+					<GB>1</GB>
+					<CD>111</CD>
+					<CSCNN>100000</CSCNN>
+					<RMK><![CDATA[\n비고1\n]]></RMK>
+				</STR>
+				<STR>
+					<GB>2</GB>
+					<CD>212</CD>
+					<CSCNN>300000</CSCNN>
+					<RMK><![CDATA[\n비고2\n]]></RMK>
+				</STR>
+			</Request>
+		</xxx:acRptStacnt>
+	</soap:Body>
+</soap:Envelope>
+
+
+
+<!--
+S_AUTH_KEY      시설
+O_AUTH_KEY      업체
+MON             회계보고월
+GB              세입1/세출2
+CD              계정코드
+AMT             계정별합계금액
+CNT             계정별전표개수
+
+RESULTCODE      결과코드
+RESULTMSG       결과메시지
+
+
+<data>
+        <user name="Hanna">
+                <age>25</age>
+                <neighbor name="Anna" direction="E"/>
+        </user>
+        <user name="Hyun">
+                <age>26</age>
+                <neighbor name="Won" direction="N"/>
+        </user>
+        <user name="Mi">
+                <age>25</age>
+                <neighbor name="Inho" direction="W"/>
+        </user>
+</data>
+-->

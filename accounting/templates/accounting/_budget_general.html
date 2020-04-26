@@ -1,0 +1,65 @@
+{% load humanize %}
+
+<div class="page">
+	<center><h1>{{ year }}년 예산총괄표</h1></center>
+	<h2>1.세입</h1>
+	<div style="text-align:right">
+		<p style="margin:2px 2px">(단위 : 원)</p>
+	</div>
+	<table width="100%" height="100%" style="border-collapse:collapse;font-size:15px;" border="1" cellpadding="5">
+		<thead class="thead-light text-center th-nowrap">
+			<tr>
+				<th>관별</th>
+				<th>예산액</th>
+				<th>전년도예산액</th>
+				<th>증감</th>
+			</tr>
+		</thead>
+		<tbody style="text-align:center">
+			{% for isubsection in general.isubsection_list %}
+			<tr>
+				<td style="white-space:nowrap;">{{ isubsection.context }}</td>
+				<td style="text-align:right;">{{ isubsection.s_total|intcomma }}</td>
+				<td style="text-align:right">{{ isubsection.xs_total|intcomma }}</td>
+				<td style="text-align:right">{{ isubsection.ds_total|intcomma }}</td>
+			</tr>
+			{% endfor %}
+			<tr>
+				<th>세입계</th>
+				<th style="text-align:right">{{ general.is_total|intcomma }}</th>
+				<th style="text-align:right">{{ general.is_xtotal|intcomma }}</th>
+				<th style="text-align:right">{{ general.is_dtotal|intcomma }}</th>
+			</tr>
+		</tbody>
+	</table>
+	<h2>2.세출</h1>
+	<div style="text-align:right">
+		<p style="margin:2px 2px">(단위 : 원)</p>
+	</div>
+	<table width="100%" height="100%" style="border-collapse:collapse;font-size:15px;" border="1" cellpadding="5">
+		<thead class="thead-light text-center th-nowrap">
+			<tr>
+				<th>관별</th>
+				<th>예산액</th>
+				<th>전년도예산액</th>
+				<th>증감</th>
+			</tr>
+		</thead>
+		<tbody style="text-align:center">
+			{% for osubsection in general.osubsection_list %}
+			<tr>
+				<td style="white-space:nowrap;">{{ osubsection.context }}</td>
+				<td style="text-align:right;">{{ osubsection.s_total|intcomma }}</td>
+				<td style="text-align:right">{{ osubsection.xs_total|intcomma }}</td>
+				<td style="text-align:right">{{ osubsection.ds_total|intcomma }}</td>
+			</tr>
+			{% endfor %}
+			<tr>
+				<th>세출계</th>
+				<th style="text-align:right">{{ general.os_total|intcomma }}</th>
+				<th style="text-align:right">{{ general.os_xtotal|intcomma }}</th>
+				<th style="text-align:right">{{ general.os_dtotal|intcomma }}</th>
+			</tr>
+		</tbody>
+	</table>
+</div>

@@ -1,0 +1,70 @@
+{% extends 'accounting/base.html' %}
+
+{% load static %}
+{% block menu %}
+        {% include 'accounting/menu.html' %}
+{% endblock %}
+	
+{% block content %}
+<h1 class="mb-3">마감등록</h1>
+
+<div class="row mb-4 justify-content-center">
+	<div class="col-md-6">
+		<form name="writeForm" method="POST" action="{% url 'regist_close' %}">
+		{% csrf_token %}
+		<div class="table-responsive">
+			<table class="table table-bordered table-sm">
+				<th>회계년도</th>
+				<td>
+					<select name="year" onchange="location=this.value;">
+						{% for year in year_range %}
+						<option value="{% url 'close_list' %}?year={{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+						{% endfor %}
+					</select>
+				</td>
+			</table>
+		</div>
+		<div class="table-responsive">
+			<table class="table table-bordered table-sm">
+				<thead class="thead-light text-center">
+				<tr>
+					<th>마감등록</th>
+				</tr>
+				</thead>
+				<tbody class="text-center">
+				<tr>
+					<td>
+						<select name="ym" class="custom-select text-center" size="12">
+							{% if ym_list %}
+							{% for ym in ym_list %}
+							<option value="{{ ym.Bkdate__year }}_{{ ym.Bkdate__month }}">{{ ym.Bkdate__year }}년 {% if ym.Bkdate__month < 10 %}&nbsp;&nbsp;{% endif %}{{ ym.Bkdate__month }}월&emsp;&emsp;{% if ym.close %}마감완료{% else %}미마감{% endif %}</option>
+							{% endfor %}
+							{% else %}
+							<option value="">해당 회계년도에 등록된 거래가 없습니다.</option>
+							{% endif %}
+						</select>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<div class="row">
+			<div class="col-md-6 mb-1">
+				<center><input type="submit" class="btn btn-primary btn-sm px-5" value="마감등록"/></center>
+			</div>
+			<div class="col-md-6 mb-1">
+				<center><input type="button" class="btn btn-primary btn-sm px-5" value="마감취소" onclick="changeAction();"/></center>
+			</div>
+		</div>
+		</form>
+	</div>
+</div>
+
+<script type="text/javascript">
+function changeAction() {
+	var f = document.writeForm;
+	f.action = "{% url 'undo_close' %}";
+	f.submit();
+}
+</script>
+
+{% endblock %}

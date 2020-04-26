@@ -1,0 +1,72 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+	{% include 'accounting/admin_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">영업사원등록</h1>
+<form method="POST" class="business-form">
+	{% csrf_token %}
+	<table class="table table-sm">
+	{% for field in userform %}
+		<tr>
+			<td>
+				{{ field.label }}
+				{% if field.field.required %}
+				<span class="field-required">*</span>
+				{% endif %}
+			</td>
+			<td>{{ field }}</td>
+		<tr>
+		{% if field.errors %}
+		<tr>
+			<td></td>
+			<td>
+				<span class="field-error">{{ field.errors|striptags }}</span>
+			</td>
+		</tr>
+		{% endif %}
+	{% endfor %}
+	{% for field in form %}
+		<tr>
+			<td>
+				{{ field.label }}
+				{% if field.field.required %}
+				<span class="field-required">*</span>
+				{% endif %}
+			</td>
+			<td>{{ field }}
+				{% if field.name == 'zip_number' %}
+				<input type="button" class="btn btn-primary btn-zip-search" onclick="ZipSearchDaumPostcode()" value="우편번호 찾기">
+				{% endif %}
+			</td>
+		<tr>
+		{% if field.errors %}
+		<tr>
+			<td></td>
+			<td>
+				<span class="field-error">{{ field.errors|striptags }}</span>
+			</td>
+		</tr>
+		{% endif %}
+	{% endfor %}
+	</table>
+	<button type="submit" class="save btn btn-outline-primary">등록</button>
+	<a class="btn btn-outline-primary" href="{% url 'sales_list' %}">취소</a>
+</form>
+
+{% include 'accounting/zip_search.html' %}
+<script type="text/javascript">
+$(function () {
+	$("#id_jdate").datepicker({
+		monthNamesShort: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+		dayNamesMin: ['일','월','화','수','목','금','토'],
+		changeYear: true,
+		changeMonth: true,
+		showMonthAfterYear: true,
+		dateFormat: "yy-mm-dd"
+	});
+});
+</script>
+{% endblock %}

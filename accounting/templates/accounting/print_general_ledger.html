@@ -1,0 +1,62 @@
+{% extends 'accounting/print_base.html' %}
+{% load humanize %}
+
+{% block content %}
+{% for item in item_list %}
+{% for transaction in item.transaction %}
+{% if transaction %}
+<div class="page">
+	<center><h1>총계정원장</h1></center>
+	<div style="float:left;width:50%;">
+		<p style="margin:2px 2px">{{ item.context }}</p>
+	</div>
+	<div style="float:left;width:50%;text-align:right">
+		<p style="margin:2px 2px">(단위 : 원)</p>
+	</div>
+	<table width="100%" height="100%" style="border-collapse:collapse;" cellpadding="5px" border="1" cellpadding="2" class="th-nowrap td-nowrap">
+		<thead>
+			<tr>
+				<th>월/일</th>
+				<th>증빙서번호</th>
+				<th>적요</th>
+				<th>예산</th>
+				<th>수입금액</th>
+				<th>지출금액</th>
+				<th>잔액</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr style="font-weight:bold">
+				<td></td>
+				<td></td>
+				<td></td>
+				<td>{{ item.budget|intcomma }}</td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			{% for transaction in transaction %}
+			<tr>
+				<td style="text-align:center;">{{ transaction.Bkdate|date:"n/j" }}</td>
+				<td style="text-align:center;">{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}</td>
+				<td>{{ transaction.Bkjukyo }}</td>
+				<td>{{ transaction. }}</td>
+				<td style="text-align:right;">{{ transaction.Bkinput|intcomma }}</td>
+				<td style="text-align:right;">{{ transaction.Bkoutput|intcomma }}</td>
+				<td style="text-align:right;"></td>
+			</tr>
+			{% endfor %}
+			<tr style="font-weight:bold">
+				<td colspan="3" style="text-align:center;">누계</td>
+				<td></td>
+				<td style="text-align:right;">{{ item.total_input|intcomma }}</td>
+				<td style="text-align:right;">{{ item.total_output|intcomma }}</td>
+				<td style="text-align:right;">{{ item.balance|intcomma }}</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endblock %}

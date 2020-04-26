@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>erowm - 회계프로그램</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="{% static 'css/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+
+  <!-- Custom styles for this template -->
+  <link href="{% static 'css/modern-business.css' %}" rel="stylesheet">
+
+
+  <!-- main.js -->
+  <script src="{% static 'js/main.js' %}"></script>
+
+  <!-- dataPicker -->
+  <!-- Ajax -->
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <!-- end datePicker -->
+
+</head>
+
+<body>
+  <div class="wrapper">
+
+    <div class="fixed-top bg-light">
+      <div class="container">
+	<div class="row">
+	  <div class="col-md-12">
+	    <div class="float-left">
+	      <a href="tel:02-1234-5678" title="전화앱 연결"><i class="fas fa-phone-square"></i>&nbsp;<small>02-1234-5678</small></a>
+	    </div>
+	    <div class="float-right">
+	      {% if user.is_authenticated %}
+	        {% if user.is_staff %}
+		<a href="{% url 'admin:index' %}" class="mr-3"><small>관리자페이지</small></a>
+		{% else %}
+		  {% if master_login %}
+		  <a href="{% url 'retransform' %}" class="mr-2"><small>사업장전환</small></a>
+		  {% endif %}
+		  {% if not business %}
+		  <a href="{% url 'mypage' %}" class="mr-2"><small>내정보</small></a>
+		  {% else %}
+		  <a href="{% url 'retransform_business' %}" class="mr-2"><small>업무전환</small></a>
+		  {% endif %}
+		{% endif %}
+		Hello {{ user.username }} <small>(<a href="{% url 'logout' %}">로그아웃</a>)</small>
+	      {% else %}
+		<a href="{% url 'signup' %}" class="top-menu">회원가입</a>
+		<a href="{% url 'login' %}" class="top-menu">로그인</a>
+	      {% endif %}
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </div>
+
+    {% block menu %}
+    {% endblock %}
+
+    <!-- Page Content -->
+    <div class="container" style="font-size:10pt">
+      {% block content %}
+      {% endblock %}
+    </div>
+    <!-- /.container -->
+
+    <!-- Footer -->
+    <footer class="py-3 bg-dark">
+      <div class="container">
+        <p class="m-0 text-center text-white">Copyright &copy; erowm 2019</p>
+      </div>
+      <!-- /.container -->
+    </footer>
+  </div>
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="{% static 'js/bootstrap/bootstrap.bundle.min.js' %}"></script>
+
+</body>
+
+</html>

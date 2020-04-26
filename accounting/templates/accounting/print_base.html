@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>인쇄페이지</title>
+		<link rel="stylesheet" href="{% static 'css/print.css' %}">
+		<style>
+			html, body { height:100%; margin:0px; }
+		</style>
+	</head>
+	<body>
+		<object id="factory" style="display:none" viewastext classid="clsid:1663ed61-23eb-11d2-b92f-008048fdd814" codebase="{% static 'cab/smsx.cab' %}"></object>
+		<script type="text/javascript">
+			function printPage() {
+				//window.print();
+				factory.printing.header = "";  //머릿말 설정 
+				factory.printing.footer = " {{ business.name }} ";  //꼬릿말 설정 
+				factory.printing.portrait = true;  //출력방향 설정: true-세로, false-가로 
+				factory.printing.leftMargin = 0;  //왼쪽 여백 설정 
+				factory.printing.topMargin = 0;  //위쪽 여백 설정 
+				factory.printing.rightMargin = 0;  //오른쪽 여백 설정 
+				factory.printing.bottomMargin = 0;  //아래쪽 여백 설정
+				
+				factory.printing.Print(true,window);  //출력하기 
+			}
+		</script>
+		<div class="book" style="font-size:8pt">
+			<div class="no-print-page">
+				<br>
+				<center>
+					<input type='button' value='인쇄하기' class="btnblue" onClick="printPage();">
+					<input type='button' value='닫기' class="btnblue" onclick='top.close();'>
+				</center>
+			</div>
+
+			{% block content %}
+			{% endblock %}
+
+			<div class="no-print-page">
+				<center>
+					<input type='button' value='인쇄하기' class="btnblue" onClick="printPage();">
+					<input type='button' value='닫기' class="btnblue" onclick='top.close();'>
+				</center>
+				<br>
+			</div>
+		</div>
+	</body>
+</html>
