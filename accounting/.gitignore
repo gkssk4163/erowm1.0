@@ -1,7 +1,0 @@
-*.pyc
-*~
-__pycache__
-/static
-/gitdownload
-*.log
-/media
