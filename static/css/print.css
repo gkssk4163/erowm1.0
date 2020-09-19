@@ -1,0 +1,66 @@
+html, body {
+	height:100%;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	background-color: #FAFAFA;
+}
+
+* {
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+}
+
+.page {
+	position: relative;
+	width: 21cm;
+	min-height: 29.3cm;
+	max-height: 29.3cm;
+	padding: 2cm;
+	margin: 1cm auto;
+	border: 1px #D3D3D3 solid;
+	border-radius: 5px;
+	background: white;
+	box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.footer {
+	width: 17cm;
+	min-height: 2cm;
+	max-height: 2cm;
+	padding: 0.5cm;
+	position: absolute;
+      	bottom: 0;
+}
+
+@page {
+	size: A4;
+	margin: 0;
+}
+
+@media print {
+	.page {
+		margin: 0;
+		border: initial;
+		border-radius: 0;
+		width: initial;
+		min-height: 29.3cm;
+		max-height: 29.3cm;
+		box-shadow: 0;
+		background: initial;
+		page-break-after: always;
+	}
+	.no-print-page {
+		display: none;
+	}
+}
+
+.th-nowrap th{
+	white-space: nowrap;
+}
+.td-nowrap td{
+	white-space: nowrap;
+}
+
