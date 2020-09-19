@@ -13,9 +13,9 @@
 		<input type="hidden" name="Bkname" value="{{ transaction.Bkname }}">
 		<input type="hidden" name="Bkdate" value="{{ transaction.Bkdate|date:"Y-m-d" }}">
 		<input type="hidden" name="inoutType" id="inoutType" value={% if transaction.Bkinput > 0 %}"input"{% elif transaction.Bkoutput > 0 %}"output"{% endif %}>
-		<input type="hidden" name="itemId_list" id="itemId_list">
+		<input type="hidden" name="itemId_list">
 		<input type="hidden" name="item_list" id="item_list">
-		<input type="hidden" name="subdivisionId_list" id="subdivisionId_list">
+		<input type="hidden" name="subdivisionId_list">
 		<input type="hidden" name="subdivision_list" id="subdivision_list">
 		<input type="hidden" name="Bkjukyo" id="Bkjukyo">
 		<input type="hidden" name="Bkinout" id="Bkinout">
@@ -38,13 +38,22 @@
 					<td>{{ transaction.Bkacctno }}</td>
 					<td>{{ transaction.Bkdate|date:"Y-m-d" }}</td>
 					<td class="cloneTd1">
-						<input type="hidden" name="itemId_list" id="itemId_list">
-						<input type="text" name="item_list" id="item_list" size="10" readonly>
-						<a id="select_item_url" href="#" onclick="javascript:open_popup(1);" class="btn btn-primary btn-sm">선택</a>
+						<!--<input type="hidden" name="itemId_list" id="itemId_list">-->
+						<select name="itemId_list" style="width: 150px;">
+							<option value="">계정선택</option>
+							{% for item in item_list %}
+							<option value="{{ item.id }}">{{ item }}</option>
+							{% endfor %}
+						</select>
+						<!--<input type="text" name="item_list" id="item_list" size="10" readonly>-->
+						<!--<a id="select_item_url" href="#" onclick="javascript:open_popup(1);" class="btn btn-primary btn-sm">선택</a>-->
 					</td>
 					<td class="cloneTd2">
-						<input type="hidden" name="subdivisionId_list" id="subdivisionId_list">
-						<input type="text" name="subdivision_list" id="subdivision_list" size="10" readonly>
+						<!--<input type="hidden" name="subdivisionId_list" id="subdivisionId_list" value="-1">-->
+						<!--<input type="text" name="subdivision_list" id="subdivision_list" size="10" readonly>-->
+						<select name="subdivisionId_list" style="width:150px;">
+							<option value="-1">세목선택</option>
+						</select>
 					</td>
 					<td class="cloneTd3"><input type="text" name="Bkjukyo" id="Bkjukyo" size="15" value="{{ transaction.Bkjukyo }}"></td>
 					<td class="text-right cloneTd4"><input type="text" name="Bkinout" id="Bkinout" size="10" value="{% if transaction.Bkinput %}{{ transaction.Bkinput }}{% elif transaction.Bkoutput %}{{ transaction.Bkoutput }}{% endif %}" onchange="calc();" onkeypress="return onlyNumber(event);"></td>
@@ -62,6 +71,7 @@
 	<button id="btn-add-row" class="btn btn-sm btn-primary">추가</button>
 	<button type="button" class="float-right btn btn-sm btn-primary" onclick="writeCheck();">등록</button>
 </div>
+
 <script type="text/javascript">
 var index = 1;
 function writeCheck() {
@@ -70,7 +80,7 @@ function writeCheck() {
 	for (var i=1; i<=f.row.value; i++) {
 		if(!f.itemId_list[i].value) {
 			alert("계정명을 선택해주세요");
-			f.item_list[i].focus();
+			//f.item_list[i].focus();
 			return;
 		}
 		if(!f.Bkjukyo[i].value) {
@@ -93,11 +103,13 @@ function writeCheck() {
 	f.submit();
 }
 
+/*
 function open_popup(index) {
 	var row = document.getElementById("row").value;
 	var inoutType = document.getElementById("inoutType").value;
 	return window.open('{% url "popup_select_item" %}?index='+index+'&row='+row+'&inoutType='+inoutType, '계정선택','width=900, height=800, scrollbars=1');
 }
+*/
 
 $('#btn-add-row').click(function() {
 	$.ajax({
@@ -118,6 +130,32 @@ $('#btn-add-row').click(function() {
 				$('.cloneTd1 #select_item_url').last().attr("onclick", "javascript:open_popup("+f.row.value+");");
 			}
 		},
+	});
+});
+
+$(document).on("change", "select[name='itemId_list']", function() {
+	//alert($('select[name="itemId_list"]').index(this));
+	var index = $('select[name="itemId_list"]').index(this);
+	$.ajax({
+		type: "POST"
+		,url: '{% url 'select_subdivision' %}'
+		,data: {
+			'csrfmiddlewaretoken': '{{ csrf_token }}',
+			'item_id' : $(this).val()
+		}
+		,dataType: "json"
+		,success: function(data) {
+			var options = '<option value="-1">세목선택</option>';
+			$.each(data, function(index, item) {
+				options += '<option value="'+item.pk+'">'+item.fields.context+'('+item.fields.code+')</option>';
+			})
+			console.log(options);
+			$('select[name="subdivisionId_list"]').eq(index).html(options);
+			//document.getElementsByName("subdivisionId_list")[index].options = options
+		}
+		,error: function() {
+			alert($(this).val());
+		}
 	});
 });
 

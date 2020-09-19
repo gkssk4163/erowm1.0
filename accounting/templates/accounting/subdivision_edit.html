@@ -9,13 +9,26 @@
 
 <form method="POST" class="business-form">
 	{% csrf_token %}
+	{% for hidden in form.hidden_fields %}
+		{{ hidden }}
+	{% endfor %}
 	<table class="table table-sm">
 		{% if form.errors %}
 		<tr>
 			<td colspan=2><p>{{ form.errors|striptags }}</p></td>
 		</tr>
 		{% endif %}
-		{% for field in form %}
+		<tr>
+			<td>회계년도</td>
+			<td>
+				<select id="year" name="year" style="width: 100px;">
+					{% for data in year_range %}
+					<option value="{{ data }}" {% if data == year %}selected{% endif %}>{{ data }}</option>
+					{% endfor %}
+				</select>
+			</td>
+		</tr>
+		{% for field in form.visible_fields %}
 		<tr>
 			<td>
 				{{ field.label }}
@@ -42,4 +55,24 @@
 	<button type="submit" class="save btn btn-outline-primary">등록</button>
 	<button type="button" class="btn btn-outline-primary" onclick="cancelCheck();">취소</button>
 </form>
+
+<script type="text/javascript">
+$("#year").on('change', function() {
+	$.ajax({
+		type: "POST"
+		,url: "{% url 'select_item' %}"
+		,data: {
+			'csrfmiddlewaretoken': '{{ csrf_token }}'
+			,'year': $("#year").val()
+		}
+		,dataType: "json"
+		,success: function(data) {
+			$("#id_item").html(data.option_html);
+		}
+		,error: function(request, status, error) {
+			console.log(error);
+		}
+	});
+});
+</script>
 {% endblock %}

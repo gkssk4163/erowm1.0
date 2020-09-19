@@ -486,11 +486,15 @@ class ItemForm(forms.ModelForm):
 class SubdivisionForm(forms.ModelForm):
     class Meta:
         model = Subdivision
-        fields = ('item', 'code', 'context')
+        fields = ('business', 'item', 'code', 'context')
         labels = {
+            'business': '사업장',
             'item': '목번호',
             'code': '세목번호',
             'context': '내용',
+        }
+        widgets = {
+            'business': forms.HiddenInput()
         }
         error_messages = {
             NON_FIELD_ERRORS: {

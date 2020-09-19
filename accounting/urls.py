@@ -108,6 +108,9 @@ urlpatterns = [
     url(r'^set_proofnum/$', views.set_proofnum, name='set_proofnum'),
     url(r'^tr_syn/$', views.tr_syn, name='tr_syn'),
 
+    url(r'^select/subdivision/$', views.select_subdivision, name='select_subdivision'),
+    url(r'^select/item/$', views.select_item, name='select_item'),
+
     #url(r'^/$', views., name=''),
     url(r'^test/$', views.test, name='test'),
     url(r'^design_test/$', views.design_test, name='design_test'),

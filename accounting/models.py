@@ -222,7 +222,7 @@ class Item(models.Model):
 
 class Subdivision(models.Model):
     class Meta:
-        unique_together = (('item', 'code'),)
+        unique_together = (('business', 'item', 'code'),)
 
     business = models.ForeignKey('accounting.Business', on_delete=models.CASCADE)
     item = models.ForeignKey('accounting.Item', on_delete=models.PROTECT)

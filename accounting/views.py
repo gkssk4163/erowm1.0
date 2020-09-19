@@ -21,8 +21,8 @@ from django.utils.dateformat import DateFormat
 from dateutil.relativedelta import relativedelta
 
 import math
-from django.db.models import Sum, Count, Case, When, Q, Min
-from django.db.models.functions import Coalesce
+from django.db.models import Sum, Count, Case, When, Q, Min, Value
+from django.db.models.functions import Coalesce, Concat
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 import json
@@ -305,7 +305,7 @@ def business_info(request):
 def account_list(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     lists = Account.objects.filter(business=business)
-    url = "https://ssl.bankda.com/partnership/partner/account_list_userid_xml.php"
+    url = "https://ssl-new.bankda.com/partnership/partner/account_list_userid_xml.php"
     #headers = {'content-type': 'application/soap+xml'}
     data = {'service_type': 'basic', 'partner_id': 'vizun21',
             'user_id': request.user.username, 'user_pw': request.user.password[34:],
@@ -330,7 +330,7 @@ def account_create(request):
         account_flag = account_check(request)
         if account_flag == True:
             Bjumin = business.reg_number.split("-")
-            url = "https://ssl.bankda.com/partnership/user/account_add.php"
+            url = "https://ssl-new.bankda.com/partnership/user/account_add.php"
             data = {'directAccess': 'y', 'partner_id': "vizun21", 'service_type': "basic",
                 'user_id': request.user.username, 'user_pw': request.user.password[34:],
                 'Command': "update", 'bkdiv': request.POST.get('bkdiv'),
@@ -371,7 +371,7 @@ def account_edit(request, pk):
         account_flag = account_check(request)
         if account_flag == True:
             Bjumin = business.reg_number.split("-")
-            url = "https://ssl.bankda.com/partnership/user/account_fix.php"
+            url = "https://ssl-new.bankda.com/partnership/user/account_fix.php"
             data = {'directAccess': 'y', 'partner_id': "vizun21", 'service_type': "basic",
                 'user_id': request.user.username, 'user_pw': request.user.password[34:],
                 'Command': "update", 'bkdiv': request.POST.get('bkdiv'),
@@ -391,6 +391,7 @@ def account_edit(request, pk):
                 print(resMsg.content.decode('utf-8'))
                 print("뱅크다등록오류")
                 #등록한 계좌내용 삭제? 오류반환
+                return redirect('account_list')
         else:
             form = AccountForm(request.POST, instance=account)
             if not form.is_valid():
@@ -1068,12 +1069,32 @@ def item_edit(request, pk):
 @login_required(login_url='/')
 def subdivision_list(request):
     business = get_object_or_404(Business, pk=request.session['business'])
-    subdivisions = Subdivision.objects.filter(business=business).order_by('item')
-    return render(request, 'accounting/subdivision_list.html', {'business': business, 'subdivisions': subdivisions, 'master_login': request.session['master_login'], 'accounting_management': 'active', 'subdivision_list': 'active'})
+    today = datetime.datetime.now()
+    this_year = DateFormat(today).format("Y")
+    this_month = DateFormat(today).format("m")
+    sessionInfo = session_info(this_year, this_month, business.session_month)
+    year = int(request.GET.get('year', sessionInfo['year']))
+    subdivisions = Subdivision.objects.filter(
+        business = business
+        ,item__paragraph__subsection__year = year
+    ).order_by(
+            'item__paragraph__subsection__type', 'item__paragraph__subsection__code'
+            , 'item__paragraph__code', 'item__code', 'code')
+    return render(request, 'accounting/subdivision_list.html', {
+        'business': business, 'subdivisions': subdivisions
+        ,'master_login': request.session['master_login']
+        ,'accounting_management': 'active', 'subdivision_list': 'active'
+        ,'year': year, 'year_range': range(int(sessionInfo['year']), 2018, -1)
+        })
 
 @login_required(login_url='/')
 def subdivision_create(request):
     business = get_object_or_404(Business, pk=request.session['business'])
+    today = datetime.datetime.now()
+    this_year = DateFormat(today).format("Y")
+    this_month = DateFormat(today).format("m")
+    sessionInfo = session_info(this_year, this_month, business.session_month)
+    year = int(request.GET.get('year', sessionInfo['year']))
     if request.method == "POST":
         form = SubdivisionForm(request.POST)
         if form.is_valid():
@@ -1082,9 +1103,37 @@ def subdivision_create(request):
             subdivision.save()
             return redirect('subdivision_list')
     else:
-        form = SubdivisionForm()
-        form.fields['item'].queryset = Item.objects.filter(paragraph__subsection__institution = business.type3)
-    return render(request, 'accounting/subdivision_edit.html', {'business': business, 'form': form, 'accounting_management': 'active', 'subdivision_list': 'active'})
+        form = SubdivisionForm(initial={'business': business})
+        form.fields['item'].queryset = Item.objects.filter(
+            paragraph__subsection__institution = business.type3
+            ,paragraph__subsection__year = year
+        ).exclude(code=0)
+    return render(request, 'accounting/subdivision_edit.html', {
+        'business': business, 'form': form
+        ,'accounting_management': 'active', 'subdivision_list': 'active'
+        ,'year': year, 'year_range': range(int(sessionInfo['year']), 2018, -1)
+        })
+
+@login_required(login_url='/')
+def select_item(request):
+    from django.core import serializers
+    business = get_object_or_404(Business, pk=request.session['business'])
+    today = datetime.datetime.now()
+    this_year = DateFormat(today).format("Y")
+    this_month = DateFormat(today).format("m")
+    sessionInfo = session_info(this_year, this_month, business.session_month)
+    year = request.POST.get('year', sessionInfo['year'])
+    item_list = Item.objects.filter(
+        paragraph__subsection__institution = business.type3
+        ,paragraph__subsection__year = year
+    ).exclude(code=0)
+
+    option_html='<option value="" selected="">---------</option>\n'
+    for item in item_list:
+        option_html += '<option value="'+str(item.pk)+'">'+str(item)+'</option>\n'
+    print(option_html)
+
+    return HttpResponse(json.dumps({'option_html': option_html}), content_type="application/json")
 
 @login_required(login_url='/')
 def other_settings(request):
@@ -1152,14 +1201,34 @@ def change_main_account(request):
 
 @login_required(login_url='/')
 def popup_transaction_division(request, Bkid):
+    business = get_object_or_404(Business, pk=request.session['business'])
     month = request.GET.get('month')
     tblbank_tr = TBLBANK.objects.get(Bkid=Bkid)
     total = 0
     if tblbank_tr.Bkinput:
         total=tblbank_tr.Bkinput
+        filter_type = "수입"
     elif tblbank_tr.Bkoutput:
         total=tblbank_tr.Bkoutput
-    return render(request, 'accounting/popup_transaction_division.html', {'transaction': tblbank_tr, 'Bkid': Bkid, 'total': total, 'month': month})
+        filter_type = "지출"
+    
+    sessionInfo = session_info(str(tblbank_tr.Bkdate.year), str(tblbank_tr.Bkdate.month), business.session_month)
+
+    item_list=Item.objects.filter(
+        paragraph__subsection__year = sessionInfo['year'],
+        paragraph__subsection__institution=business.type3,
+        paragraph__subsection__type = filter_type).exclude(code=0)
+    return render(request, 'accounting/popup_transaction_division.html', {'transaction': tblbank_tr, 'Bkid': Bkid, 'total': total, 'month': month, 'item_list': item_list})
+
+@login_required(login_url='/')
+def select_subdivision(request):
+    from django.core import serializers
+    business = get_object_or_404(Business, pk=request.session['business'])
+    item_id = request.POST.get('item_id')
+    subdivision_list = Subdivision.objects.filter(item__id=item_id, business=business)
+    data_json = serializers.serialize('json', subdivision_list)
+    print(data_json)
+    return HttpResponse(data_json, content_type="application/json")
 
 @login_required(login_url='/')
 def add_row(request):

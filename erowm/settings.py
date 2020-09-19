@@ -142,6 +142,7 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 CRONJOBS = [
     ('*/5 * * * *', 'accounting.cron.cron_database_syn', '>> ~/erowm/accounting/cron.log'),
     ('30 4 28 * *', '/var/log/letsencrypt renew', '>> /var/log/ssl-renew.log'),
+    ('35 4 28 * *', 'systemctl restart nginx', '>> /var/log/restart-nginx-after-ssl-renew.log'),
 ]
 
 

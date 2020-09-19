@@ -34,7 +34,7 @@
 						<td>{{ account.bank }}</td>
 						<td>{{ account.account_number }}</td>
 						<td class="text-center">
-							<form name="bankda_join_form" action="https://ssl.bankda.com/partnership/user/account_add.php" method="post" target="_blank">
+							<form name="bankda_join_form" action="https://ssl-new.bankda.com/partnership/user/account_add.php" method="post" target="_blank">
 								{% csrf_token %}
 								<input type="hidden" name="directAccess" value="y">
 								<input type="hidden" name="partner_id" value="vizun21">
@@ -77,7 +77,7 @@ $('input:button[name=withdraw]').click(function() {
 	var acctpk = this.id;
 	$.ajax({
 		type: "POST",
-		url: "https://ssl.bankda.com/partnership/user/account_del.php",
+		url: "https://ssl-new.bankda.com/partnership/user/account_del.php",
 		data: {
 			'directAccess': 'y',
 			'partner_id': "vizun21",
