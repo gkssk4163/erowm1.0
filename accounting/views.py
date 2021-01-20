@@ -23,6 +23,7 @@ from dateutil.relativedelta import relativedelta
 import math
 from django.db.models import Sum, Count, Case, When, Q, Min, Value
 from django.db.models.functions import Coalesce, Concat
+from django.db.models import Max
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 import json
@@ -1444,6 +1445,7 @@ def annual_budget(request, budget_type):
 
     budget_list = []
     spi_list = []
+    spi_year = Item.objects.aggregate(year=Max('year'))
     sub_budget = []
     revenue_budget_page = ''
     expenditure_budget_page = ''
@@ -1452,7 +1454,11 @@ def annual_budget(request, budget_type):
 
     have_sub_bt = request.POST.get('have_sub_bt')
 
-    print(have_sub_bt, type(have_sub_bt))
+    print("================ annual budget ====================")
+    print("business: ", business)
+    print("year: ", year)
+    print("have_sub_bt", have_sub_bt, type(have_sub_bt))
+    print("============== annual budget end ==================")
 
     if budget_type == "revenue" or budget_type[:21] == "supplementary_revenue":
         if have_sub_bt == "1":
@@ -1461,7 +1467,7 @@ def annual_budget(request, budget_type):
             budget_list = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type="수입", type="revenue")
         else:
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="수입", type=budget_type)
-        spi_list = item_info(year, business.type3, 'i')
+        spi_list = item_info(spi_year['year'], business.type3, 'i')
         if budget_type == "revenue":
             revenue_budget_page = 'active'
         else:
@@ -1473,7 +1479,7 @@ def annual_budget(request, budget_type):
             budget_list = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type="지출", type="expenditure")
         else:
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="지출", type=budget_type)
-        spi_list = item_info(year, business.type3, 'o')
+        spi_list = item_info(spi_year['year'], business.type3, 'o')
         if budget_type == "expenditure":
             expenditure_budget_page = 'active'
         else:
@@ -1519,7 +1525,7 @@ def annual_budget(request, budget_type):
                     spi.sub_budget = sub_data
                     sub_budget += sub_data
 
-    return render(request, 'accounting/annual_budget.html', {'total_revenue': total_revenue, 'total_expenditure': total_expenditure, 'total_difference': total_difference,'budget_type': budget_type, 'sub_budget': sub_budget, 'spi_list': spi_list, 'budget_list': budget_list, 'budget_management': 'active', 'revenue_budget_page': revenue_budget_page, 'expenditure_budget_page': expenditure_budget_page, 'supplementary_revenue_page': supplementary_revenue_page, 'supplementary_expenditure_page': supplementary_expenditure_page, 'master_login': request.session['master_login'], 'business': business, 'year_range': range(this_year, 1999, -1), 'year': year})
+    return render(request, 'accounting/annual_budget.html', {'total_revenue': total_revenue, 'total_expenditure': total_expenditure, 'total_difference': total_difference,'budget_type': budget_type, 'sub_budget': sub_budget, 'spi_list': spi_list, 'budget_list': budget_list, 'budget_management': 'active', 'revenue_budget_page': revenue_budget_page, 'expenditure_budget_page': expenditure_budget_page, 'supplementary_revenue_page': supplementary_revenue_page, 'supplementary_expenditure_page': supplementary_expenditure_page, 'master_login': request.session['master_login'], 'business': business, 'year_range': range(this_year+1, 1999, -1), 'year': year})
 
 @login_required(login_url='/')
 def print_yearly_budget(request, budget_type):

@@ -171,6 +171,7 @@ class Account(models.Model):
     Mjumin_1 = models.CharField(max_length=6, null=True, blank=True)
     webid = models.CharField(max_length=30, null=True, blank=True)
     webpw = models.CharField(max_length=30, null=True, blank=True)
+    account_yn = models.CharField(max_length=1, default='Y')
     
     def __str__(self):
         return self.renames

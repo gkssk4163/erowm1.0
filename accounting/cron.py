@@ -1,8 +1,11 @@
-from .models import Setting, Business, TBLBANK
+from accounting.models import Setting, Business, TBLBANK
 from django.db import connections
 from django.utils import timezone
 
 def cron_database_syn():
+
+    print(str(timezone.now()) + " database_syn start =====================")
+
     try:
         tr_num = Setting.objects.get(name="transaction_num")
 
@@ -37,10 +40,13 @@ def cron_database_syn():
                 tr_num.value = data['Bkid']
                 tr_num.save()
                 num += 1
-            except:
+            except Exception as ex:
                 print(str(timezone.now())+" "+ex)
 
         print(str(timezone.now())+" cron complete")
     except Exception as ex:
         print("--"+str(timezone.now())+" "+ex)
+
+    print(str(timezone.now()) + " database_syn end =======================\n")
+
     return redirect('other_settings')
