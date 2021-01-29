@@ -90,7 +90,7 @@ function checkDate() {
 		var f = document.termForm;
 		$.ajax({
 			type: "POST",
-			url: {% url 'check_date' %},
+			url: "{% url 'check_date' %}",
 			data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'year': f.year.value, 'month': f.month.value, 'year2': f.year2.value, 'month2': f.month2.value},
 			dataType: "json",
 			success: function(response) {

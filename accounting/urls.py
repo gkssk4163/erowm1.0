@@ -114,4 +114,7 @@ urlpatterns = [
     #url(r'^/$', views., name=''),
     url(r'^test/$', views.test, name='test'),
     url(r'^design_test/$', views.design_test, name='design_test'),
+
+    #ajax function
+    url(r'^budget/spi/total/$', views.budget_spi_total, name='budget_spi_total'),
 ]

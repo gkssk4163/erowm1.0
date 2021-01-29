@@ -1,0 +1,104 @@
+{% load humanize %}
+{% load mathfilters %}
+
+<div class="page" style="font-size: 13px;">
+    <center>
+        <span style="font-size: 30px;font-weight: bold;">예산총칙</span>
+    </center>
+    
+    <span style="word-wrap:break-word;white-space:pre-wrap;white-space:-moz-pre-wrap;white-space:-pre-wrap;white-space:-o-pre-wrap;word-break:break-all;">
+        
+
+
+        ○ 제1조 : 해당연도 년도 세입⦁세출 예산 총액은 다음과 같다.
+
+        <table class="table" style="margin-left: 30px;">
+            <caption style="caption-side: top;text-align: right;">( 단위 : 천원 )</caption>
+            <colgroup>
+                <col width="15%"/>
+                <col width="15%"/>
+                <col width="16%"/>
+                <col width="18%"/>
+                <col width="18%"/>
+                <col width="18%"/>
+            </colgroup>
+            <tr>
+                <th rowspan="2" colspan="2">구분</th>
+                <th colspan="4">세입⦁세출 예산 총액</th>
+            </tr>
+            <tr>
+                <th>세입세출</th>
+                <th>예산액</th>
+                <th>전년도예산액</th>
+                <th>증감액<br>(전년도대비)</th>
+            </tr>
+            <tr>
+                <th rowspan="2">시설회계 보육사업비</th>
+                <th rowspan="2">어린이집</th>
+                <th>세입</th>
+				<th style="text-align:right">{{ general.is_total|intdiv:1000|intcomma }}</th>
+				<th style="text-align:right">{{ general.is_xtotal|intdiv:1000|intcomma }}</th>
+				<th style="text-align:right">{{ general.is_dtotal|intdiv:1000|intcomma }}</th>
+            </tr>
+            <tr>
+				<th>세출</th>
+				<th style="text-align:right">{{ general.os_total|intdiv:1000|intcomma }}</th>
+				<th style="text-align:right">{{ general.os_xtotal|intdiv:1000|intcomma }}</th>
+				<th style="text-align:right">{{ general.os_dtotal|intdiv:1000|intcomma }}</th>
+			</tr>
+        </table>
+
+        ○ 제2조 : 세입⦁세출 예산의 명세서는 별첨“세입⦁세출예산”과 같다.
+
+        ○ 제3조 : 해당연도년도 일시 차입금은 <span id="span_borrowings"></span>원 한도 내에서 일시 차입할 수 있다.
+
+        ○ 제4조 : 일반회계 예비비는 <span id="span_reserve"></span>원으로 한다.
+    </span>
+</div>
+
+<script>
+    $(function() {
+        getBorrowings();
+        getReserve();
+    });
+
+    function getBorrowings() {
+        console.log("bbb");
+        $.ajax({
+			type: "post"
+			,url: "{% url 'budget_spi_total' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'year': "{{ year }}"
+                ,'type': "revenue"
+                ,'context': "차입금"
+            }
+			,dataType: "json"
+			,success: function(data) {
+                $("#span_borrowings").html(data.total.comma());
+			}
+			,error: function(xhr, status, message) {
+			}
+		});
+    }
+
+    function getReserve() {
+        console.log("bbb");
+        $.ajax({
+			type: "post"
+			,url: "{% url 'budget_spi_total' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'year': "{{ year }}"
+                ,'type': "expenditure"
+                ,'context': "예비비"
+            }
+			,dataType: "json"
+			,success: function(data) {
+                $("#span_reserve").html(data.total.comma());
+			}
+			,error: function(xhr, status, message) {
+			}
+		});
+    }
+</script>

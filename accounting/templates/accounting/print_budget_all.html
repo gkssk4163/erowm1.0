@@ -3,8 +3,27 @@
 
 {% block content %}
 
+<style>
+    .table {
+        width: 100%;
+        border: 1px solid black;
+        border-collapse: collapse;
+    }
+    .table th, .table td {
+        height: 30px;
+        border: 1px solid black;
+        word-break: keep-all;
+        padding: 0px 5px;
+    }
+    .table th {
+        height: 40px;
+    }
+</style>
+
 <!--표지-->
 {% include 'accounting/_budget_cover.html' %}
+
+{% include 'accounting/_budget_general_rule.html' %}
 
 {% include 'accounting/_budget_general.html' %}
 
