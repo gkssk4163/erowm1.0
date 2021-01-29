@@ -1475,7 +1475,7 @@ def annual_budget(request, budget_type):
     elif budget_type == "expenditure" or budget_type[:25] == "supplementary_expenditure":
         if have_sub_bt == "1":
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="지출", type="expenditure")
-        if have_sub_bt == "2":
+        elif have_sub_bt == "2":
             budget_list = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type="지출", type="expenditure")
         else:
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="지출", type=budget_type)
