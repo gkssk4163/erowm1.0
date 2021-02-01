@@ -3222,22 +3222,19 @@ def _budget_general(request, year):
     }
     return general
 
-def _budget_content(request, budget_type):
+def _budget_content(request, year, budget_type):
     business = get_object_or_404(Business, pk=request.session['business'])
-    today = datetime.datetime.now()
-    this_year = int(DateFormat(today).format("Y"))
-    if request.method == "POST":
-        year = int(request.POST.get('year'))
 
     if budget_type in ['revenue', 'supplementary_revenue']:
         stype_filter = '수입'
     elif budget_type in ['expenditure', 'supplementary_expenditure']:
         stype_filter='지출'
-
     
+    # 총합 : 예산액, 전년도 예산액, 비교증감
     total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type=stype_filter, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
     xtotal = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type=stype_filter, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
     dtotal = total - xtotal
+
     if 'supplementary' in budget_type:
         try:
             sp_budget = Budget.objects.filter(business=business, year=year, type__icontains=budget_type).order_by('type').last()

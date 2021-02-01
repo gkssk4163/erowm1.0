@@ -21,3 +21,37 @@ jQuery.fn.slideFadeTableRow = function(speed, easing, callback) {
 	return $tr;
 };
 
+String.prototype.comma = function(gubn) {
+	var num = this.toString().split(".");
+	num[0] = num[0].replace(/[^0-9]/g, "");
+	if(num[1]) {
+		num[1] = num[1].replace(/[^0-9]/g, "");
+	}
+	
+	if (this.toString().trim().left(1) != "-") {
+		if(num[0].length == 0 || isNaN(num[0])) return "";
+	}
+	
+	var positive = num[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+	if (this.toString().trim().substring(0,1) == "-") {
+		positive = "-" + positive;
+	}
+	
+	if(gubn) {
+		gubn = gubn.replace(/[^0-9]/g, "");	
+		
+		if(typeof num[1] == "undefined") {
+			return positive;
+		}
+		else if(num[1] == "") {
+			positive = positive + ".";
+		}
+		else {
+			positive = positive + "." + (num[1] + "000").substring(0, (num[1].length < gubn ? num[1].length : gubn));
+		}
+	}
+	
+	return positive;
+}
+
+Number.prototype.comma = String.prototype.comma;
