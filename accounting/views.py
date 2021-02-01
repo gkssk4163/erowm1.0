@@ -1445,7 +1445,7 @@ def annual_budget(request, budget_type):
 
     budget_list = []
     spi_list = []
-    spi_year = Item.objects.aggregate(year=Max('year'))
+    # spi_year = Item.objects.aggregate(year=Max('year'))
     sub_budget = []
     revenue_budget_page = ''
     expenditure_budget_page = ''
@@ -1467,7 +1467,7 @@ def annual_budget(request, budget_type):
             budget_list = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type="수입", type="revenue")
         else:
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="수입", type=budget_type)
-        spi_list = item_info(spi_year['year'], business.type3, 'i')
+        spi_list = item_info(year, business.type3, 'i')
         if budget_type == "revenue":
             revenue_budget_page = 'active'
         else:
@@ -1479,7 +1479,7 @@ def annual_budget(request, budget_type):
             budget_list = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type="지출", type="expenditure")
         else:
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="지출", type=budget_type)
-        spi_list = item_info(spi_year['year'], business.type3, 'o')
+        spi_list = item_info(year, business.type3, 'o')
         if budget_type == "expenditure":
             expenditure_budget_page = 'active'
         else:
@@ -1626,13 +1626,13 @@ def print_yearly_budget(request, budget_type):
         subsection_list = Subsection.objects.filter(year=year, type=stype_filter, institution=business.type3).exclude(code=0)
         for subsection in subsection_list:
             subsection.s_total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection = subsection, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
-            subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection = subsection, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
+            subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
             subsection.ds_total = subsection.s_total - subsection.xs_total
     
             paragraph_list = Paragraph.objects.filter(subsection=subsection)
             for paragraph in paragraph_list:
                 paragraph.p_total = Budget.objects.filter(business=business, year=year, item__paragraph=paragraph, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
-                paragraph.xp_total = Budget.objects.filter(business=business, year=year-1, item__paragraph=paragraph, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
+                paragraph.xp_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, item__paragraph__code = paragraph.code, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
                 paragraph.dp_total = paragraph.p_total - paragraph.xp_total
     
                 item_list = Item.objects.filter(paragraph=paragraph)
@@ -1640,7 +1640,7 @@ def print_yearly_budget(request, budget_type):
                     budget = Budget.objects.get(business=business, year=year, item=item, type=budget_type)
                     item.i_total = budget.price
                     try:
-                        item.xi_total = Budget.objects.get(business=business, year=year-1, item=item, type=budget_type).price
+                        item.xi_total = Budget.objects.get(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, item__paragraph__code = paragraph.code, item__code=item.code, type=budget_type).price
                     except :
                         item.xi_total = 0
                     item.di_total = item.i_total - item.xi_total
@@ -3182,9 +3182,14 @@ def print_budget_all(request):
 
     general = _budget_general(request, year)
 
+    revenue_budget = _budget_content(request, year, 'revenue')
+
+    expenditure_budget = _budget_content(request, year, 'expenditure')
+
     return render(request, 'accounting/print_budget_all.html', {
         'business': business, 'year': year,
-        'general': general
+        'general': general, 'revenue_budget': revenue_budget,
+        'expenditure_budget': expenditure_budget
     })
 
 def _budget_general(request, year):
@@ -3200,7 +3205,7 @@ def _budget_general(request, year):
     isubsection_list = subsection_info(year, business.type3, 'i')
     for subsection in isubsection_list:
         subsection.s_total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection = subsection, type="revenue").aggregate(total=Coalesce(Sum('price'), 0))['total']
-        subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection = subsection, type="revenue").aggregate(total=Coalesce(Sum('price'), 0))['total']
+        subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, type="revenue").aggregate(total=Coalesce(Sum('price'), 0))['total']
         subsection.ds_total = subsection.s_total - subsection.xs_total
         is_total += subsection.s_total
         is_xtotal += subsection.xs_total
@@ -3209,7 +3214,7 @@ def _budget_general(request, year):
     osubsection_list = subsection_info(year, business.type3, 'o')
     for subsection in osubsection_list:
         subsection.s_total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection = subsection, type="expenditure").aggregate(total=Coalesce(Sum('price'), 0))['total']
-        subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection = subsection, type="expenditure").aggregate(total=Coalesce(Sum('price'), 0))['total']
+        subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, type="expenditure").aggregate(total=Coalesce(Sum('price'), 0))['total']
         subsection.ds_total = subsection.s_total - subsection.xs_total
         os_total += subsection.s_total
         os_xtotal += subsection.xs_total
@@ -3225,9 +3230,10 @@ def _budget_general(request, year):
 def _budget_content(request, year, budget_type):
     business = get_object_or_404(Business, pk=request.session['business'])
 
-    if budget_type in ['revenue', 'supplementary_revenue']:
+    # 예산전체출력은 본예산 기준(추경예산X)
+    if budget_type in ['revenue']:
         stype_filter = '수입'
-    elif budget_type in ['expenditure', 'supplementary_expenditure']:
+    elif budget_type in ['expenditure']:
         stype_filter='지출'
     
     # 총합 : 예산액, 전년도 예산액, 비교증감
@@ -3235,159 +3241,88 @@ def _budget_content(request, year, budget_type):
     xtotal = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type=stype_filter, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
     dtotal = total - xtotal
 
-    if 'supplementary' in budget_type:
-        try:
-            sp_budget = Budget.objects.filter(business=business, year=year, type__icontains=budget_type).order_by('type').last()
-            if sp_budget :
-                sp_budget_type = sp_budget.type
-            else :
-                return HttpResponse("<script>alert('추경예산이 등록되지 않았습니다.');close();</script>")
-            total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type=stype_filter, type=sp_budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
-            xtotal = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type=stype_filter, type=budget_type[14:]).aggregate(total=Coalesce(Sum('price'), 0))['total']
-            dtotal = total - xtotal
-        except Exception as ex:
-            print(ex)
-
     budget_list = []
     spi_list = []
     paragraph_list = []
 
-    if 'supplementary' in budget_type:
-        subsection_list = Subsection.objects.filter(year=year, type=stype_filter, institution=business.type3).exclude(code=0)
-        for subsection in subsection_list:
-            sp_budget_type = Budget.objects.filter(business=business, year=year, type__icontains=budget_type).order_by('type').last().type
-            subsection.s_total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection = subsection, type=sp_budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
-            subsection.xs_total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection = subsection, type=budget_type[14:]).aggregate(total=Coalesce(Sum('price'), 0))['total']
-            subsection.ds_total = subsection.s_total - subsection.xs_total
-    
-            paragraph_list = Paragraph.objects.filter(subsection=subsection)
-            for paragraph in paragraph_list:
-                paragraph.p_total = Budget.objects.filter(business=business, year=year, item__paragraph=paragraph, type=sp_budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
-                paragraph.xp_total = Budget.objects.filter(business=business, year=year, item__paragraph=paragraph, type=budget_type[14:]).aggregate(total=Coalesce(Sum('price'), 0))['total']
-                paragraph.dp_total = paragraph.p_total - paragraph.xp_total
-    
-                item_list = Item.objects.filter(paragraph=paragraph)
-                for item in item_list:
-                    try:
-                        budget = Budget.objects.get(business=business, year=year, item=item, type=sp_budget_type)
-                        item.i_total = budget.price
-                        item.xi_total = Budget.objects.get(business=business, year=year, item=item, type=budget_type[14:]).price
-                        item.di_total = item.i_total - item.xi_total
+    subsection_list = Subsection.objects.filter(year=year, type=stype_filter, institution=business.type3).exclude(code=0)
+    for subsection in subsection_list:
+        subsection.s_total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection = subsection, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
+        subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
+        subsection.ds_total = subsection.s_total - subsection.xs_total
+        print("관(", subsection.code, ") : ", subsection.s_total, subsection.xs_total, subsection.ds_total)
+        
+        paragraph_list = Paragraph.objects.filter(subsection=subsection)
+        for paragraph in paragraph_list:
+            paragraph.p_total = Budget.objects.filter(business=business, year=year, item__paragraph=paragraph, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
+            paragraph.xp_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, item__paragraph__code = paragraph.code, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
+            paragraph.dp_total = paragraph.p_total - paragraph.xp_total
+            print("관항(", subsection.code,paragraph.code, ") : ", paragraph.p_total, paragraph.xp_total, paragraph.dp_total)
+            
+            item_list = Item.objects.filter(paragraph=paragraph)
+            for item in item_list:
+                budget = Budget.objects.get(business=business, year=year, item=item, type=budget_type)
+                item.i_total = budget.price
+                try :
+                    item.xi_total = Budget.objects.get(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, item__paragraph__code = paragraph.code, item__code=item.code, type=budget_type).price
+                except :
+                    item.xi_total = 0
+                item.di_total = item.i_total - item.xi_total
+                print("관항목(", subsection.code, paragraph.code, item.code, ") : ", item.i_total, item.xi_total, item.di_total)
 
-                        context_list = []
-                        unit_price_list = []
-                        cnt_list = []
-                        months_list = []
-                        percent_list = []
-                        sub_price_list = []
+                context_list = []
+                unit_price_list = []
+                cnt_list = []
+                months_list = []
+                percent_list = []
+                sub_price_list = []
 
-                        sub_columns = ['item','context','unit_price','cnt','months','percent','sub_price']
-                        context_list = budget.context.split("|")
-                        unit_price_list = budget.unit_price.split("|")
-                        cnt_list = budget.cnt.split("|")
-                        months_list = budget.months.split("|")
+                sub_columns = ['item','context','unit_price','cnt','months','percent','sub_price']
+                context_list = budget.context.split("|")
+                unit_price_list = budget.unit_price.split("|")
+                cnt_list = budget.cnt.split("|")
+                months_list = budget.months.split("|")
+                if budget.percent is not None:
+                    percent_list = budget.percent.split("|")
+                sub_price_list = budget.sub_price.split("|")
+                row_list = []
+                for idx, val in enumerate(context_list):
+                    r = []
+                    if val != None:
+                        r.append(budget.item.id)
+                        r.append(context_list[idx])
+                        r.append(unit_price_list[idx])
+                        r.append(cnt_list[idx])
+                        r.append(months_list[idx])
                         if budget.percent is not None:
-                            percent_list = budget.percent.split("|")
-                        sub_price_list = budget.sub_price.split("|")
-                        row_list = []
-                        for idx, val in enumerate(context_list):
-                            r = []
-                            if val != None:
-                                r.append(budget.item.id)
-                                r.append(context_list[idx])
-                                r.append(unit_price_list[idx])
-                                r.append(cnt_list[idx])
-                                r.append(months_list[idx])
-                                if budget.percent is not None:
-                                    r.append(percent_list[idx])
-                                else:
-                                    r.append('')
-                                r.append(sub_price_list[idx])
-                            row_list.append(r)
-                            item.sub_data = [ dict(zip(sub_columns,row)) for row in row_list ]
-                    except Exception as ex:
-                        print(ex)
-                        item.i_total = 0
-                        item.xi_total = Budget.objects.get(business=business, year=year, item=item, type=budget_type[14:]).price
-                        item.di_total = item.i_total - item.xi_total
-                        item.sub_data = []
-                paragraph.item_list = item_list
-            subsection.paragraph_list = paragraph_list
-    else:
-        subsection_list = Subsection.objects.filter(year=year, type=stype_filter, institution=business.type3).exclude(code=0)
-        for subsection in subsection_list:
-            subsection.s_total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection = subsection, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
-            subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection = subsection, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
-            subsection.ds_total = subsection.s_total - subsection.xs_total
-    
-            paragraph_list = Paragraph.objects.filter(subsection=subsection)
-            for paragraph in paragraph_list:
-                paragraph.p_total = Budget.objects.filter(business=business, year=year, item__paragraph=paragraph, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
-                paragraph.xp_total = Budget.objects.filter(business=business, year=year-1, item__paragraph=paragraph, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
-                paragraph.dp_total = paragraph.p_total - paragraph.xp_total
-    
-                item_list = Item.objects.filter(paragraph=paragraph)
-                for item in item_list:
-                    budget = Budget.objects.get(business=business, year=year, item=item, type=budget_type)
-                    item.i_total = budget.price
-                    try:
-                        item.xi_total = Budget.objects.get(business=business, year=year-1, item=item, type=budget_type).price
-                    except :
-                        item.xi_total = 0
-                    item.di_total = item.i_total - item.xi_total
-
-                    context_list = []
-                    unit_price_list = []
-                    cnt_list = []
-                    months_list = []
-                    percent_list = []
-                    sub_price_list = []
-
-                    sub_columns = ['item','context','unit_price','cnt','months','percent','sub_price']
-                    context_list = budget.context.split("|")
-                    unit_price_list = budget.unit_price.split("|")
-                    cnt_list = budget.cnt.split("|")
-                    months_list = budget.months.split("|")
-                    if budget.percent is not None:
-                        percent_list = budget.percent.split("|")
-                    sub_price_list = budget.sub_price.split("|")
-                    row_list = []
-                    for idx, val in enumerate(context_list):
-                        r = []
-                        if val != None:
-                            r.append(budget.item.id)
-                            r.append(context_list[idx])
-                            r.append(unit_price_list[idx])
-                            r.append(cnt_list[idx])
-                            r.append(months_list[idx])
-                            if budget.percent is not None:
-                                r.append(percent_list[idx])
-                            else:
-                                r.append('')
-                            r.append(sub_price_list[idx])
-                        row_list.append(r)
-                        item.sub_data = [ dict(zip(sub_columns,row)) for row in row_list ]
-                paragraph.item_list = item_list
-            subsection.paragraph_list = paragraph_list
+                            r.append(percent_list[idx])
+                        else:
+                            r.append('')
+                        r.append(sub_price_list[idx])
+                    row_list.append(r)
+                    item.sub_data = [ dict(zip(sub_columns,row)) for row in row_list ]
+            paragraph.item_list = item_list
+        subsection.paragraph_list = paragraph_list
 
     page_list = []
     sub_row = []
     for index, subsection in enumerate(subsection_list):
-        print(index, subsection)
+        # print(index, subsection)
         sub_row.append(subsection)
         if (budget_type in ['revenue', 'supplementary_revenue', 'supplementary_revenue']) and (index+1 in [3,9]):
             page_list.append(sub_row)
-            print(index, sub_row)
+            # print(index, sub_row)
             sub_row = []
         elif (budget_type in ['expenditure', 'supplementary_expenditure', 'supplementary_expenditure']) and (index+1 in [1,2,5,10]):
             page_list.append(sub_row)
-            print(index, sub_row)
+            # print(index, sub_row)
             sub_row = []
 
-    return render(request, 'accounting/print_yearly_budget.html', {
-        'budget_type': budget_type, 'year': year, 'page_list': page_list,
+    budget_content = {
+        'budget_type': budget_type, 'page_list': page_list,
         'total': total, 'xtotal': xtotal, 'dtotal': dtotal
-        })
+    }
+    return budget_content
 
 
 #--------------파일다운로드-------------
