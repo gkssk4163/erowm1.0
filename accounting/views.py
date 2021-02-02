@@ -2148,7 +2148,7 @@ def print_budget_settlement(request, budget_type):
         paragraph__subsection__year = year,
         paragraph__subsection__institution = business.type3,
         paragraph__subsection__type = filter_type
-    ).annotate(
+    ).exclude(code=0).annotate(
         total_budget=Coalesce(Sum(Case(
             When(budget__business = business, then=Case(When(budget__year = year, then=Case(When(budget__type = filter_budget_type, then='budget__price'))))))), 0))
     if budget_type == "revenue":
@@ -2156,7 +2156,7 @@ def print_budget_settlement(request, budget_type):
             paragraph__subsection__year = year,
             paragraph__subsection__institution = business.type3, 
             paragraph__subsection__type = filter_type
-        ).annotate(
+        ).exclude(code=0).annotate(
             total_sum=Coalesce(Sum(Case(
                 When(transaction__business = business, then=Case(
                 When(transaction__Bkdate__gte = start_date, then=Case(
@@ -2166,7 +2166,7 @@ def print_budget_settlement(request, budget_type):
             paragraph__subsection__year = year,
             paragraph__subsection__institution = business.type3,
             paragraph__subsection__type = filter_type
-        ).annotate(
+        ).exclude(code=0).annotate(
             total_sum=Coalesce(Sum(Case(
                 When(transaction__business = business, then=Case(
                 When(transaction__Bkdate__gte = start_date, then=Case(
@@ -2215,7 +2215,7 @@ def print_budget_settlement2(request, budget_type):
         paragraph__subsection__year = sessionInfo['year'],
         paragraph__subsection__institution = business.type3,
         paragraph__subsection__type = filter_type
-    ).annotate(
+    ).exclude(code=0).annotate(
         total_budget=Coalesce(Sum(Case(
             When(budget__business = business, then=Case(When(budget__year = sessionInfo['year'], then=Case(When(budget__type = filter_budget_type, then='budget__price'))))))), 0)).exclude(code=0)
     if budget_type == "revenue":
@@ -2223,7 +2223,7 @@ def print_budget_settlement2(request, budget_type):
             paragraph__subsection__year = sessionInfo['year'],
             paragraph__subsection__institution = business.type3,
             paragraph__subsection__type = filter_type
-        ).annotate(
+        ).exclude(code=0).annotate(
             total_sum=Coalesce(Sum(Case(
                 When(transaction__business = business, then=Case(
                 When(transaction__Bkdate__gte = start_date, then=Case(
@@ -2242,7 +2242,7 @@ def print_budget_settlement2(request, budget_type):
             paragraph__subsection__year = sessionInfo['year'],
             paragraph__subsection__institution = business.type3,
             paragraph__subsection__type = filter_type
-        ).annotate(
+        ).exclude(code=0).annotate(
             total_sum=Coalesce(Sum(Case(
                 When(transaction__business = business, then=Case(
                 When(transaction__Bkdate__gte = start_date, then=Case(
