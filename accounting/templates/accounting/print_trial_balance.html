@@ -1,5 +1,6 @@
 {% extends 'accounting/print_base.html' %}
 {% load humanize %}
+{% load mathfilters %}
 
 {% block content %}
 {% for list in itemList %}
@@ -31,7 +32,23 @@
 				<td class="text-right">{% if item.paragraph.subsection.type == "지출" %}{{ item.cumulative_expenditure|intcomma }}{% endif %}</td>
 			</tr>
 			{% endfor %}
-		</tbody>
+        </tbody>
+        <tfoot>
+            <tr>
+                <th class="text-right">{{ item_list.cumulative_income_total|intcomma }}</th>
+                <th class="text-right">{{ item_list.income_total|intcomma }}</th>
+                <th>합계</th>
+                <th class="text-right">{{ item_list.expenditure_total|intcomma }}</th>
+                <th class="text-right">{{ item_list.cumulative_expenditure_total|intcomma }}</th>
+            </tr>
+            <tr>
+                <th class="text-right">{{ item_list.cumulative_income_total|sub:item_list.cumulative_expenditure_total|intcomma }}</th>
+                <th class="text-right">{{ item_list.income_total|sub:item_list.expenditure_total|intcomma }}</th>
+                <th></th>
+                <th></th>
+                <th></th>
+            </tr>
+        </tfoot>
 	</table>
 </div>
 {% endfor %}

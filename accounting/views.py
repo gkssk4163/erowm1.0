@@ -3081,41 +3081,75 @@ def print_trial_balance(request):
         end_date = datetime.datetime.strptime(str(year2)+'-'+str(month2)+'-01', '%Y-%m-%d') + relativedelta(months=1)
 
         item_list = Item.objects.filter(
-                paragraph__subsection__year = sessionInfo['year'],
-                paragraph__subsection__institution = business.type3
-            ).annotate(cumulative_income=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = sessionInfo['start_date'], then=Case(
-                When(transaction__Bkdate__lt = end_date, then=Case(
-                When(transaction__Bkinput__isnull = False, then='transaction__Bkinput'))))))))), 0)
-            ).order_by('paragraph__subsection__type', 'paragraph__subsection__code', 'paragraph__code', 'code').exclude(code=0)
+            paragraph__subsection__year = sessionInfo['year'],
+            paragraph__subsection__institution = business.type3
+        ).order_by('paragraph__subsection__type', 'paragraph__subsection__code', 'paragraph__code', 'code').exclude(code=0)
 
         for idx, item in enumerate(item_list):
-            item_list2 = Item.objects.filter(pk=item.pk
-            ).annotate(income=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = start_date, then=Case(
-                When(transaction__Bkdate__lt = end_date, then=Case(
-                When(transaction__Bkinput__isnull = False, then='transaction__Bkinput'))))))))), 0))
-            item_list3 = Item.objects.filter(pk=item.pk
-            ).annotate(expenditure=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = start_date, then=Case(
-                When(transaction__Bkdate__lt = end_date, then=Case(
-                When(transaction__Bkoutput__isnull = False, then='transaction__Bkoutput'))))))))), 0))
-            item_list4 = Item.objects.filter(pk=item.pk
-            ).annotate(cumulative_expenditure=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = sessionInfo['start_date'], then=Case(
-                When(transaction__Bkdate__lt = end_date, then=Case(
-                When(transaction__Bkoutput__isnull = False, then='transaction__Bkoutput'))))))))), 0))
+            # 수입누계
+            item_list[idx].cumulative_income = Transaction.objects.filter(
+                business = business, item = item.pk,
+                Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date,
+            ).aggregate(cumulative_income=Coalesce(Sum('Bkinput'),0))['cumulative_income']
 
-            item_list[idx].income = item_list2[0].income
-            item_list[idx].expenditure = item_list3[0].expenditure
-            item_list[idx].cumulative_expenditure = item_list4[0].cumulative_expenditure
+            # 수입금액
+            item_list[idx].income = Transaction.objects.filter(
+                business = business, item = item.pk,
+                Bkdate__gte = start_date, Bkdate__lt = end_date,
+            ).aggregate(income=Coalesce(Sum('Bkinput'),0))['income']
+
+            # 지출금액
+            item_list[idx].expenditure = Transaction.objects.filter(
+                business = business, item = item.pk,
+                Bkdate__gte = start_date, Bkdate__lt = end_date,
+            ).aggregate(expenditure=Coalesce(Sum('Bkoutput'),0))['expenditure']
+
+            # 수입누계
+            item_list[idx].cumulative_expenditure = Transaction.objects.filter(
+                business = business, item = item.pk,
+                Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date,
+            ).aggregate(cumulative_expenditure=Coalesce(Sum('Bkoutput'),0))['cumulative_expenditure']
+
+        # 수입누계 총합
+        # 년도 정보는 원래 안들어가는 것이 맞으나,
+        # 거래내역 관항목이 전년도로 잘못등록된 경우로 인해 합계가 다르게 나와서 임시로 추가해 둠
+        item_list.cumulative_income_total = Transaction.objects.filter(
+            business = business, item__paragraph__subsection__type = "수입",
+            item__paragraph__subsection__year = sessionInfo['year'],    # 원래 없어도되는 조회조건
+            Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date,
+        ).exclude(item__code = 0).aggregate(
+            cumulative_income_total=Coalesce(Sum('Bkinput'),0)
+        )['cumulative_income_total']
+
+        # 수입금액 총합
+        item_list.income_total = Transaction.objects.filter(
+            business = business, item__paragraph__subsection__type = "수입",
+            item__paragraph__subsection__year = sessionInfo['year'],    # 원래 없어도되는 조회조건
+            Bkdate__gte = start_date, Bkdate__lt = end_date,
+        ).exclude(item__code = 0).aggregate(
+            income_total=Coalesce(Sum('Bkinput'),0)
+        )['income_total']
+
+        # 지출금액 총합
+        item_list.expenditure_total = Transaction.objects.filter(
+            business = business, item__paragraph__subsection__type = "지출",
+            item__paragraph__subsection__year = sessionInfo['year'],    # 원래 없어도되는 조회조건
+            Bkdate__gte = start_date, Bkdate__lt = end_date,
+        ).exclude(item__code = 0).aggregate(
+            expenditure_total=Coalesce(Sum('Bkoutput'),0)
+        )['expenditure_total']
+
+        # 지출누계 총합
+        item_list.cumulative_expenditure_total = Transaction.objects.filter(
+            business = business, item__paragraph__subsection__type = "지출",
+            item__paragraph__subsection__year = sessionInfo['year'],    # 원래 없어도되는 조회조건
+            Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date,
+        ).exclude(item__code = 0).aggregate(
+            cumulative_expenditure_total=Coalesce(Sum('Bkoutput'),0)
+        )['cumulative_expenditure_total']
 
         itemList = []
-        item_paginator = Paginator(item_list, 45)
+        item_paginator = Paginator(item_list, 40)
         for item_page in range(1, item_paginator.num_pages+1):
             itemList.append(item_paginator.page(item_page))
 
