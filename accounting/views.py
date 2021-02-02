@@ -1995,15 +1995,10 @@ def print_annual_trial_balance(request):
 
         sessionInfo = session_info(str(year), business.session_month, business.session_month)
 
+        # 당해년도 목(Item) 목록
         item_list = Item.objects.filter(
-                paragraph__subsection__year = sessionInfo['year'],
-                paragraph__subsection__institution = business.type3
-            ).annotate(total_settlement=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = sessionInfo['start_date'], then=Case(
-                When(transaction__Bkdate__lt = sessionInfo['end_date'], then=Case(
-                When(transaction__Bkinput = 0, then='transaction__Bkoutput'),
-                default='transaction__Bkinput')))))))), 0)
+            paragraph__subsection__year = sessionInfo['year'],
+            paragraph__subsection__institution = business.type3
         ).order_by('paragraph__subsection__type', 'paragraph__subsection__code', 'paragraph__code', 'code').exclude(code=0)
 
         ym_list = []
@@ -2011,33 +2006,87 @@ def print_annual_trial_balance(request):
             date = sessionInfo['start_date'] + relativedelta(months=x)
             ym_list.append({'y': DateFormat(date).format("Y"), 'm': DateFormat(date).format("m")})
 
+        input_budget_total = 0      # 세입예산합계
+        output_budget_total = 0     # 세출예산합계
+        input_settlement_total = 0  # 세입결산합계
+        output_settlement_total = 0 # 세출결산합계
         for idx, item in enumerate(item_list):
-            ms_list = []
+            # 예산액 (본예산을 기준으로 함)
+            try :
+                item_list[idx].budget_amount = Budget.objects.filter(
+                    Q(type="revenue")|Q(type="expenditure")
+                ).get(business=business, year=year, item = item.pk).price
+                if item.paragraph.subsection.type == "수입" :
+                    input_budget_total += item_list[idx].budget_amount
+                elif item.paragraph.subsection.type == "지출" :
+                    output_budget_total += item_list[idx].budget_amount
+            except :
+                item_list[idx].budget_amount = 0
 
+            # 결산액
+            settlement = Transaction.objects.filter(
+                business = business, Bkdate__gte = sessionInfo['start_date'],
+                Bkdate__lt = sessionInfo['end_date'], item = item.pk
+            ).aggregate(
+                input=Coalesce(Sum('Bkinput'),0),
+                output=Coalesce(Sum('Bkoutput'),0)
+            )
+            if item.paragraph.subsection.type == "수입" :
+                item_list[idx].settlement_amount = settlement['input']
+                input_settlement_total += item_list[idx].settlement_amount
+            elif item.paragraph.subsection.type == "지출" :
+                item_list[idx].settlement_amount = settlement['output']
+                output_settlement_total += item_list[idx].settlement_amount
+
+            # 월별 시산액
+            ms_list = []
             for ym in ym_list:
                 start_date = datetime.datetime.strptime(ym['y']+'-'+ym['m']+'-01', '%Y-%m-%d')
                 end_date = start_date + relativedelta(months=1)
 
-                item_list3 = Item.objects.filter(pk=item.pk
-                ).annotate(income=Coalesce(Sum(Case(
-                    When(transaction__business = business, then=Case(
-                    When(transaction__Bkdate__gte = start_date, then=Case(
-                    When(transaction__Bkdate__lt = end_date, then=Case(
-                    When(transaction__Bkinput = 0, then='transaction__Bkoutput'),
-                    default='transaction__Bkinput')))))))), 0))
-
-                ms_list.append(item_list3[0].income)
-
+                settlement = Transaction.objects.filter(
+                    business = business, Bkdate__gte = start_date,
+                    Bkdate__lt = end_date, item = item.pk
+                ).aggregate(
+                    input=Coalesce(Sum('Bkinput'),0),
+                    output=Coalesce(Sum('Bkoutput'),0)
+                )
+                if item.paragraph.subsection.type == "수입" :
+                    ms_list.append(settlement['input'])
+                elif item.paragraph.subsection.type == "지출" :
+                    ms_list.append(settlement['output'])
+                else :
+                    ms_list.append(0)
             item_list[idx].ms_list = ms_list
 
-        itemList = []
-        item_paginator = Paginator(item_list, 30)
-        for item_page in range(1, item_paginator.num_pages+1):
-            itemList.append(item_paginator.page(item_page))
+        item_list.input_budget_total = input_budget_total
+        item_list.output_budget_total = output_budget_total
+        item_list.input_settlement_total = input_settlement_total
+        item_list.output_settlement_total = output_settlement_total
+
+        # 월별 시산액 합계
+        month_total_list = []
+        for ym in ym_list:
+            start_date = datetime.datetime.strptime(ym['y']+'-'+ym['m']+'-01', '%Y-%m-%d')
+            end_date = start_date + relativedelta(months=1)
+
+            # 세입 월별시산액 합계 (code=0은 제외)
+            input_month_total = Transaction.objects.filter(
+                business = business, item__paragraph__subsection__year = year,
+                Bkdate__gte = start_date, Bkdate__lt = end_date,
+                item__paragraph__subsection__type = "수입"
+            ).exclude(item__code=0).aggregate(input=Coalesce(Sum('Bkinput'),0))['input']
+            output_month_total = Transaction.objects.filter(
+                business = business, item__paragraph__subsection__year = year,
+                Bkdate__gte = start_date, Bkdate__lt = end_date,
+                item__paragraph__subsection__type = "지출"
+            ).exclude(item__code=0).aggregate(output=Coalesce(Sum('Bkoutput'),0))['output']
+            month_total_list.append({'input': input_month_total, 'output': output_month_total})
 
     return render(request, 'accounting/print_annual_trial_balance.html', {
         'settlement_management': 'active', 'annual_trial_balance_page': 'active',
-        'ym_list': ym_list, 'year': year, 'item_list': item_list, 'itemList': itemList
+        'ym_list': ym_list, 'year': year, 'item_list': item_list,
+        'month_total_list': month_total_list
     })
 
 @login_required(login_url='/')

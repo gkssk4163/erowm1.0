@@ -1,21 +1,25 @@
-{% extends 'accounting/print_base2.html' %}
+{% extends 'accounting/print_landscape_base.html' %}
 {% load humanize %}
+{% load mathfilters %}
 
 {% block content %}
-{% for list in itemList %}
 <div class="page">
 	<center><h1>월별시산표</h1></center>
-	<div style="float:left;width:50%;">
-		<p style="margin:2px 2px">{{ year }}년</p>
-	</div>
-	<div style="float:left;width:50%;text-align:right">
-		<p style="margin:2px 2px">(단위 : 원)</p>
-	</div>
-	<table width="100%" height="100%" style="border-collapse:collapse;" border="1" cellpadding="2" class="th-nowrap td-nowrap">
+    <table width="100%" height="100%" style="border-collapse:collapse;font-size: 9px;" border="1" cellpadding="2" class="th-nowrap td-nowrap">
+        <caption style="caption-side: top;">
+            <div>
+                <span style="float: left;">{{ year }}년</span>
+                <span style="float: right;">( 단위 : 원 )</span>
+            </div>
+        </caption>
 		<thead>
 			<tr>
+				<th>구분</th>
 				<th>코드</th>
 				<th>계정명</th>
+				<th>예산액</th>
+				<th>결산액</th>
+				<th>비율</th>
 				{% for ym in ym_list %}
 				<th>{{ ym.y }}년 {{ ym.m }}월</th>
 				{% endfor %}
@@ -23,18 +27,95 @@
 			</tr>
 		</thead>
 		<tbody>
-			{% for item in list %}
+			{% for item in item_list %}
 			<tr>
+                <td class="tdType">{% if item.paragraph.subsection.type == "수입" %}세입{% elif item.paragraph.subsection.type == "지출" %}세출{% endif %}</td>
 				<td style="white-space:nowrap;">{{ item.paragraph.subsection.code }}{{ item.paragraph.code }}{{ item.code }}</td>
 				<td style="white-space:nowrap;">{{ item.context }}</td>
+                <td style="text-align: right;">{{ item.budget_amount|intcomma }}</td>
+                <td style="text-align: right;">{{ item.settlement_amount|intcomma }}</td>
+                <td style="text-align: right;">
+                    {% if item.budget_amount != 0 %}
+                        {{ item.settlement_amount|mul:100|intdiv:item.budget_amount }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </td>
 				{% for ms in item.ms_list %}
-				<td class="text-right">{{ ms|intcomma }}</td>
+				<td class="monthSum{{ forloop.counter }}" style="text-align: right;">{{ ms|intcomma }}</td>
 				{% endfor %}
-				<td class="text-right">{{ item.total_settlement|intcomma }}</td>
+				<td style="text-align: right;">{{ item.settlement_amount|intcomma }}</td>
 			</tr>
 			{% endfor %}
-		</tbody>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3">세입합계</td>
+                <td style="text-align: right;">{{ item_list.input_budget_total|intcomma }}</td>
+                <td style="text-align: right;">{{ item_list.input_settlement_total|intcomma }}</td>
+                <td style="text-align: right;">
+                    {% if item_list.input_budget_total != 0 %}
+                        {{ item_list.input_settlement_total|mul:100|intdiv:item_list.input_budget_total }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </td>
+                {% for month_total in month_total_list %}
+                <td style="text-align: right;">{{ month_total.input|intcomma }}</td>
+                {% endfor %}
+                <td style="text-align: right;">{{ item_list.input_settlement_total|intcomma }}</td>
+            </tr>
+            <tr>
+                <td colspan="3">세출합계</td>
+                <td style="text-align: right;">{{ item_list.output_budget_total|intcomma }}</td>
+                <td style="text-align: right;">{{ item_list.output_settlement_total|intcomma }}</td>
+                <td style="text-align: right;">
+                    {% if item_list.output_budget_total != 0 %}
+                        {{ item_list.output_settlement_total|mul:100|intdiv:item_list.output_budget_total }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </td>
+                {% for month_total in month_total_list %}
+                <td style="text-align: right;">{{ month_total.output|intcomma }}</td>
+                {% endfor %}
+                <td style="text-align: right;">{{ item_list.output_settlement_total|intcomma }}</td>
+            </tr>
+            <tr>
+                <td colspan="3">잔액(세입합계-세출합계)</td>
+                <td style="text-align: right;">{{ item_list.input_budget_total|sub:item_list.output_budget_total|intcomma }}</td>
+                <td style="text-align: right;">{{ item_list.input_settlement_total|sub:item_list.output_settlement_total|intcomma }}</td>
+                <td style="text-align: right;">
+                    {% if item_list.input_budget_total|sub:item_list.output_budget_total != 0 %}
+                        {{ item_list.input_settlement_total|sub:item_list.output_settlement_total|mul:100|intdiv:item_list.input_budget_total|sub:item_list.output_budget_total }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </td>
+                {% for month_total in month_total_list %}
+                <td style="text-align: right;">{{ month_total.input|sub:month_total.output|intcomma }}</td>
+                {% endfor %}
+                <td style="text-align: right;">{{ item_list.input_settlement_total|sub:item_list.output_settlement_total|intcomma }}</td>
+            </tr>
+        </tfoot>
 	</table>
 </div>
-{% endfor %}
+
+<script>
+    $(function() {
+        getRowspan("tdType");
+    });
+
+    function getRowspan(className) {
+        $("." + className).each(function() {
+            var rows = $("." + className + ":contains('" + $(this).text() + "')");
+            if (rows.length > 1) {
+                rows.eq(0).attr("rowspan", rows.length);
+                rows.not(":eq(0)").remove();
+            }
+        });
+    }
+
+    function getSum() {}
+</script>
 {% endblock %}

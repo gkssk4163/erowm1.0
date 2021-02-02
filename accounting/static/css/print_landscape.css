@@ -1,0 +1,57 @@
+html, body { height:100%; margin:0px; }
+
+body {
+	margin: 0;
+	padding: 0;
+	background-color: #FAFAFA;
+}
+
+* {
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+}
+
+.no-print-page {
+    width: 29.7cm;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+.page {
+	position: relative;
+    min-width: 29.7cm;
+    max-width: 35.0cm;
+	min-height: 20.6cm;
+	padding: 1cm;
+	margin: 1cm auto;
+	border: 1px #D3D3D3 solid;
+	border-radius: 5px;
+	background: white;
+	box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+@media print {
+    @page {
+        size: landscape;
+        margin: 1.5cm;
+    }
+	.page {
+		margin: 0;
+		border: initial;
+        width: initial;
+        min-height: initial;
+        box-shadow: initial;
+        background: initial;
+		page-break-after: always;
+	}
+	.no-print-page {
+        display: none;
+    }
+}
+
+.th-nowrap th{
+	white-space: nowrap;
+}
+.td-nowrap td{
+	white-space: nowrap;
+}

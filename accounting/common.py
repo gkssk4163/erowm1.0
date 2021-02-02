@@ -13,7 +13,7 @@ def session_info(selected_year, selected_month, session_month):
         session_year = str(int(selected_year)-1)
 
     start_date = datetime.datetime.strptime(session_year+"-"+session_month+"-01", "%Y-%m-%d")
-    end_date = datetime.datetime.strptime(session_year+"-"+session_month+"-01", "%Y-%m-%d")
+    end_date = datetime.datetime.strptime(str(int(session_year)+1)+"-"+session_month+"-01", "%Y-%m-%d")
 
     return {'start_date': start_date,
             'end_date' : end_date,

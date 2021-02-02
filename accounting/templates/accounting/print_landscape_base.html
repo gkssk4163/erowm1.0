@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>인쇄페이지</title>
+        <link rel="stylesheet" href="{% static 'css/print_landscape.css' %}">
+        
+        <!-- jquery -->
+        <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+
+        <!-- main.js -->
+        <script src="{% static 'js/main.js' %}"></script>
+        
+	</head>
+	<body>
+		<script type="text/javascript">
+			function printPage() {
+				window.print();
+			}
+		</script>
+        <div class="no-print-page">
+            <br>
+            <center>
+                <input type='button' value='인쇄하기' class="btnblue" onClick="printPage();">
+                <input type='button' value='닫기' class="btnblue" onclick='top.close();'>
+            </center>
+        </div>
+
+        {% block content %}
+        {% endblock %}
+
+        <div class="no-print-page">
+            <center>
+                <input type='button' value='인쇄하기' class="btnblue" onClick="printPage();">
+                <input type='button' value='닫기' class="btnblue" onclick='top.close();'>
+            </center>
+            <br>
+        </div>
+	</body>
+</html>
