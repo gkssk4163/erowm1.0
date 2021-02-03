@@ -1,0 +1,128 @@
+{% load humanize %}
+{% load mathfilters %}
+
+<div class="page" style="font-size: 13px;">
+    <center>
+        <span style="font-size: 30px;font-weight: bold;">세입·세출결산 총괄 설명</span>
+    </center>
+    
+    <span style="word-wrap:break-word;white-space:pre-wrap;white-space:-moz-pre-wrap;white-space:-o-pre-wrap;word-break:break-all;">
+
+
+
+        ○ 세입 예산 000 원에 대하여 수납액은 000 원이며
+
+        ○ 세출 예산 000 원에 대하여 지출액은 000 원이며
+
+        ○ 그 차인잔액은 000 원으로서 보조금집행잔액 000 원이 포함되어 있으며 이를 공제한 순이월금은 000 원이다.
+
+        ○ 세입세출결산 총괄
+        <table class="table" style="margin-left: 30px;width: 90%;">
+            <thead>
+            <tr>
+                <th>수납액</th>
+                <th>지출액</th>
+                <th>차인잔액</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>원</td>
+                <td>원</td>
+                <td>원</td>
+            </tr>
+            </tbody>
+        </table>
+
+        ○ 세입세출외 적립금 결산보고
+        <table class="table" style="margin-left: 30px;width: 90%;">
+            <colgroup>
+                <col width="30%">
+                <col width="18%">
+                <col width="18%">
+                <col width="16%">
+                <col width="18%">
+            </colgroup>
+            <tr>
+                <th rowspan="4">구분</th>
+                <th>예금주</th>
+                <td colspan="3"></td>
+            </tr>
+            <tr>
+                <th>적립기관</th>
+                <td colspan="3"></td>
+            </tr>
+            <tr>
+                <th>적립기간</th>
+                <td colspan="3"></td>
+            </tr>
+            <tr>
+                <th>전 회계연도 적립액(A)</th>
+                <th>당 회계연도 적립액(B)</th>
+                <th>인출액(C)</th>
+                <th>누적 적립액(A+B-C)</th>
+            </tr>
+            <tr>
+                <th>일반적립금</th>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <th>퇴직적립금</th>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>
+    </span>
+</div>
+
+<script>
+    $(function() {
+        getBorrowings();
+        getReserve();
+    });
+
+    function getBorrowings() {
+        console.log("bbb");
+        $.ajax({
+			type: "post"
+			,url: "{% url 'budget_spi_total' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'year': "{{ year }}"
+                ,'type': "revenue"
+                ,'context': "차입금"
+            }
+			,dataType: "json"
+			,success: function(data) {
+                $("#span_borrowings").html(data.total.comma());
+			}
+			,error: function(xhr, status, message) {
+			}
+		});
+    }
+
+    function getReserve() {
+        console.log("bbb");
+        $.ajax({
+			type: "post"
+			,url: "{% url 'budget_spi_total' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'year': "{{ year }}"
+                ,'type': "expenditure"
+                ,'context': "예비비"
+            }
+			,dataType: "json"
+			,success: function(data) {
+                $("#span_reserve").html(data.total.comma());
+			}
+			,error: function(xhr, status, message) {
+			}
+		});
+    }
+</script>

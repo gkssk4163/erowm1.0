@@ -29,6 +29,10 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import json
 import requests
 
+from accounting.common import getLatestBudgetType
+from accounting.common import getTransactionSumByItem, getTransactionSumBySubsection, getTransactionSumByName
+from accounting.common import getBudgetSumBySubsection
+
 # Create your views here.
 
 ACCOUNTANT = 1
@@ -226,10 +230,7 @@ def home(request):
         filter_type = "지출"
         budget_type = "expenditure"
 
-    try:
-        filter_budget_type = Budget.objects.filter(business=business, year=sessionInfo['year'], type__icontains=budget_type).order_by('type').last().type
-    except:
-        filter_budget_type = budget_type
+    filter_budget_type = getLatestBudgetType(business, year, budget_type)
 
     budget_list = Item.objects.filter(
         paragraph__subsection__year = sessionInfo['year'],
@@ -1790,11 +1791,7 @@ def budget_settlement(request, budget_type):
     elif budget_type == "expenditure":
         filter_type = "지출"
 
-    try:
-        filter_budget_type = Budget.objects.filter(business=business, year=year, type__icontains=budget_type).order_by('type').last().type
-    except:
-        filter_budget_type = budget_type
-    print(sessionInfo['year'])
+    filter_budget_type = getLatestBudgetType(business, year, budget_type)
 
     subsection_list = Subsection.objects.filter(year=sessionInfo['year'], institution=business.type3, type=filter_type).annotate(count=Count('paragraph__item')).exclude(count=0).exclude(code=0)
     paragraph_list = Paragraph.objects.filter(subsection__year=sessionInfo['year'], subsection__institution=business.type3, subsection__type=filter_type).annotate(count=Count('item')).exclude(count=0).exclude(code=0)
@@ -1889,45 +1886,37 @@ def trial_balance(request):
         else:
             end_date = datetime.datetime.strptime(str(year2+1)+'-'+str(month2-11)+'-01', '%Y-%m-%d')
 
-        """
-        item_list = Item.objects.filter(paragraph__subsection__institution = business.type3
-            ).annotate(total_budget=Coalesce(Sum(Case(
-                When(budget__business = business, then=Case(When(budget__year = year, then='budget__price'))))), 0))
-        """
-
         item_list = Item.objects.filter(
-                paragraph__subsection__year = sessionInfo['year'],
-                paragraph__subsection__institution = business.type3
-            ).annotate(cumulative_income=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = sessionInfo['start_date'], then=Case(
-                When(transaction__Bkdate__lt = end_date, then=Case(
-                When(transaction__Bkinput__isnull = False, then='transaction__Bkinput'))))))))), 0)
-            ).order_by('paragraph__subsection__type', 'paragraph__subsection__code', 'paragraph__code', 'code').exclude(code=0)
+            paragraph__subsection__year=sessionInfo['year'],
+            paragraph__subsection__institution=business.type3
+        ).order_by('paragraph__subsection__type', 'paragraph__subsection__code', 'paragraph__code', 'code'
+        ).exclude(code=0)
 
+        item_list.cumulative_income_total = 0  # 수입누계 총합
+        item_list.income_total = 0  # 수입금액 총합
+        item_list.expenditure_total = 0  # 지출금액 총합
+        item_list.cumulative_expenditure_total = 0  # 지출누계 총합
         for idx, item in enumerate(item_list):
-            item_list2 = Item.objects.filter(pk=item.pk
-            ).annotate(income=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = start_date, then=Case(
-                When(transaction__Bkdate__lt = end_date, then=Case(
-                When(transaction__Bkinput__isnull = False, then='transaction__Bkinput'))))))))), 0))
-            item_list3 = Item.objects.filter(pk=item.pk
-            ).annotate(expenditure=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = start_date, then=Case(
-                When(transaction__Bkdate__lt = end_date, then=Case(
-                When(transaction__Bkoutput__isnull = False, then='transaction__Bkoutput'))))))))), 0))
-            item_list4 = Item.objects.filter(pk=item.pk
-            ).annotate(cumulative_expenditure=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = sessionInfo['start_date'], then=Case(
-                When(transaction__Bkdate__lt = end_date, then=Case(
-                When(transaction__Bkoutput__isnull = False, then='transaction__Bkoutput'))))))))), 0))
+            if item.paragraph.subsection.type == '수입':
+                # 목별 수입누계
+                item_list[idx].cumulative_income = getTransactionSumByItem(
+                    business, item, sessionInfo['start_date'], end_date)
+                item_list.cumulative_income_total += item_list[idx].cumulative_income
 
-            item_list[idx].income = item_list2[0].income
-            item_list[idx].expenditure = item_list3[0].expenditure
-            item_list[idx].cumulative_expenditure = item_list4[0].cumulative_expenditure
+                # 목별 수입금액
+                item_list[idx].income = getTransactionSumByItem(
+                    business, item, start_date, end_date)
+                item_list.income_total += item_list[idx].income
+            elif item.paragraph.subsection.type == '지출':
+                # 목별 지출금액
+                item_list[idx].expenditure = getTransactionSumByItem(
+                    business, item, start_date, end_date)
+                item_list.expenditure_total += item_list[idx].expenditure
+
+                # 목별 수입누계
+                item_list[idx].cumulative_expenditure = getTransactionSumByItem(
+                    business, item, sessionInfo['start_date'], end_date)
+                item_list.cumulative_expenditure_total += item_list[idx].cumulative_expenditure
 
     return render(request, 'accounting/trial_balance.html', {
         'settlement_management': 'active', 'trial_balance_page': 'active',
@@ -1946,45 +1935,102 @@ def annual_trial_balance(request):
 
         sessionInfo = session_info(str(year), business.session_month, business.session_month)
 
+        # 당해년도 목(Item) 목록
         item_list = Item.objects.filter(
-                paragraph__subsection__year = sessionInfo['year'],
-                paragraph__subsection__institution = business.type3
-            ).annotate(total_settlement=Coalesce(Sum(Case(
-                When(transaction__business = business, then=Case(
-                When(transaction__Bkdate__gte = sessionInfo['start_date'], then=Case(
-                When(transaction__Bkdate__lt = sessionInfo['end_date'], then=Case(
-                When(transaction__Bkinput = 0, then='transaction__Bkoutput'),
-                default='transaction__Bkinput')))))))), 0)
-        ).order_by('paragraph__subsection__type', 'paragraph__subsection__code', 'paragraph__code', 'code').exclude(code=0)
+            paragraph__subsection__year=sessionInfo['year'],
+            paragraph__subsection__institution=business.type3
+        ).order_by('paragraph__subsection__type', 'paragraph__subsection__code', 'paragraph__code', 'code').exclude(
+            code=0)
 
         ym_list = []
         for x in range(0, 12):
             date = sessionInfo['start_date'] + relativedelta(months=x)
             ym_list.append({'y': DateFormat(date).format("Y"), 'm': DateFormat(date).format("m")})
 
+        input_budget_total = 0  # 세입예산합계
+        output_budget_total = 0  # 세출예산합계
+        input_settlement_total = 0  # 세입결산합계
+        output_settlement_total = 0  # 세출결산합계
+        revenue_budget_type = getLatestBudgetType(business, year, "revenue")
+        expenditure_budget_type = getLatestBudgetType(business, year, "expenditure")
         for idx, item in enumerate(item_list):
-            ms_list = []
+            # 예산액 (본예산을 기준으로 함)
+            try:
+                filter_budget_type = getLatestBudgetType(business, year, "both")
+                item_list[idx].budget_amount = Budget.objects.filter(
+                    Q(type=revenue_budget_type) | Q(type=expenditure_budget_type)
+                ).get(business=business, year=year, item=item.pk).price
+                if item.paragraph.subsection.type == "수입":
+                    input_budget_total += item_list[idx].budget_amount
+                elif item.paragraph.subsection.type == "지출":
+                    output_budget_total += item_list[idx].budget_amount
+            except:
+                item_list[idx].budget_amount = 0
 
+            # 결산액
+            settlement = Transaction.objects.filter(
+                business=business, Bkdate__gte=sessionInfo['start_date'],
+                Bkdate__lt=sessionInfo['end_date'], item=item.pk
+            ).aggregate(
+                input=Coalesce(Sum('Bkinput'), 0),
+                output=Coalesce(Sum('Bkoutput'), 0)
+            )
+            if item.paragraph.subsection.type == "수입":
+                item_list[idx].settlement_amount = settlement['input']
+                input_settlement_total += item_list[idx].settlement_amount
+            elif item.paragraph.subsection.type == "지출":
+                item_list[idx].settlement_amount = settlement['output']
+                output_settlement_total += item_list[idx].settlement_amount
+
+            # 월별 시산액
+            ms_list = []
             for ym in ym_list:
-                start_date = datetime.datetime.strptime(ym['y']+'-'+ym['m']+'-01', '%Y-%m-%d')
+                start_date = datetime.datetime.strptime(ym['y'] + '-' + ym['m'] + '-01', '%Y-%m-%d')
                 end_date = start_date + relativedelta(months=1)
 
-                item_list3 = Item.objects.filter(pk=item.pk
-                ).annotate(income=Coalesce(Sum(Case(
-                    When(transaction__business = business, then=Case(
-                    When(transaction__Bkdate__gte = start_date, then=Case(
-                    When(transaction__Bkdate__lt = end_date, then=Case(
-                    When(transaction__Bkinput = 0, then='transaction__Bkoutput'),
-                    default='transaction__Bkinput')))))))), 0))
-
-                ms_list.append(item_list3[0].income)
-
+                settlement = Transaction.objects.filter(
+                    business=business, Bkdate__gte=start_date,
+                    Bkdate__lt=end_date, item=item.pk
+                ).aggregate(
+                    input=Coalesce(Sum('Bkinput'), 0),
+                    output=Coalesce(Sum('Bkoutput'), 0)
+                )
+                if item.paragraph.subsection.type == "수입":
+                    ms_list.append(settlement['input'])
+                elif item.paragraph.subsection.type == "지출":
+                    ms_list.append(settlement['output'])
+                else:
+                    ms_list.append(0)
             item_list[idx].ms_list = ms_list
+
+        item_list.input_budget_total = input_budget_total
+        item_list.output_budget_total = output_budget_total
+        item_list.input_settlement_total = input_settlement_total
+        item_list.output_settlement_total = output_settlement_total
+
+        # 월별 시산액 합계
+        month_total_list = []
+        for ym in ym_list:
+            start_date = datetime.datetime.strptime(ym['y'] + '-' + ym['m'] + '-01', '%Y-%m-%d')
+            end_date = start_date + relativedelta(months=1)
+
+            # 세입 월별시산액 합계 (code=0은 제외)
+            input_month_total = Transaction.objects.filter(
+                business=business, item__paragraph__subsection__year=year,
+                Bkdate__gte=start_date, Bkdate__lt=end_date,
+                item__paragraph__subsection__type="수입"
+            ).exclude(item__code=0).aggregate(input=Coalesce(Sum('Bkinput'), 0))['input']
+            output_month_total = Transaction.objects.filter(
+                business=business, item__paragraph__subsection__year=year,
+                Bkdate__gte=start_date, Bkdate__lt=end_date,
+                item__paragraph__subsection__type="지출"
+            ).exclude(item__code=0).aggregate(output=Coalesce(Sum('Bkoutput'), 0))['output']
+            month_total_list.append({'input': input_month_total, 'output': output_month_total})
 
     return render(request, 'accounting/annual_trial_balance.html', {
         'settlement_management': 'active', 'annual_trial_balance_page': 'active',
         'ym_list': ym_list, 'year_range': range(cyear+1, 1999, -1),'year': year,
-        'item_list': item_list
+        'item_list': item_list, 'month_total_list': month_total_list
     })
 
 @login_required(login_url='/')
@@ -2010,11 +2056,13 @@ def print_annual_trial_balance(request):
         output_budget_total = 0     # 세출예산합계
         input_settlement_total = 0  # 세입결산합계
         output_settlement_total = 0 # 세출결산합계
+        revenue_budget_type = getLatestBudgetType(business, year, "revenue")
+        expenditure_budget_type = getLatestBudgetType(business, year, "expenditure")
         for idx, item in enumerate(item_list):
             # 예산액 (본예산을 기준으로 함)
             try :
                 item_list[idx].budget_amount = Budget.objects.filter(
-                    Q(type="revenue")|Q(type="expenditure")
+                    Q(type=revenue_budget_type)|Q(type=expenditure_budget_type)
                 ).get(business=business, year=year, item = item.pk).price
                 if item.paragraph.subsection.type == "수입" :
                     input_budget_total += item_list[idx].budget_amount
@@ -2137,10 +2185,7 @@ def print_budget_settlement(request, budget_type):
     elif budget_type == "expenditure":
         filter_type = "지출"
 
-    try:
-        filter_budget_type = Budget.objects.filter(business=business, year=year, type__icontains=budget_type).order_by('type').last().type
-    except:
-        filter_budget_type = budget_type
+    filter_budget_type = getLatestBudgetType(business, year, budget_type)
 
     subsection_list = Subsection.objects.filter(year=year, institution=business.type3, type=filter_type).annotate(count=Count('paragraph__item')).exclude(count=0).exclude(code=0)
     paragraph_list = Paragraph.objects.filter(subsection__year=year, subsection__institution=business.type3, subsection__type=filter_type).annotate(count=Count('item')).exclude(count=0)
@@ -2179,7 +2224,12 @@ def print_budget_settlement(request, budget_type):
         total_sum += item_list[idx].total_sum
         total_difference += item_list[idx].total_difference
 
-    return render(request,'accounting/print_budget_settlement.html', {'settlement_management': 'active', 'master_login': request.session['master_login'], 'business': business, 'year': year, 'subsection_list': subsection_list, 'paragraph_list': paragraph_list, 'item_list': item_list, 'total_budget': total_budget, 'total_sum': total_sum, 'total_difference': total_difference, 'budget_type': budget_type})
+    return render(request,'accounting/print_budget_settlement.html', {
+        'settlement_management': 'active', 'master_login': request.session['master_login'],
+        'business': business, 'year': year, 'subsection_list': subsection_list,
+        'paragraph_list': paragraph_list, 'item_list': item_list,
+        'total_budget': total_budget, 'total_sum': total_sum,
+        'total_difference': total_difference, 'budget_type': budget_type})
 
 @login_required(login_url='/')
 def print_budget_settlement2(request, budget_type):
@@ -2204,10 +2254,7 @@ def print_budget_settlement2(request, budget_type):
     elif budget_type == "expenditure":
         filter_type = "지출"
 
-    try:
-        filter_budget_type = Budget.objects.filter(business=business, year=year, type__icontains=budget_type).order_by('type').last().type
-    except:
-        filter_budget_type = budget_type
+    filter_budget_type = getLatestBudgetType(business, year, budget_type)
 
     subsection_list = Subsection.objects.filter(year=sessionInfo['year'], institution=business.type3, type=filter_type).annotate(count=Count('paragraph__item')).exclude(count=0).exclude(code=0)
     paragraph_list = Paragraph.objects.filter(subsection__year=sessionInfo['year'], subsection__institution=business.type3, subsection__type=filter_type).annotate(count=Count('item')).exclude(count=0)
@@ -2827,10 +2874,7 @@ def monthly_print_all(request):
     revenue_total_sum = 0
     revenue_total_difference = 0
 
-    try:
-        filter_budget_type = Budget.objects.filter(business=business, year=year, type__icontains="revenue").order_by('type').last().type
-    except:
-        filter_budget_type = "revenue"
+    filter_budget_type = getLatestBudgetType(business, year, "revenue")
 
     revenue_subsection_list = Subsection.objects.filter(
         year=sessionInfo['year'], institution=business.type3, type="수입"
@@ -2867,10 +2911,7 @@ def monthly_print_all(request):
     expenditure_total_sum = 0
     expenditure_total_difference = 0
 
-    try:
-        filter_budget_type = Budget.objects.filter(business=business, year=year, type__icontains="expenditure").order_by('type').last().type
-    except:
-        filter_budget_type = "expenditure"
+    filter_budget_type = getLatestBudgetType(business, year, "expenditure")
 
     expenditure_subsection_list = Subsection.objects.filter(
         year=sessionInfo['year'], institution=business.type3, type="지출"
@@ -3085,68 +3126,31 @@ def print_trial_balance(request):
             paragraph__subsection__institution = business.type3
         ).order_by('paragraph__subsection__type', 'paragraph__subsection__code', 'paragraph__code', 'code').exclude(code=0)
 
+        item_list.cumulative_income_total = 0       # 수입누계 총합
+        item_list.income_total = 0                  # 수입금액 총합
+        item_list.expenditure_total = 0             # 지출금액 총합
+        item_list.cumulative_expenditure_total = 0  # 지출누계 총합
         for idx, item in enumerate(item_list):
-            # 수입누계
-            item_list[idx].cumulative_income = Transaction.objects.filter(
-                business = business, item = item.pk,
-                Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date,
-            ).aggregate(cumulative_income=Coalesce(Sum('Bkinput'),0))['cumulative_income']
+            if item.paragraph.subsection.type == '수입':
+                # 목별 수입누계
+                item_list[idx].cumulative_income = getTransactionSumByItem(
+                            business, item, sessionInfo['start_date'], end_date)
+                item_list.cumulative_income_total += item_list[idx].cumulative_income
 
-            # 수입금액
-            item_list[idx].income = Transaction.objects.filter(
-                business = business, item = item.pk,
-                Bkdate__gte = start_date, Bkdate__lt = end_date,
-            ).aggregate(income=Coalesce(Sum('Bkinput'),0))['income']
+                # 목별 수입금액
+                item_list[idx].income = getTransactionSumByItem(
+                                            business, item, start_date, end_date)
+                item_list.income_total += item_list[idx].income
+            elif item.paragraph.subsection.type == '지출':
+                # 목별 지출금액
+                item_list[idx].expenditure = getTransactionSumByItem(
+                                                business, item, start_date, end_date)
+                item_list.expenditure_total += item_list[idx].expenditure
 
-            # 지출금액
-            item_list[idx].expenditure = Transaction.objects.filter(
-                business = business, item = item.pk,
-                Bkdate__gte = start_date, Bkdate__lt = end_date,
-            ).aggregate(expenditure=Coalesce(Sum('Bkoutput'),0))['expenditure']
-
-            # 수입누계
-            item_list[idx].cumulative_expenditure = Transaction.objects.filter(
-                business = business, item = item.pk,
-                Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date,
-            ).aggregate(cumulative_expenditure=Coalesce(Sum('Bkoutput'),0))['cumulative_expenditure']
-
-        # 수입누계 총합
-        # 년도 정보는 원래 안들어가는 것이 맞으나,
-        # 거래내역 관항목이 전년도로 잘못등록된 경우로 인해 합계가 다르게 나와서 임시로 추가해 둠
-        item_list.cumulative_income_total = Transaction.objects.filter(
-            business = business, item__paragraph__subsection__type = "수입",
-            item__paragraph__subsection__year = sessionInfo['year'],    # 원래 없어도되는 조회조건
-            Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date,
-        ).exclude(item__code = 0).aggregate(
-            cumulative_income_total=Coalesce(Sum('Bkinput'),0)
-        )['cumulative_income_total']
-
-        # 수입금액 총합
-        item_list.income_total = Transaction.objects.filter(
-            business = business, item__paragraph__subsection__type = "수입",
-            item__paragraph__subsection__year = sessionInfo['year'],    # 원래 없어도되는 조회조건
-            Bkdate__gte = start_date, Bkdate__lt = end_date,
-        ).exclude(item__code = 0).aggregate(
-            income_total=Coalesce(Sum('Bkinput'),0)
-        )['income_total']
-
-        # 지출금액 총합
-        item_list.expenditure_total = Transaction.objects.filter(
-            business = business, item__paragraph__subsection__type = "지출",
-            item__paragraph__subsection__year = sessionInfo['year'],    # 원래 없어도되는 조회조건
-            Bkdate__gte = start_date, Bkdate__lt = end_date,
-        ).exclude(item__code = 0).aggregate(
-            expenditure_total=Coalesce(Sum('Bkoutput'),0)
-        )['expenditure_total']
-
-        # 지출누계 총합
-        item_list.cumulative_expenditure_total = Transaction.objects.filter(
-            business = business, item__paragraph__subsection__type = "지출",
-            item__paragraph__subsection__year = sessionInfo['year'],    # 원래 없어도되는 조회조건
-            Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date,
-        ).exclude(item__code = 0).aggregate(
-            cumulative_expenditure_total=Coalesce(Sum('Bkoutput'),0)
-        )['cumulative_expenditure_total']
+                # 목별 수입누계
+                item_list[idx].cumulative_expenditure = getTransactionSumByItem(
+                            business, item, sessionInfo['start_date'], end_date)
+                item_list.cumulative_expenditure_total += item_list[idx].cumulative_expenditure
 
         itemList = []
         item_paginator = Paginator(item_list, 40)
@@ -3407,6 +3411,64 @@ def _budget_content(request, year, budget_type):
     }
     return budget_content
 
+@login_required(login_url='/')
+def print_settlement_all(request):
+    business = get_object_or_404(Business, pk=request.session['business'])
+    today = datetime.datetime.now()
+    year = int(request.POST.get('year'))
+
+    general = _settlement_general(request, year)
+
+    return render(request, 'accounting/print_settlement_all.html', {
+        'business': business, 'year': year,
+        'general': general
+    })
+
+def _settlement_general(request, year):
+    business = get_object_or_404(Business, pk=request.session['business'])
+    sessionInfo = session_info(str(year), business.session_month, business.session_month)
+
+    revenue_budget_total = 0        # 세입예산 총합
+    revenue_settlement_total = 0    # 세입결산 총합
+    revenue_diff_total = 0          # 세입차액 총합
+    expenditure_budget_total = 0    # 세입예산 총합
+    expenditure_settlement_total = 0 # 세입결산 총합
+    expenditure_diff_total = 0      # 세입차액 총합
+
+    # 관목록(수입)
+    isubsection_list = subsection_info(year, business.type3, 'i')
+    revenue_budget_type = getLatestBudgetType(business, year, "revenue")
+    for subsection in isubsection_list:
+        subsection.budget_amount = getBudgetSumBySubsection(business, year, subsection, revenue_budget_type)
+        subsection.settlement_amount = \
+            getTransactionSumBySubsection(business, subsection, sessionInfo['start_date'], sessionInfo['end_date'])
+        subsection.diff = subsection.budget_amount - subsection.settlement_amount
+        revenue_budget_total += subsection.budget_amount
+        revenue_settlement_total += subsection.settlement_amount
+        revenue_diff_total += subsection.diff
+
+    # 관목록(지출)
+    osubsection_list = subsection_info(year, business.type3, 'o')
+    expenditure_budget_type = getLatestBudgetType(business, year, "expenditure")
+    for subsection in osubsection_list:
+        subsection.budget_amount = getBudgetSumBySubsection(business, year, subsection, expenditure_budget_type)
+        subsection.settlement_amount = \
+            getTransactionSumBySubsection(business, subsection, sessionInfo['start_date'], sessionInfo['end_date'])
+        subsection.diff = subsection.budget_amount - subsection.settlement_amount
+        expenditure_budget_total += subsection.budget_amount
+        expenditure_settlement_total += subsection.settlement_amount
+        expenditure_diff_total += subsection.diff
+
+    test = getTransactionSumByName(business, "both", sessionInfo['start_date'], sessionInfo['end_date'], "적립금", "N")
+    print(test)
+
+    general = {
+        'isubsection_list': isubsection_list, 'osubsection_list': osubsection_list,
+        'revenue_budget_total': revenue_budget_total, 'expenditure_budget_total': expenditure_budget_total,
+        'revenue_settlement_total': revenue_settlement_total, 'expenditure_settlement_total': expenditure_settlement_total,
+        'revenue_diff_total': revenue_diff_total, 'expenditure_diff_total': expenditure_diff_total
+    }
+    return general
 
 #--------------파일다운로드-------------
 from .models import UploadFile
@@ -3862,7 +3924,7 @@ def budget_spi_total(request):
     context = request.POST.get('context')
     
     total = Budget.objects.filter(
-        business = 35, year = year, type=type
+        business = business, year = year, type=type
     ).filter(
         Q(item__context__contains=context)
         | Q(item__paragraph__context__contains=context)

@@ -1,11 +1,12 @@
 {% extends 'accounting/base.html' %}
+{% load humanize %}
+{% load mathfilters %}
 
 {% block menu %}
 	{% include 'accounting/menu.html' %}
 {% endblock %}
 
 {% block content %}
-{% load humanize %}
 <div class="row">
 	<div class="col-md-12 mt-1">
 		<form name="termForm" method="GET">
@@ -66,12 +67,28 @@
 					<tr>
 						<td class="text-right">{% if item.paragraph.subsection.type == "수입" %}{{ item.cumulative_income|intcomma }}{% endif %}</td>
 						<td class="text-right">{% if item.paragraph.subsection.type == "수입" %}{{ item.income|intcomma }}{% endif %}</td>
-						<td style="white-space:nowrap;">[{{ item.paragraph.subsection.code }}{{ item.paragraph.code }}{{ item.code }}] {{ item.context }}</td>
+						<td class="text-left" style="white-space:nowrap;">[{{ item.paragraph.subsection.code }}{{ item.paragraph.code }}{{ item.code }}] {{ item.context }}</td>
 						<td class="text-right">{% if item.paragraph.subsection.type == "지출" %}{{ item.expenditure|intcomma }}{% endif %}</td>
 						<td class="text-right">{% if item.paragraph.subsection.type == "지출" %}{{ item.cumulative_expenditure|intcomma }}{% endif %}</td>
 					</tr>
 					{% endfor %}
 				</tbody>
+				<tfoot>
+					<tr>
+						<th class="text-right">{{ item_list.cumulative_income_total|intcomma }}</th>
+						<th class="text-right">{{ item_list.income_total|intcomma }}</th>
+						<th class="text-center">합계</th>
+						<th class="text-right">{{ item_list.expenditure_total|intcomma }}</th>
+						<th class="text-right">{{ item_list.cumulative_expenditure_total|intcomma }}</th>
+					</tr>
+					<tr>
+						<th class="text-right">{{ item_list.cumulative_income_total|sub:item_list.cumulative_expenditure_total|intcomma }}</th>
+						<th class="text-right">{{ item_list.income_total|sub:item_list.expenditure_total|intcomma }}</th>
+						<th></th>
+						<th></th>
+						<th></th>
+					</tr>
+				</tfoot>
 			</table>
 		</div>
 	</div>

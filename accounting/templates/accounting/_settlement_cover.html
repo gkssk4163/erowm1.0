@@ -1,0 +1,25 @@
+{% load humanize %}
+
+<div class="page" style="font-size: 30px;">
+	<center>
+		<table width="80%" style="text-align:center;margin:100px 0px;line-height: 160%;">
+			<tr>
+                <th>
+                    {{ year }} 회계연도<br>
+                    {{ business }} 세입 · 세출 결산서
+                </th>
+            </tr>
+            <tr style="height: 150px;"></tr>
+            <tr>
+                <td>
+                    세입총액 : {{ general.is_total|intcomma }}<br>
+                    세출총액 : {{ general.os_total|intcomma }}
+                </td>
+            </tr>
+            <tr style="height: 300px;"></tr>
+            <tr>
+                <th>{{ business }}</th>
+            </tr>
+        </table>
+    </center>
+</div>

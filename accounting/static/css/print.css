@@ -12,12 +12,14 @@ body {
 }
 
 .no-print-page {
-    width: 29.7cm;
+    width: 21cm;
     margin: 0 auto;
     padding: 10px;
 }
 
 .page {
+	font-size: 12px;
+	font-family:'Times New Roman', Times, serif;
     position: relative;
     width: 21cm;
     min-height: 29.3cm;
@@ -58,13 +60,20 @@ body {
 	}
 }
 
-.th-nowrap th{
-	white-space: nowrap;
+/* bootstrap override */
+.table thead th {
+	text-align: center;
+    border-bottom: 1px solid #000000!important;
 }
-.td-nowrap td{
-	white-space: nowrap;
+.table-bordered td, .table-bordered th {
+	border: 1px solid #000000!important;
 }
+/* bootstrap override */
 
-th.text-right, td.text-right {
-    text-align: right;
+/* add */
+.table tbody th, .table th {
+	text-align: center;
+	vertical-align: middle;
+	word-break: keep-all;
 }
+/* add */

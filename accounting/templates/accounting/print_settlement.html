@@ -67,6 +67,7 @@
 				</tr>
 			</table>
 			<div style="padding:10px">
+				<input type="button" onclick="yearPost('{% url 'print_settlement_all' %}');" value="전체출력">
 				<input type="button" onclick="yearPost('{% url 'print_budget_settlement' budget_type='revenue' %}');" value="세입결산출력">
 				<input type="button" onclick="yearPost('{% url 'print_budget_settlement' budget_type='expenditure' %}');" value="세출결산출력">
 				<input type="button" onclick="yearPost('{% url 'print_annual_trial_balance' %}');" value="월별시산표">

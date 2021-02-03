@@ -35,11 +35,11 @@
                 <td style="text-align: right;">{{ item.budget_amount|intcomma }}</td>
                 <td style="text-align: right;">{{ item.settlement_amount|intcomma }}</td>
                 <td style="text-align: right;">
-                    {% if item.budget_amount != 0 %}
-                        {{ item.settlement_amount|mul:100|intdiv:item.budget_amount }}%
-                    {% else %}
-                        0%
-                    {% endif %}
+                {% if item.budget_amount != 0 %}
+                    {{ item.settlement_amount|mul:100|intdiv:item.budget_amount }}%
+                {% else %}
+                    0%
+                {% endif %}
                 </td>
 				{% for ms in item.ms_list %}
 				<td class="monthSum{{ forloop.counter }}" style="text-align: right;">{{ ms|intcomma }}</td>
@@ -102,20 +102,18 @@
 </div>
 
 <script>
-    $(function() {
-        getRowspan("tdType");
+$(function() {
+    getRowspan("tdType");
+});
+
+function getRowspan(className) {
+    $("." + className).each(function() {
+        var rows = $("." + className + ":contains('" + $(this).text() + "')");
+        if (rows.length > 1) {
+            rows.eq(0).attr("rowspan", rows.length);
+            rows.not(":eq(0)").remove();
+        }
     });
-
-    function getRowspan(className) {
-        $("." + className).each(function() {
-            var rows = $("." + className + ":contains('" + $(this).text() + "')");
-            if (rows.length > 1) {
-                rows.eq(0).attr("rowspan", rows.length);
-                rows.not(":eq(0)").remove();
-            }
-        });
-    }
-
-    function getSum() {}
+}
 </script>
 {% endblock %}
