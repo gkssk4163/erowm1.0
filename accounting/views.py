@@ -308,22 +308,34 @@ def business_info(request):
 def account_list(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     lists = Account.objects.filter(business=business)
-    url = "https://ssl-new.bankda.com/partnership/partner/account_list_userid_xml.php"
-    #headers = {'content-type': 'application/soap+xml'}
-    data = {'service_type': 'basic', 'partner_id': 'vizun21',
-            'user_id': request.user.username, 'user_pw': request.user.password[34:],
-            'char_set': 'utf8'}
-    resMsg = requests.post(url, data=data)
+    # url = "https://ssl.bankda.com/partnership/partner/account_list_userid_xml.php"
+    # headers = {'content-type': 'application/soap+xml'}
+    # data = {'service_type': 'basic', 'partner_id': 'vizun21',
+    #         'user_id': request.user.username, 'user_pw': request.user.password[34:],
+    #         'char_set': 'utf8'}
+    # resMsg = requests.post(url, data=data)
+    #
+    # import xml.etree.ElementTree as ET
+    # root = ET.fromstring(resMsg.content.decode('utf-8'))
+    #
+    # for list in lists:
+    #     for account in root.iter("account_info"):
+    #         print(account)
+    #         if account.attrib['actaccountnum'] == list.account_number:
+    #             list.act_status = account.attrib['act_status']
 
-    import xml.etree.ElementTree as ET
-    root = ET.fromstring(resMsg.content.decode('utf-8'))
+    #
+    # for list in lists:
+    #     data = {
+    #         'partner_id': "vizun21", 'partner_pw': "wmso258079*"
+    #         , 'service_type': "basic", 'bkacctno': list.account_number
+    #     }
+    #     resMsg = requests.post(url, data=data)
+    #     print(resMsg)
 
-    for list in lists:
-        for account in root.iter("account_info"):
-            if account.attrib['actaccountnum'] == list.account_number:
-                list.act_status = account.attrib['act_status']
-    
-    return render(request, 'accounting/account_list.html', {'lists': lists, 'business': business, 'accounting_management': 'active', 'account_list': 'active', 'master_login': request.session['master_login']})
+    return render(request, 'accounting/account_list.html', {
+        'lists': lists, 'business': business, 'accounting_management': 'active',
+        'account_list': 'active', 'master_login': request.session['master_login'] })
 
 @login_required(login_url='/')
 def account_create(request):
@@ -333,7 +345,7 @@ def account_create(request):
         account_flag = account_check(request)
         if account_flag == True:
             Bjumin = business.reg_number.split("-")
-            url = "https://ssl-new.bankda.com/partnership/user/account_add.php"
+            url = "https://ssl.bankda.com/partnership/user/account_add.php"
             data = {'directAccess': 'y', 'partner_id': "vizun21", 'service_type': "basic",
                 'user_id': request.user.username, 'user_pw': request.user.password[34:],
                 'Command': "update", 'bkdiv': request.POST.get('bkdiv'),
@@ -374,7 +386,7 @@ def account_edit(request, pk):
         account_flag = account_check(request)
         if account_flag == True:
             Bjumin = business.reg_number.split("-")
-            url = "https://ssl-new.bankda.com/partnership/user/account_fix.php"
+            url = "https://ssl.bankda.com/partnership/user/account_fix.php"
             data = {'directAccess': 'y', 'partner_id': "vizun21", 'service_type': "basic",
                 'user_id': request.user.username, 'user_pw': request.user.password[34:],
                 'Command': "update", 'bkdiv': request.POST.get('bkdiv'),
@@ -2764,11 +2776,13 @@ def edit_transaction(request):
     inout_type = request.POST.get('inout')
     remark = request.POST.get('remark')
     pk = request.POST.get('pk', '')
+    year = request.POST.get('year', '')
+    month = request.POST.get('month', '')
     transaction = get_object_or_404(Transaction, pk=pk)
     transactionform = TransactionEditForm(request.POST, instance=transaction)
 
     try:
-        close = Deadline.objects.get(business=business,year=Bkdate[:4],month=Bkdate[5:7])
+        close = Deadline.objects.get(business=business,year=year,month=month)
         if close.regdatetime:
             return HttpResponse("<script>alert('해당월은 마감완료되었습니다.');history.back();</script>")
     except:

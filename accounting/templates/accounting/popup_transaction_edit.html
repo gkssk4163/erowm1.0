@@ -6,6 +6,8 @@
 	<form name="writeForm" method="POST" action="{% url 'edit_transaction' %}">
 		{% csrf_token %}
 		<input type="hidden" name="pk" value="{{ pk }}"/>
+		<input type="hidden" name="year" value="{{ year }}"/>
+		<input type="hidden" name="month" value="{{ month }}"/>
 		<table id="tr-table" class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
 			<thead class="thead-light text-center">
 				<tr>
