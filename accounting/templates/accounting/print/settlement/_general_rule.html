@@ -13,11 +13,9 @@
 
         ○ 세출 예산 {{ general.expenditure_budget_total|intcomma }} 원에 대하여 지출액은 {{ general.expenditure_settlement_total|intcomma }} 원이며
 
-        ○ 그 차인잔액은 {{ general.revenue_settlement_total|sub:general.expenditure_settlement_total|intcomma }} 원으로서
+        ○ 그 차인잔액은 {{ general.revenue_settlement_total|sub:general.expenditure_settlement_total|intcomma }} 원으로서 보조금집행잔액 0 원이 포함되어 있으며
 
-           보조금집행잔액 000 원이 포함되어 있으며
-
-           이를 공제한 순이월금은 000 원이다.
+           이를 공제한 순이월금은 {{ general.revenue_settlement_total|sub:general.expenditure_settlement_total|intcomma }} 원이다.
 
 
         ○ 세입세출결산 총괄
@@ -68,29 +66,29 @@
             </tr>
             <tr>
                 <th>일반적립금</th>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
+                <td class="text-right"></td>
+                <td class="text-right"></td>
+                <td class="text-right"></td>
+                <td class="text-right"></td>
             </tr>
             <tr>
                 <th>퇴직적립금</th>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
+                <td class="text-right"></td>
+                <td class="text-right"></td>
+                <td class="text-right"></td>
+                <td class="text-right"></td>
             </tr>
             <tr>
-                <td colspan="5">A : 전 회계연도 결산 시 누적 적립액</td>
+                <td colspan="5" class="text-left">A : 전 회계연도 결산 시 누적 적립액</td>
             </tr>
             <tr>
-                <td colspan="5">B : 당해 회계연도 내 적립금 계정과목(511목)으로 실제 집행된 적립금 누계액 기재</td>
+                <td colspan="5" class="text-left">B : 당해 회계연도 내 적립금 계정과목(511목)으로 실제 집행된 적립금 누계액 기재</td>
             </tr>
             <tr>
-                <td colspan="5">C : 적립금 사용을 위해 인출한 금액 (세입예산 중 적립금 처분수입<611목>으로 편성된 금액)</td>
+                <td colspan="5" class="text-left">C : 적립금 사용을 위해 인출한 금액 (세입예산 중 적립금 처분수입<611목>으로 편성된 금액)</td>
             </tr>
             <tr>
-                <td colspan="5">D : 적립금 예산잔액 증명서 내 누적 적립액 기재</td>
+                <td colspan="5" class="text-left">D : 적립금 예산잔액 증명서 내 누적 적립액 기재</td>
             </tr>
         </table>
     </span>

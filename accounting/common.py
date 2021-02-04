@@ -58,10 +58,16 @@ def getLatestBudgetType(business, year, budget_type):
 
 
 #=============== 예산 관련 ===============#
-# 예산 관별 금액(예산)
+# 관별 예산액
 def getBudgetSumBySubsection(business, year, subsection, budget_type):
     return Budget.objects.filter(
-        business=business, year=year, item__paragraph__subsection=subsection, type=budget_type
+        business = business, year = year, item__paragraph__subsection = subsection, type = budget_type
+    ).aggregate(sum=Coalesce(Sum('price'), 0))['sum']
+
+# 목별 예산액
+def getBudgetSumByItem(business, year, item, budget_type):
+    return Budget.objects.filter(
+        business = business, year = year, type=budget_type, item = item.pk
     ).aggregate(sum=Coalesce(Sum('price'), 0))['sum']
 
 
@@ -114,3 +120,35 @@ def getTransactionSumByName(business, type, start_date, end_date, context, match
     return settlement.aggregate(
         sum = Coalesce(Sum(Case(
             When(Bkinput__gt = 0, then = 'Bkinput'), default = 'Bkoutput')), 0))['sum']
+
+# 관항목 코드로 거래내역 합 구하기
+def getTransactionSumByCode(business, item, start_date, end_date):
+    if item.paragraph.subsection.type == '수입':
+        column = 'Bkinput'
+    elif item.paragraph.subsection.type == '지출':
+        column = 'Bkoutput'
+    return Transaction.objects.filter(
+        business = business, Bkdate__gte = start_date, Bkdate__lt = end_date,
+        item__paragraph__subsection__code = item.paragraph.subsection.code,
+        item__paragraph__code = item.paragraph.code, item__code=item.code
+    ).aggregate(sum=Coalesce(Sum(column),0))['sum']
+
+def getTransactionListByName(business, type, start_date, end_date, context, matchYN):
+    settlement = Transaction.objects.filter(
+        business = business, Bkdate__gte = start_date, Bkdate__lt = end_date)
+    if type == '수입' or type == '지출':
+        settlement.filter(item__paragraph__subsection__type = type)
+    if matchYN == 'Y':
+        settlement = settlement.filter(
+            Q(item__context=context)
+            | Q(item__paragraph__context=context)
+            | Q(item__paragraph__subsection__context=context)
+        )
+    else:
+        settlement = settlement.filter(
+            Q(item__context__contains=context)
+            | Q(item__paragraph__context__contains=context)
+            | Q(item__paragraph__subsection__context__contains=context)
+        )
+
+    return settlement

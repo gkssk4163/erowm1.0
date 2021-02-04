@@ -30,8 +30,9 @@ import json
 import requests
 
 from accounting.common import getLatestBudgetType
-from accounting.common import getTransactionSumByItem, getTransactionSumBySubsection, getTransactionSumByName
-from accounting.common import getBudgetSumBySubsection
+from accounting.common import getTransactionSumBySubsection, getTransactionSumByItem
+from accounting.common import getTransactionSumByName, getTransactionSumByCode, getTransactionListByName
+from accounting.common import getBudgetSumBySubsection, getBudgetSumByItem
 
 # Create your views here.
 
@@ -1037,7 +1038,7 @@ def paragraph_create(request):
 def paragraph_edit(request, pk):
     paragraph = Paragraph.objects.get(pk=pk)
     if request.method == "POST":
-        form = ParagraphForm(request.POST, instance=paragaph)
+        form = ParagraphForm(request.POST, instance=paragraph)
         if form.is_valid():
             form.save()
             return redirect('spi_list')
@@ -3414,19 +3415,25 @@ def _budget_content(request, year, budget_type):
 @login_required(login_url='/')
 def print_settlement_all(request):
     business = get_object_or_404(Business, pk=request.session['business'])
-    today = datetime.datetime.now()
     year = int(request.POST.get('year'))
 
     general = _settlement_general(request, year)
 
+    revenue_settlement = _settlement_content(request, year, "revenue")
+    expenditure_settlement = _settlement_content(request, year, "expenditure")
+
+    session = session_info(str(year), business.session_month, business.session_month)
+    bojo_list = getTransactionListByName(business, "수입", session['start_date'], session['end_date'], "보조금", "N")
+
     return render(request, 'accounting/print_settlement_all.html', {
-        'business': business, 'year': year,
-        'general': general
+        'business': business, 'year': year, 'general': general, 'bojo_list': bojo_list,
+        'revenue_settlement': revenue_settlement, 'expenditure_settlement': expenditure_settlement
     })
 
 def _settlement_general(request, year):
     business = get_object_or_404(Business, pk=request.session['business'])
-    sessionInfo = session_info(str(year), business.session_month, business.session_month)
+    session = session_info(str(year), business.session_month, business.session_month)
+    prevSession = session_info(str(year - 1), business.session_month, business.session_month)
 
     revenue_budget_total = 0        # 세입예산 총합
     revenue_settlement_total = 0    # 세입결산 총합
@@ -3441,7 +3448,7 @@ def _settlement_general(request, year):
     for subsection in isubsection_list:
         subsection.budget_amount = getBudgetSumBySubsection(business, year, subsection, revenue_budget_type)
         subsection.settlement_amount = \
-            getTransactionSumBySubsection(business, subsection, sessionInfo['start_date'], sessionInfo['end_date'])
+            getTransactionSumBySubsection(business, subsection, session['start_date'], session['end_date'])
         subsection.diff = subsection.budget_amount - subsection.settlement_amount
         revenue_budget_total += subsection.budget_amount
         revenue_settlement_total += subsection.settlement_amount
@@ -3453,22 +3460,81 @@ def _settlement_general(request, year):
     for subsection in osubsection_list:
         subsection.budget_amount = getBudgetSumBySubsection(business, year, subsection, expenditure_budget_type)
         subsection.settlement_amount = \
-            getTransactionSumBySubsection(business, subsection, sessionInfo['start_date'], sessionInfo['end_date'])
+            getTransactionSumBySubsection(business, subsection, session['start_date'], session['end_date'])
         subsection.diff = subsection.budget_amount - subsection.settlement_amount
         expenditure_budget_total += subsection.budget_amount
         expenditure_settlement_total += subsection.settlement_amount
         expenditure_diff_total += subsection.diff
 
-    test = getTransactionSumByName(business, "both", sessionInfo['start_date'], sessionInfo['end_date'], "적립금", "N")
-    print(test)
+    """ 내용 확인 후 적용
+    # 적립금 코드(511)
+    reserve_item = Item.objects.get(
+        paragraph__subsection__institution = business.type3,
+        paragraph__subsection__year = year, paragraph__subsection__type = "지출",
+        paragraph__subsection__code = 5, paragraph__code = 1, code = 1
+    )
+    this_year_reserve = getTransactionSumByCode(business, reserve_item, session['start_date'], session['end_date'])
+    prev_year_reserve = getTransactionSumByCode(business, reserve_item, prevSession['start_date'], prevSession['end_date'])
+
+    # 적립금 처분수입(611)
+    reserve_income_item = Item.objects.get(
+        paragraph__subsection__institution=business.type3,
+        paragraph__subsection__year=year, paragraph__subsection__type="수입",
+        paragraph__subsection__code=6, paragraph__code=1, code=1
+    )
+    reserve_income = getTransactionSumByCode(business, reserve_income_item, session['start_date'], session['end_date'])
+    """
 
     general = {
         'isubsection_list': isubsection_list, 'osubsection_list': osubsection_list,
         'revenue_budget_total': revenue_budget_total, 'expenditure_budget_total': expenditure_budget_total,
         'revenue_settlement_total': revenue_settlement_total, 'expenditure_settlement_total': expenditure_settlement_total,
         'revenue_diff_total': revenue_diff_total, 'expenditure_diff_total': expenditure_diff_total
+        #'this_year_reserve': this_year_reserve, 'prev_year_reserve': prev_year_reserve,
+        #'reserve_income': reserve_income
     }
     return general
+
+def _settlement_content(request, year, budget_type):
+    business = get_object_or_404(Business, pk=request.session['business'])
+    session = session_info(str(year), business.session_month, business.session_month)
+
+    total_budget = 0
+    total_settlement = 0
+    total_difference = 0
+
+    if budget_type == "revenue":
+        filter_type = "수입"
+        budget_type = getLatestBudgetType(business, year, "revenue")
+    elif budget_type == "expenditure":
+        filter_type = "지출"
+        budget_type = getLatestBudgetType(business, year, "expenditure")
+
+    item_list = Item.objects.filter(
+        paragraph__subsection__year=year,
+        paragraph__subsection__institution=business.type3,
+        paragraph__subsection__type=filter_type
+    ).exclude(code=0)
+
+    for idx, item in enumerate(item_list):
+        item.budget_amount = getBudgetSumByItem(business, year, item, budget_type)
+        total_budget += item.budget_amount
+        item.settlement_amount = getTransactionSumByItem(business, item, session['start_date'], session['end_date'])
+        total_settlement += item.settlement_amount
+        item.difference_amount = item.budget_amount - item.settlement_amount
+        total_difference += item.difference_amount
+
+        # template에서 편하게 쓰기위해 추가
+        item.scode = item.paragraph.subsection.code
+        item.pcode = item.paragraph.code
+        item.scontext = item.paragraph.subsection.context
+        item.pcontext = item.paragraph.context
+
+    content = {
+        'item_list': item_list, 'total_budget': total_budget,
+        'total_settlement': total_settlement, 'total_difference': total_difference
+    }
+    return content
 
 #--------------파일다운로드-------------
 from .models import UploadFile

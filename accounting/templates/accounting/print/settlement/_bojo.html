@@ -1,0 +1,30 @@
+{% load humanize %}
+
+<div class="page">
+	<center><h1>정부보조금명세서</h1></center>
+	<table class="table table-sm table-bordered">
+		<caption style="caption-side: top;">
+			<span style="float: right;">( 단위 : 원 )</span>
+        </caption>
+		<thead>
+		<tr>
+			<th>수령일자</th>
+			<th>보조내역</th>
+			<th>금액</th>
+			<th>보조기관</th>
+			<th>산출기초</th>
+		</tr>
+		</thead>
+		<tbody>
+			{% for bojo in bojo_list %}
+			<tr>
+				<td>{{ bojo.Bkdate }}</td>
+				<td>{{ bojo.item.context }}</td>
+				<td class="text-right">{{ bojo.Bkinput | intcomma }}</td>
+				<td></td>
+				<td></td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>

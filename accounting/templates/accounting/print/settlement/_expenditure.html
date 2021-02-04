@@ -1,0 +1,50 @@
+{% load humanize %}
+
+<div class="page">
+	<center><h1>{{ year }}년 세출결산서</h1></center>
+	<table class="table table-sm table-bordered">
+		<caption style="caption-side: top;">
+            <div>
+                <span style="float: left;">{{ year }}년</span>
+                <span style="float: right;">( 단위 : 원 )</span>
+            </div>
+        </caption>
+		<thead>
+			<tr>
+				<th colspan="6" width="60%">과목</th>
+				<th rowspan="2" width="11%">예산액</th>
+				<th rowspan="2" width="11%">지출액</th>
+				<th rowspan="2" width="11%">잔액</th>
+				<th rowspan="2" width="7%">비고</th>
+			</tr>
+			<tr>
+				<th colspan="2" width="20%">관</th>
+				<th colspan="2" width="20%">항</th>
+				<th colspan="2" width="20%">목</th>
+			</tr>
+			<tr>
+				<th colspan="6">총계</th>
+				<th class="text-right">{{ expenditure_settlement.total_budget|intcomma }}</th>
+				<th class="text-right">{{ expenditure_settlement.total_settlement|intcomma }}</th>
+				<th class="text-right">{{ expenditure_settlement.total_difference|intcomma }}</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for item in expenditure_settlement.item_list %}
+			<tr>
+				<td>{{ item.scode }}</td>
+				<td class="text-nowrap">{{ item.scontext }}</td>
+				<td>{{ item.scode }}{{ item.pcode }}</td>
+				<td class="text-nowrap">{{ item.pcontext }}</td>
+				<td>{{ item.scode }}{{ item.pcode }}{{ item.code }}</td>
+				<td class="text-nowrap">{{ item.context }}</td>
+				<td class="text-right">{{ item.budget_amount|intcomma }}</td>
+				<td class="text-right">{{ item.settlement_amount|intcomma }}</td>
+				<td class="text-right">{{ item.difference_amount|intcomma }}</td>
+				<td></td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>

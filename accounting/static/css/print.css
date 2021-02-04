@@ -23,7 +23,6 @@ body {
     position: relative;
     width: 21cm;
     min-height: 29.3cm;
-    max-height: 29.3cm;
 	padding: 1cm;
 	margin: 1cm auto;
 	border: 1px #D3D3D3 solid;
@@ -60,20 +59,54 @@ body {
 	}
 }
 
-/* bootstrap override */
-.table thead th {
-	text-align: center;
-    border-bottom: 1px solid #000000!important;
+/* bootstrap 일부 참조 및 수정 */
+.table {
+	width: 100%;
+	margin-bottom: 1rem;
+	background-color: transparent
 }
-.table-bordered td, .table-bordered th {
-	border: 1px solid #000000!important;
-}
-/* bootstrap override */
-
-/* add */
-.table tbody th, .table th {
+.table td, .table th {
+	padding: .75rem;
 	text-align: center;
 	vertical-align: middle;
-	word-break: keep-all;
+	border-top: 1px solid #000000
 }
-/* add */
+.table thead th {
+	vertical-align: middle;
+	border-bottom: 2px solid #000000
+}
+.table tbody + tbody {
+	border-top: 2px solid #000000
+}
+.table .table {
+	background-color: #fff
+}
+.table-sm td, .table-sm th {
+	padding: .3rem
+}
+.table-bordered {
+	border: 1px solid #000000
+}
+.table-bordered td, .table-bordered th {
+	border: 1px solid #000000
+}
+.table-bordered thead td, .table-bordered thead th {
+	border-bottom-width: 2px
+}
+.table {
+	border-collapse: collapse !important
+}
+.table td, .table th {
+	background-color: #fff !important
+}
+.table-bordered td, .table-bordered th {
+	border: 1px solid #000000 !important
+}
+.table caption {
+	padding-top: 2px!important;
+	padding-bottom: 2px!important;
+}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-nowrap{white-space:nowrap!important}

@@ -1,14 +1,15 @@
 {% load humanize %}
+{% load mathfilters %}
 
 <div class="page">
     <center>
-        <span style="font-size: 30px;font-weight: bold;">{{ year }}년 예산총괄표</span>
+        <span style="font-size: 30px;font-weight: bold;">{{ year }}년도 세입세출결산 총괄표</span>
     </center>
     <div style="width: 700px; margin-top: 50px;">
         <div style="width: 49%;float: left;">
             <h2>1.세입</h2>
                 <table class="table table-sm table-bordered">
-                    <caption style="caption-side: top;text-align: right;">( 단위 : 원 )</caption>
+                    <caption style="caption-side: top;text-align: right;">( 단위 : 천원 )</caption>
                     <thead>
                         <tr>
                             <th>관별</th>
@@ -21,9 +22,9 @@
                         {% for isubsection in general.isubsection_list %}
                         <tr>
                             <td>{{ isubsection.context }}</td>
-                            <td style="text-align:right;">{{ isubsection.s_total|intcomma }}</td>
-                            <td style="text-align:right">{{ isubsection.xs_total|intcomma }}</td>
-                            <td style="text-align:right">{{ isubsection.ds_total|intcomma }}</td>
+                            <td class="text-right">{{ isubsection.budget_amount | intdiv:1000 | intcomma }}</td>
+                            <td class="text-right">{{ isubsection.settlement_amount | intdiv:1000 | intcomma }}</td>
+                            <td class="text-right">{{ isubsection.diff | intdiv:1000 | intcomma }}</td>
                         </tr>
                         {% endfor %}
                         <tr>
@@ -34,9 +35,9 @@
                         </tr>
                         <tr>
                             <th>세입계</th>
-                            <th style="text-align:right">{{ general.is_total|intcomma }}</th>
-                            <th style="text-align:right">{{ general.is_xtotal|intcomma }}</th>
-                            <th style="text-align:right">{{ general.is_dtotal|intcomma }}</th>
+                            <th class="text-right">{{ general.revenue_budget_total | intdiv:1000 | intcomma }}</th>
+                            <th class="text-right">{{ general.revenue_settlement_total | intdiv:1000 | intcomma }}</th>
+                            <th class="text-right">{{ general.revenue_diff_total | intdiv:1000 | intcomma }}</th>
                         </tr>
                     </tbody>
                 </table>
@@ -44,7 +45,7 @@
         <div style="width: 49%;float: right;">
             <h2>2.세출</h2>
                 <table class="table table-sm table-bordered">
-                    <caption style="caption-side: top;text-align: right;">( 단위 : 원 )</caption>
+                    <caption style="caption-side: top;text-align: right;">( 단위 : 천원 )</caption>
                     <thead>
                         <tr>
                             <th>관별</th>
@@ -57,16 +58,16 @@
                         {% for osubsection in general.osubsection_list %}
                         <tr>
                             <td>{{ osubsection.context }}</td>
-                            <td style="text-align:right;">{{ osubsection.s_total|intcomma }}</td>
-                            <td style="text-align:right">{{ osubsection.xs_total|intcomma }}</td>
-                            <td style="text-align:right">{{ osubsection.ds_total|intcomma }}</td>
+                            <td class="text-right">{{ osubsection.budget_amount | intdiv:1000 | intcomma }}</td>
+                            <td class="text-right">{{ osubsection.settlement_amount | intdiv:1000 | intcomma }}</td>
+                            <td class="text-right">{{ osubsection.diff | intdiv:1000 | intcomma }}</td>
                         </tr>
                         {% endfor %}
                         <tr>
                             <th>세출계</th>
-                            <th style="text-align:right">{{ general.os_total|intcomma }}</th>
-                            <th style="text-align:right">{{ general.os_xtotal|intcomma }}</th>
-                            <th style="text-align:right">{{ general.os_dtotal|intcomma }}</th>
+                            <th class="text-right">{{ general.expenditure_budget_total | intdiv:1000 | intcomma }}</th>
+                            <th class="text-right">{{ general.expenditure_settlement_total | intdiv:1000 | intcomma }}</th>
+                            <th class="text-right">{{ general.expenditure_diff_total | intdiv:1000 | intcomma }}</th>
                         </tr>
                     </tbody>
                 </table>
