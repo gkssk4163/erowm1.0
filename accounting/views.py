@@ -13,7 +13,8 @@ from .forms import TblbankDirectForm, TransactionEditForm
 from .crypto import AESCipher
 from .common import session_info, subsection_info, item_info
 
-from django.contrib.auth import authenticate, login
+from django.contrib import auth
+from django.contrib.auth import authenticate
 from django.http import HttpResponse, HttpResponseRedirect
 import datetime
 from django.utils import timezone
@@ -95,6 +96,54 @@ def signup(request):
 
 def signup_done(request):
     return render(request, "registration/signup_done.html")
+
+def login(request):
+    # 해당 쿠키에 값이 없을 경우 None이 return 된다.
+    # 쿠키에 username, password가 있으면 로그인 유지
+    if request.COOKIES.get('username') is not None and request.COOKIES.get('password') is not None:
+        username = request.COOKIES.get('username')
+        password = request.COOKIES.get('password')
+        user = auth.authenticate(request, username=username, password=password)
+        if user is not None:
+            auth.login(request, user)
+            return redirect("main")
+        else:
+            return render(request, "registration/login.html")
+
+    # POST
+    elif request.method == "POST":
+        username = request.POST["username"]
+        password = request.POST["password"]
+
+        # 해당 user가 있으면 username, 없으면 None
+        user = auth.authenticate(request, username=username, password=password)
+
+        if user is not None:
+            auth.login(request, user)
+            response = redirect("main")
+
+            if request.POST.get("keepLogin") == "on":   # 로그인유지 CHECK
+                response.set_cookie('username', username)
+                response.set_cookie('password', password)
+            elif request.POST.get("saveInfo") == "on":    # 아이디저장 CHECK
+                response.set_cookie('username', username)
+            elif request.COOKIES.get('username') is not None:
+                response.delete_cookie('username')
+            return response
+        else:
+            return render(request, 'registration/login.html', {
+                'username': username, 'error':'username or password is incorrect'})
+    # GET
+    else:
+        username = request.COOKIES.get('username') if request.COOKIES.get('username') is not None else ""
+        return render(request, 'registration/login.html', {'username': username})
+    return render(request, 'registration/login.html')
+
+def logout(request):
+    response = redirect("main")
+    response.delete_cookie('password')
+    auth.logout(request)
+    return response
 
 @login_required(login_url='/')
 def user_delete(request):
@@ -503,7 +552,7 @@ def transform(request, pk):
     user = get_object_or_404(User, pk=pk)
     if (request.user.profile.level_id >= SALES) and user.is_active:
         master_username = request.user.username
-        login(request, user)
+        auth.login(request, user)
         if user is not None:
             request.session['master_login'] = True
             request.session['username'] = master_username
@@ -515,7 +564,7 @@ def retransform(request):
     if request.session['master_login'] == True:
         username = request.session['username']
         user = User.objects.get(username=username)
-        login(request, user)
+        auth.login(request, user)
         if user is not None:
             request.session['username'] = user.username
             request.session['master_login'] = False
