@@ -2369,7 +2369,11 @@ def print_transaction(request):
         total = Transaction.objects.filter(business=business, Bkdate__year=ym[:4], Bkdate__month=ym[-2:]).aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
         sub_date =  datetime.datetime.strptime(ym[:4]+'-'+ym[-2:]+'-01', '%Y-%m-%d')
         sub_end_date = DateFormat(sub_date + relativedelta(months=1)).format("Y-m-d")
-        accumulated = Transaction.objects.filter(business=business, Bkdate__gte = sessionInfo['start_date'], Bkdate__lt=sub_end_date).aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
+        accumulated = Transaction.objects.filter(
+            business = business, Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = sub_end_date
+        ).exclude(item__code = 0).aggregate(
+            input = Coalesce(Sum('Bkinput'),0),
+            output = Coalesce(Sum('Bkoutput'),0))
 
         ym_range.append({'ym': ym, 'total_input': total['input'], 'total_output': total['output'], 'transaction': transaction, 'accumulated_input': accumulated['input'], 'accumulated_output': accumulated['output']})
     
@@ -2988,7 +2992,11 @@ def monthly_print_all(request):
         total = Transaction.objects.filter(business=business, Bkdate__year=ym[:4], Bkdate__month=ym[-2:]).aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
         sub_date =  datetime.datetime.strptime(ym[:4]+'-'+ym[-2:]+'-01', '%Y-%m-%d')
         sub_end_date = DateFormat(sub_date + relativedelta(months=1)).format("Y-m-d")
-        accumulated = Transaction.objects.filter(business=business, Bkdate__gte = sessionInfo['start_date'], Bkdate__lt=sub_end_date).aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
+        accumulated = Transaction.objects.filter(
+            business = business, Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = sub_end_date
+        ).exclude(item__code = 0).aggregate(
+            input = Coalesce(Sum('Bkinput'), 0),
+            output = Coalesce(Sum('Bkoutput'), 0))
 
         ym_range.append({'ym': ym, 'total_input': total['input'], 'total_output': total['output'], 'transaction': transaction, 'accumulated_input': accumulated['input'], 'accumulated_output': accumulated['output']})
 
