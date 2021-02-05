@@ -54,7 +54,7 @@ def getLatestBudgetType(business, year, budget_type):
         # type을 오름차순으로 정렬 후 마지막꺼 가져오면 됨
         return latestBudget.order_by('type').last().type
     else:
-        return ""
+        return None
 
 
 #=============== 예산 관련 ===============#

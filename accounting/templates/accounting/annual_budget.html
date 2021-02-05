@@ -1,4 +1,5 @@
 {% extends 'accounting/base.html' %}
+{% load humanize %}
 
 {% block menu %}
 	{% include 'accounting/menu.html' %}
@@ -45,7 +46,7 @@
 					</tr>
 					<tr>
 						<td>예산금액</td>
-						<td>세입: {{ total_revenue }} | 세출: {{ total_expenditure }} | 차액: {{ total_difference }}</td>
+						<td>세입: {{ total_revenue | intcomma }} | 세출: {{ total_expenditure | intcomma }} | 차액: {{ total_difference | intcomma }}</td>
 					</tr>
 				</tbody>
 			</table>
