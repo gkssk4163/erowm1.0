@@ -65,3 +65,87 @@ String.prototype.comma = function(gubn) {
 }
 
 Number.prototype.comma = String.prototype.comma;
+
+
+$.datepicker.regional['ko'] = {
+	closeText: '닫기',
+	prevText: '이전달',
+	nextText: '다음달',
+	currentText: '오늘',
+	monthNames: [ '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월' ],
+	monthNamesShort: [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12' ],
+	dayNames: [ '일', '월', '화', '수', '목', '금', '토' ],
+	dayNamesShort: [ '일', '월', '화', '수', '목', '금', '토' ],
+	dayNamesMin: [ '일', '월', '화', '수', '목', '금', '토' ],
+	yearRange: 'c-100:c+10',
+	weekHeader: 'Wk',
+	dateFormat: 'yy-mm-dd',
+	firstDay: 0,
+	isRTL: false,
+	showMonthAfterYear: true,
+	yearSuffix: ''
+};
+
+$.datepicker.setDefaults($.datepicker.regional['ko']);
+
+function initDatepickerByClass() {
+	var options = {
+		'changeMonth': true,
+		'changeYear': true,
+		dateFormat: 'yy-mm-dd'
+	};
+
+	$.each(arguments, function(index, value) {
+		$(document).find("." + value).removeClass("hasDatepicker").datepicker(options);
+	});
+}
+
+/*function initStartEndDatepicker(startDateElementId, endDateElementId) {
+	var startDatepicker = $("#" + startDateElementId);
+	var endDatepicker = $("#" + endDateElementId);
+	console.log(endDatepicker.val());
+	console.log(startDatepicker.val());
+
+	var startDatePickerOptions = {
+		'changeMonth': true,
+		'changeYear': true,
+		'maxDate': endDatepicker.val(),
+		'onClose': function(datepicker) {
+			endDatepicker.datepicker('option', 'minDate', datepicker);
+		}
+	};
+
+	var endDatePickerOptions = {
+		'changeMonth': true,
+		'changeYear': true,
+		'minDate': startDatepicker.val(),
+		'onClose': function(datepicker) {
+			startDatepicker.datepicker('option', 'maxDate', datepicker);
+		}
+	};
+
+	startDatepicker.datepicker(startDatePickerOptions);
+	endDatepicker.datepicker(endDatePickerOptions);
+}*/
+
+// 회계년도 구하기
+function getSessionYear(business, startDate) {
+	if (business == "어린이집") {
+		if (moment(startDate).format("M") < 3) {
+			return moment(startDate).format("YYYY") - 1;
+		}
+	}
+
+	return moment(startDate).format("YYYY");
+}
+
+function ChkIsEmpty(str) {
+	if (str == null) return "";
+	if (str == "NaN") return "";
+	if (new String(str).valueOf() == "undefined") return "";
+	var chkStr = new String(str);
+	if( chkStr.valueOf() == "undefined" ) return "";
+	if (chkStr == null) return "";
+	if (chkStr.toString().length == 0 ) return "";
+	return str;
+}

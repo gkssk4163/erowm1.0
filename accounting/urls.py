@@ -35,7 +35,7 @@ urlpatterns = [
     url(r'^account/edit/(?P<pk>\d+)/$', views.account_edit, name='account_edit'),
     url(r'^account/delete/(?P<pk>\d+)/$', views.account_delete, name='account_delete'),
     url(r'^transaction/history/$', views.transaction_history, name='transaction_history'),
-
+    url(r'^transaction/list/$', views.transaction_list, name='transaction_list'),
 
     url(r'^spi/list/$', views.spi_list, name='spi_list'),
     url(r'^subsection/create/$', views.subsection_create, name='subsection_create'),
@@ -118,4 +118,8 @@ urlpatterns = [
 
     #ajax function
     url(r'^budget/spi/total/$', views.budget_spi_total, name='budget_spi_total'),
+
+    url(r'^subsection/list/$', views.subsection_list, name='subsection_list'),
+    url(r'^paragraph/list/$', views.paragraph_list, name='paragraph_list'),
+    url(r'^item/list/$', views.item_list, name='item_list'),
 ]

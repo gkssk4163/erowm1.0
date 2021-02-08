@@ -1,0 +1,270 @@
+{% extends 'accounting/base.html' %}
+
+{% block menu %}
+        {% include 'accounting/menu.html' %}
+{% endblock %}
+
+{% block content %}
+{% load humanize %}
+
+<h1 class="mb-3">거래조회</h1>
+
+<div class="row">
+	<div class="col-md-12">
+		<form name="searchForm">
+			<input type="hidden" id="institution" name="institution" value="{{ business.type3 }}">
+			<table class="type0 table table-sm table-bordered">
+				<colgroup>
+					<col width="20%">
+					<col width="30%">
+					<col width="20%">
+					<col width="30%">
+				</colgroup>
+				<tr>
+					<th>기간</th>
+					<td>
+						<div class="form-inline">
+							<div class="form-group">
+								<input type="text" id="start_date" name="start_date" class="form-control input-sm datepicker"
+									   value="{{ param.start_date }}" style="max-width: 130px;">
+							</div>
+							<div class="form-group"><pre> ~ </pre></div>
+							<div class="form-group">
+								<input type="text" id="end_date" name="end_date" class="form-control input-sm datepicker"
+									   value="{{ param.end_date }}" style="max-width: 130px;">
+							</div>
+						</div>
+					</td>
+					<th>검색어</th>
+					<td>
+						<input type="text" id="keyword" name="keyword" class="form-control input-sm" value="{{ param.keyword }}">
+					</td>
+				</tr>
+				<tr>
+					<th>관항목 선택</th>
+					<td colspan="3">
+						<div class="form-inline">
+							<div class="form-group">
+								<select id="type" class="form-control input-sm" style="width: 120px;margin-right: 3px;">
+									<option value="">전체</option>
+									<option value="수입">수입</option>
+									<option value="지출">지출</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<select id="subsection" class="form-control input-sm" style="width: 120px;margin-right: 3px;">
+									<option value="">관선택</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<select id="paragraph" class="form-control input-sm" style="width: 120px;margin-right: 3px;">
+									<option value="">항선택</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<select id="item" class="form-control input-sm" style="width: 120px;margin-right: 3px;">
+									<option value="">목선택</option>
+								</select>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+</div>
+<div class="row mb-2">
+	<div class="col-md-12">
+		<div class="float-left">
+			<span class="text-danger">관항목은 조회시작일을 기준으로 해당 회계년도의 관항목이 표시됩니다.</span>
+		</div>
+		<div class="float-right">
+			<button class="btn btn-sm btn-primary" id="btnSearch" style="width: 100px;">검색</button>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-md-12">
+		<table id="tbList" class="table table-sm table-bordered">
+			<thead class="thead-dark">
+			<tr>
+				<th>번호</th>
+				<th>출납일</th>
+				<th>구분</th>
+				<th>계정번호</th>
+				<th>계정명</th>
+				<th>적요</th>
+				<th>입금</th>
+				<th>출금</th>
+				<th>비고</th>
+			</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>
+</div>
+
+<script type="text/javascript">
+	$(function () {
+		getSubsectionList();
+		getPage();
+	})
+
+	$("#btnSearch").on("click", function() {
+		getPage();
+	})
+
+	$("#type").on("change", function () {
+		getSubsectionList();
+	});
+
+	// 조회시작일 변경 시 회계년도가 변경되는 경우만 관항목 다시 불러오기
+	$("#start_date").on("focus", function () {
+		previous = this.value;
+	}).change(function () {
+		var prevSessionYear = getSessionYear($("#institution").val(), previous);
+		var currSessionYear = getSessionYear($("#institution").val(), this.value);
+		if (prevSessionYear == currSessionYear) {
+			return false;
+		}
+		getSubsectionList();
+	});
+
+	$("#subsection").on("change", function () {
+		if ($(this).val() != "") {
+			getParagraphList();
+		} else {
+			$("#paragraph").find("option").remove();
+			$("#paragraph").append("<option value=''>항선택</option>");
+			$("#item").find("option").remove();
+			$("#item").append("<option value=''>목선택</option>");
+		}
+	});
+
+	$("#paragraph").on("change", function () {
+		if ($(this).val() != "") {
+			getItemList();
+		} else {
+			$("#item").find("option").remove();
+			$("#item").append("<option value=''>목선택</option>");
+		}
+	});
+
+	function getPage() {
+		$.ajax({
+			type: "post"
+			,url: "{% url 'transaction_list' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'start_date': $("#start_date").val()
+				,'end_date': $("#end_date").val()
+				,'keyword': $("#keyword").val().trim()
+				,'type': $("#type").val()
+				,'subsection': $("#subsection").val()
+				,'paragraph': $("#paragraph").val()
+				,'item': $("#item").val()
+            }
+			,dataType: "json"
+			,success: function(data) {
+				$('#tbList tbody').empty();
+
+				var html = [];
+				$.each(data, function(index, item) {
+					var rowItem = "<tr>"
+					rowItem += "<td>" + (index + 1) + "</td>"
+					rowItem += "<td>" + item.Bkdate + "</td>"
+					rowItem += "<td>" + item.io_type + "</td>"
+					rowItem += "<td>" + item.spi_code + "</td>"
+					rowItem += "<td class='text-left'>" + item.item_context + "</td>"
+					rowItem += "<td class='text-left'>" + item.Bkjukyo + "</td>"
+					rowItem += "<td class='text-right'>" + item.Bkinput.comma() + "</td>"
+					rowItem += "<td class='text-right'>" + item.Bkoutput.comma() + "</td>"
+					rowItem += "<td class='text-left'>" + ChkIsEmpty(item.remark) + "</td>"
+					rowItem += "</tr>"
+					html.push(rowItem)
+				});
+				$("#tbList").append(html);
+
+			}
+			,error: function(xhr, status, message) {
+				alert(xhr + '\n' + status + '\n' + message);
+			}
+		});
+	}
+
+	function getSubsectionList() {
+		$.ajax({
+			type: "post"
+			,url: "{% url 'subsection_list' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'institution': $("#institution").val()
+                ,'year': getSessionYear($("#institution").val(), $("#start_date").val())
+				,'type': $("#type").val()
+                ,'keyword': $("#keyword").val().trim()
+            }
+			,dataType: "json"
+			,success: function(data) {
+				$("#subsection").find("option").remove();
+				$("#subsection").append("<option value=''>관선택</option>");
+
+				$.each(data, function(index, item) {
+					$("#subsection").append("<option value='" + item.id + "'>[" + item.code + "]" + item.context + "</option>");
+				});
+				$("#subsection").trigger("change");
+			}
+			,error: function(xhr, status, message) {
+				alert(xhr + '\n' + status + '\n' + message);
+			}
+		});
+	}
+
+	function getParagraphList() {
+		$.ajax({
+			type: "post"
+			,url: "{% url 'paragraph_list' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'subsection': $("#subsection").val()
+            }
+			,dataType: "json"
+			,success: function(data) {
+				$("#paragraph").find("option").remove();
+				$("#paragraph").append("<option value=''>항선택</option>");
+
+				$.each(data, function(index, item) {
+					$("#paragraph").append("<option value='" + item.id + "'>[" + item.code + "]" + item.context + "</option>");
+				});
+				$("#paragraph").trigger("change");
+			}
+			,error: function(xhr, status, message) {
+				alert(xhr + '\n' + status + '\n' + message);
+			}
+		});
+	}
+
+	function getItemList() {
+		$.ajax({
+			type: "post"
+			,url: "{% url 'item_list' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'paragraph': $("#paragraph").val()
+            }
+			,dataType: "json"
+			,success: function(data) {
+				$("#item").find("option").remove();
+				$("#item").append("<option value=''>목선택</option>");
+
+				$.each(data, function(index, item) {
+					$("#item").append("<option value='" + item.id + "'>[" + item.code + "]" + item.context + "</option>");
+				});
+			}
+			,error: function(xhr, status, message) {
+				alert(xhr + '\n' + status + '\n' + message);
+			}
+		});
+	}
+
+</script>
+{% endblock %}

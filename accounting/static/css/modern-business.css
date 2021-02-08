@@ -54,3 +54,17 @@ table .full-width{
   display: table;
 }
 
+/* css 추가 */
+.type0 {
+      border: 1px solid #000000;
+}
+.table td, .table th {
+  vertical-align: middle;
+  text-align: center;
+}
+.input-sm {
+  height: 30px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}

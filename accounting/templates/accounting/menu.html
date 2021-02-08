@@ -20,6 +20,7 @@
 					<a class="nav-link dropdown-toggle" href="#" id="navbarDropdownBlog" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">회계관리</a>
 					<div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownBlog">
 						<a class="dropdown-item {{ transaction_history_page }}" href="{% url 'transaction_history' %}">거래내역</a>
+						<a class="dropdown-item {{ transaction_list_page }}" href="{% url 'transaction_list' %}">거래조회</a>
 						<a class="dropdown-item {{ account_list }}" href="{% url 'account_list' %}">계좌관리</a>
 						<a class="dropdown-item {{ subdivision_list }}" href="{% url 'subdivision_list' %}">세목등록</a>
 						<a class="dropdown-item {{ close_list }}" href="{% url 'close_list' %}">마감등록</a>

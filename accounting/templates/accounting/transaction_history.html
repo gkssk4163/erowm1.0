@@ -41,7 +41,7 @@
 						</tr>
 						<tr>
 							<td colspan=13>
-								은행계좌 : 
+								은행계좌 :
 								<select name="acctid" onchange="location='{% url "transaction_history" %}?page=1&page2=1&year={{year}}&month={{month}}&acctid='+this.value;">
 									{% for acct in acct_list %}
 									<option value="{{ acct.id }}" {% if acct.id == acctid %}selected{% endif %}>[{{ acct.bank.name }}]{{ acct.account_number }}</option>
@@ -65,7 +65,7 @@
 							<th>분할</th>
 						</tr>
 					</thead>
-					
+
 					<tbody>
 						{% for dt in data %}
 						{% with forloop.counter as outer_counter %}
@@ -325,7 +325,7 @@
 							<th>출력</th>
 						</tr>
 					</thead>
-					
+
 					<tbody>
 						{% for dt in data2 %}
 						<tr>

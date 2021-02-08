@@ -35,6 +35,11 @@ from accounting.common import getTransactionSumBySubsection, getTransactionSumBy
 from accounting.common import getTransactionSumByName, getTransactionSumByCode, getTransactionListByName
 from accounting.common import getBudgetSumBySubsection, getBudgetSumByItem
 
+from accounting.subsection import getSubsectionList
+from accounting.paragraph import getParagraphList
+from accounting.item import getItemList
+from accounting.view.transaction import getTransactionList
+
 # Create your views here.
 
 ACCOUNTANT = 1
@@ -853,6 +858,57 @@ def transaction_history(request):
     return render(request, 'accounting/transaction_history.html', {
         'selected_check_list': selected_check_list, 'total_input': total_input, 'total_output': total_output, 'jango': jango, 'premonth_transfer_price': premonth_transfer_price, 'year': int(year), 'month': int(month), 'year_range': range(int(DateFormat(today).format("Y")), 1999, -1), 'month_range': range(1,13), 'acctid': int(acctid), 'page': page, 'page2': page2, 'acct_list': acct_list, 'selected_subdivision_list': selected_subdivision_list, 'selected_input_subdivision_list': selected_input_subdivision_list, 'relative_item_list': relative_item_list, 'input_subsections': input_subsections, 'selected_subsection_list': selected_subsection_list, 'selected_item_list': selected_item_list, 'data': data, 'data2': data2, 'input_items': input_items, 'output_items': output_items, 'subdivision_list': subdivision_list, 'business': business, 'accounting_management': 'active', 'transaction_history_page': 'active', 'master_login': request.session['master_login'],
     })
+
+@login_required(login_url='/')
+def transaction_list(request):
+    business = get_object_or_404(Business, pk=request.session['business'])
+
+    if request.method == "GET":
+        today = datetime.datetime.now()
+        firstDay = today.replace(day=1)
+        nextMonth = firstDay + relativedelta(months=1)
+        lastDay = nextMonth - relativedelta(days=1)
+
+        start_date = request.GET.get('start_date', firstDay)
+        end_date = request.GET.get('end_date', lastDay)
+        keyword = request.GET.get('keyword', "")
+
+        param = {
+            'start_date': DateFormat(start_date).format("Y-m-d")
+            ,'end_date': DateFormat(end_date).format("Y-m-d")
+            ,'keyword': keyword
+        }
+
+        return render(request, 'accounting/transaction/list.html', {
+            'business': business, 'master_login': request.session['master_login'],
+            'accounting_management': 'active', 'transaction_list_page': 'active',
+            'param': param
+        })
+    else:
+        param = {
+            'business': business
+            ,'start_date': request.POST.get('start_date')
+            ,'end_date': request.POST.get('end_date')
+            ,'keyword': request.POST.get('keyword')
+            ,'type': request.POST.get('type')
+            ,'subsection': request.POST.get('subsection')
+            ,'paragraph': request.POST.get('paragraph')
+            ,'item': request.POST.get('item')
+            ,'codeYN': 'N'
+        }
+
+        transaction = getTransactionList(param)  # QuerySet
+        data = list(transaction.values())  # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
+
+        from django.forms.models import model_to_dict
+        for d in data:
+            # item = model_to_dict(Item.objects.get(pk = d['item_id']))
+            item = Item.objects.get(pk = d['item_id'])
+            d['io_type'] = item.paragraph.subsection.type
+            d['spi_code'] = str(item.paragraph.subsection.code) + str(item.paragraph.code) + str(item.code)
+            d['item_context'] = item.context
+
+        return JsonResponse(data, safe=False)  # safe=False 필수
 
 @login_required(login_url='/')
 def regist_transaction(request):
@@ -4032,3 +4088,36 @@ def budget_spi_total(request):
 
     context = {'total': total}
     return HttpResponse(json.dumps(context), content_type="application/json")
+
+
+# ajax
+from django.http.response import JsonResponse
+
+def subsection_list(request):
+    if request.method == "POST":
+        institution = request.POST.get('institution')
+        year = request.POST.get('year')
+        type = request.POST.get('type')
+
+        subsection = getSubsectionList(institution, year, type)   # QuerySet
+        data = list(subsection.values())     # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
+
+        return JsonResponse(data, safe=False)   # safe=False 필수
+
+def paragraph_list(request):
+    if request.method == "POST":
+        subsection = request.POST.get('subsection')
+
+        subsection = getParagraphList(subsection)   # QuerySet
+        data = list(subsection.values())     # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
+
+        return JsonResponse(data, safe=False)   # safe=False 필수
+
+def item_list(request):
+    if request.method == "POST":
+        paragraph = request.POST.get('paragraph')
+
+        paragraph = getItemList(paragraph)  # QuerySet
+        data = list(paragraph.values())  # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
+
+        return JsonResponse(data, safe=False)  # safe=False 필수
