@@ -196,6 +196,8 @@ def business_edit(request, pk):
                 business.session_month = '03'
             else :
                 business.session_month = '01'
+            business.ceo_stamp = request.FILES['ceo_stamp']
+            business.manager_stamp = request.FILES['manager_stamp']
             business.save()
             return redirect('business_list')
     else:

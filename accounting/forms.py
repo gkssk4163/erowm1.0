@@ -186,17 +186,21 @@ class BusinessForm(forms.ModelForm):
 
     class Meta:
         model = Business
-        fields = ('name', 'place_name', 'reg_number', 'owner_name', 'owner_reg_number1', 'owner_reg_number2', 'type1', 'type2', 'type3','cellphone', 'phone', 'fax', 'email', 'zip_number', 'address', 'detailed_address')
+        fields = ('name', 'place_name', 'reg_number', 'owner_name', 'owner_reg_number1',
+                  'owner_reg_number2', 'type1', 'type2', 'type3','cellphone', 'phone', 'fax',
+                  'email', 'zip_number', 'address', 'detailed_address', 'ceo_stamp', 'manager_stamp')
         labels = {
-                'name': '사업명',
-                'place_name': '사업장명',
-                'owner_name': '대표자성명',
-                'type1': '업태',
-                'type2': '업종',
-                'type3': '사업종류',
-                'email': '이메일',
-                'address': '주소',
-                'detailed_address': '상세주소',
+            'name': '사업명',
+            'place_name': '사업장명',
+            'owner_name': '대표자성명',
+            'type1': '업태',
+            'type2': '업종',
+            'type3': '사업종류',
+            'email': '이메일',
+            'address': '주소',
+            'detailed_address': '상세주소',
+            'ceo_stamp': '원장 도장',
+            'manager_stamp': '담당자 도장',
         }
     def __init__(self, *args, **kwargs):
         super(BusinessForm, self).__init__(*args, **kwargs)

@@ -5,7 +5,7 @@
 
 <div class="row mb-4">
 	<div class="col-md-12">
-		<form method="POST" class="business-form">
+		<form method="POST" class="business-form" enctype="multipart/form-data">
 			{% csrf_token %}
 			<table class="table table-sm">
 				{% for field in form %}
