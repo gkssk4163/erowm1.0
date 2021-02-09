@@ -68,3 +68,6 @@ table .full-width{
   font-size: 12px;
   line-height: 1.5;
 }
+.overlay-wrapper .overlay {position:absolute;top:0;left:0;width:100%;height:100%;}
+.overlay-wrapper .overlay {z-index:50;background:rgba(255,255,255,0.7);border-radius: 3px;}
+.overlay-wrapper .overlay>.fas {position:absolute;top:40vh;left:50%;transform:translate(-50%, -50%);color:#000;font-size:100px;}

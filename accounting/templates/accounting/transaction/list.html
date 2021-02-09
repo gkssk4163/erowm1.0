@@ -9,9 +9,13 @@
 
 <h1 class="mb-3">거래조회</h1>
 
+<section class="content overlay-wrapper">
+<div class="overlay">
+	<i class="fas fa-spinner fa-pulse"></i>
+</div>
 <div class="row">
 	<div class="col-md-12">
-		<form name="searchForm">
+<!--		<form name="searchForm">-->
 			<input type="hidden" id="institution" name="institution" value="{{ business.type3 }}">
 			<table class="type0 table table-sm table-bordered">
 				<colgroup>
@@ -37,7 +41,7 @@
 					</td>
 					<th>검색어</th>
 					<td>
-						<input type="text" id="keyword" name="keyword" class="form-control input-sm" value="{{ param.keyword }}">
+						<input type="text" id="keyword" name="keyword" class="form-control input-sm rudder" value="{{ param.keyword }}">
 					</td>
 				</tr>
 				<tr>
@@ -70,17 +74,17 @@
 					</td>
 				</tr>
 			</table>
-		</form>
-	</div>
-</div>
-<div class="row mb-2">
-	<div class="col-md-12">
-		<div class="float-left">
-			<span class="text-danger">관항목은 조회시작일을 기준으로 해당 회계년도의 관항목이 표시됩니다.</span>
-		</div>
-		<div class="float-right">
-			<button class="btn btn-sm btn-primary" id="btnSearch" style="width: 100px;">검색</button>
-		</div>
+			<div class="row">
+				<div class="col-md-12 mb-3">
+					<div class="float-left">
+						<span class="text-danger">관항목은 조회시작일을 기준으로 해당 회계년도의 관항목이 표시됩니다.</span>
+					</div>
+					<div class="float-right">
+						<button class="btn btn-sm btn-primary enter-data" id="btnSearch" style="width: 100px;">검색</button>
+					</div>
+				</div>
+			</div>
+<!--		</form>-->
 	</div>
 </div>
 <div class="row">
@@ -103,6 +107,7 @@
 		</table>
 	</div>
 </div>
+</section>
 
 <script type="text/javascript">
 	$(function () {
@@ -150,7 +155,14 @@
 		}
 	});
 
+	$("#keyword").on("keyup", function(event) {
+		if (event.keyCode == 13) {
+			$("#btnSearch").trigger("click");
+		}
+	});
+
 	function getPage() {
+		$(".overlay").show();
 		$.ajax({
 			type: "post"
 			,url: "{% url 'transaction_list' %}"
@@ -167,24 +179,28 @@
 			,dataType: "json"
 			,success: function(data) {
 				$('#tbList tbody').empty();
-
-				var html = [];
-				$.each(data, function(index, item) {
-					var rowItem = "<tr>"
-					rowItem += "<td>" + (index + 1) + "</td>"
-					rowItem += "<td>" + item.Bkdate + "</td>"
-					rowItem += "<td>" + item.io_type + "</td>"
-					rowItem += "<td>" + item.spi_code + "</td>"
-					rowItem += "<td class='text-left'>" + item.item_context + "</td>"
-					rowItem += "<td class='text-left'>" + item.Bkjukyo + "</td>"
-					rowItem += "<td class='text-right'>" + item.Bkinput.comma() + "</td>"
-					rowItem += "<td class='text-right'>" + item.Bkoutput.comma() + "</td>"
-					rowItem += "<td class='text-left'>" + ChkIsEmpty(item.remark) + "</td>"
-					rowItem += "</tr>"
-					html.push(rowItem)
-				});
-				$("#tbList").append(html);
-
+				if (data.length > 0) {
+					var html = [];
+					$.each(data, function(index, item) {
+						var rowItem = "<tr>"
+						rowItem += "<td>" + (index + 1) + "</td>"
+						rowItem += "<td>" + item.Bkdate + "</td>"
+						rowItem += "<td>" + item.io_type + "</td>"
+						rowItem += "<td>" + item.spi_code + "</td>"
+						rowItem += "<td class='text-left'>" + item.item_context + "</td>"
+						rowItem += "<td class='text-left'>" + item.Bkjukyo + "</td>"
+						rowItem += "<td class='text-right'>" + item.Bkinput.comma() + "</td>"
+						rowItem += "<td class='text-right'>" + item.Bkoutput.comma() + "</td>"
+						rowItem += "<td class='text-left'>" + ChkIsEmpty(item.remark) + "</td>"
+						rowItem += "</tr>"
+						html.push(rowItem);
+					});
+					$("#tbList").append(html);
+				}
+				else {
+					$("#tbList").append("<tr><td colspan='9'>조회된 데이터가 없습니다.</td></tr>");
+				}
+				$(".overlay").hide();
 			}
 			,error: function(xhr, status, message) {
 				alert(xhr + '\n' + status + '\n' + message);
