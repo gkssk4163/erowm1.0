@@ -4,4 +4,4 @@ __pycache__
 /gitdownload
 *.log
 /media
-/static
+*key.json

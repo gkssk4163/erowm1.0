@@ -40,6 +40,8 @@ from accounting.paragraph import getParagraphList
 from accounting.item import getItemList
 from accounting.view.transaction import getTransactionList
 
+from accounting.view.bankda import account_info_xml
+
 # Create your views here.
 
 ACCOUNTANT = 1
@@ -364,30 +366,18 @@ def business_info(request):
 def account_list(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     lists = Account.objects.filter(business=business)
-    # url = "https://ssl.bankda.com/partnership/partner/account_list_userid_xml.php"
-    # headers = {'content-type': 'application/soap+xml'}
-    # data = {'service_type': 'basic', 'partner_id': 'vizun21',
-    #         'user_id': request.user.username, 'user_pw': request.user.password[34:],
-    #         'char_set': 'utf8'}
-    # resMsg = requests.post(url, data=data)
-    #
-    # import xml.etree.ElementTree as ET
-    # root = ET.fromstring(resMsg.content.decode('utf-8'))
-    #
-    # for list in lists:
-    #     for account in root.iter("account_info"):
-    #         print(account)
-    #         if account.attrib['actaccountnum'] == list.account_number:
-    #             list.act_status = account.attrib['act_status']
 
-    #
-    # for list in lists:
-    #     data = {
-    #         'partner_id': "vizun21", 'partner_pw': "wmso258079*"
-    #         , 'service_type': "basic", 'bkacctno': list.account_number
-    #     }
-    #     resMsg = requests.post(url, data=data)
-    #     print(resMsg)
+    with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
+        json_data = json.load(f)
+
+    for list in lists:
+        data = {
+            'service_type': "basic"
+            ,'bkacctno': list.account_number
+            ,'partner_id': json_data['id']
+            ,'partner_pw': json_data['pw']
+        }
+        list.bankda = account_info_xml(data)
 
     return render(request, 'accounting/account_list.html', {
         'lists': lists, 'business': business, 'accounting_management': 'active',
@@ -3352,7 +3342,6 @@ def authkey_edit(request):
 @login_required(login_url='/')
 def print_budget_all(request):
     business = get_object_or_404(Business, pk=request.session['business'])
-    today = datetime.datetime.now()
     year = int(request.POST.get('year'))
 
     general = _budget_general(request, year)
@@ -3410,15 +3399,11 @@ def _budget_content(request, year, budget_type):
         stype_filter = '수입'
     elif budget_type in ['expenditure']:
         stype_filter='지출'
-    
+
     # 총합 : 예산액, 전년도 예산액, 비교증감
     total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type=stype_filter, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
     xtotal = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type=stype_filter, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
     dtotal = total - xtotal
-
-    budget_list = []
-    spi_list = []
-    paragraph_list = []
 
     subsection_list = Subsection.objects.filter(year=year, type=stype_filter, institution=business.type3).exclude(code=0)
     for subsection in subsection_list:
@@ -3426,14 +3411,14 @@ def _budget_content(request, year, budget_type):
         subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
         subsection.ds_total = subsection.s_total - subsection.xs_total
         print("관(", subsection.code, ") : ", subsection.s_total, subsection.xs_total, subsection.ds_total)
-        
+
         paragraph_list = Paragraph.objects.filter(subsection=subsection)
         for paragraph in paragraph_list:
             paragraph.p_total = Budget.objects.filter(business=business, year=year, item__paragraph=paragraph, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
             paragraph.xp_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, item__paragraph__code = paragraph.code, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
             paragraph.dp_total = paragraph.p_total - paragraph.xp_total
             print("관항(", subsection.code,paragraph.code, ") : ", paragraph.p_total, paragraph.xp_total, paragraph.dp_total)
-            
+
             item_list = Item.objects.filter(paragraph=paragraph)
             for item in item_list:
                 budget = Budget.objects.get(business=business, year=year, item=item, type=budget_type)
@@ -3445,13 +3430,7 @@ def _budget_content(request, year, budget_type):
                 item.di_total = item.i_total - item.xi_total
                 print("관항목(", subsection.code, paragraph.code, item.code, ") : ", item.i_total, item.xi_total, item.di_total)
 
-                context_list = []
-                unit_price_list = []
-                cnt_list = []
-                months_list = []
                 percent_list = []
-                sub_price_list = []
-
                 sub_columns = ['item','context','unit_price','cnt','months','percent','sub_price']
                 context_list = budget.context.split("|")
                 unit_price_list = budget.unit_price.split("|")
@@ -3482,15 +3461,12 @@ def _budget_content(request, year, budget_type):
     page_list = []
     sub_row = []
     for index, subsection in enumerate(subsection_list):
-        # print(index, subsection)
         sub_row.append(subsection)
         if (budget_type in ['revenue', 'supplementary_revenue', 'supplementary_revenue']) and (index+1 in [3,9]):
             page_list.append(sub_row)
-            # print(index, sub_row)
             sub_row = []
         elif (budget_type in ['expenditure', 'supplementary_expenditure', 'supplementary_expenditure']) and (index+1 in [1,2,5,10]):
             page_list.append(sub_row)
-            # print(index, sub_row)
             sub_row = []
 
     budget_content = {

@@ -62,6 +62,10 @@ table .full-width{
   vertical-align: middle;
   text-align: center;
 }
+.form-control {
+  min-width: 120px;
+  margin-right: 3px;
+}
 .input-sm {
   height: 30px;
   padding: 5px 10px;
