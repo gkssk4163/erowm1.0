@@ -276,67 +276,71 @@
 {% for transaction in data.item.transaction %}
 <div class="page">
 	<center><h1>수입결의서</h1></center>
-	<table width="100%" height="800" style="border-collapse:collapse;table-layout:fixed" border="1" cellpadding="2" class="th-nowrap td-nowrap">
-		<thead>
-			<colgroup>
-				<col width="20%"/>
-				<col width="30%"/>
-				<col width="15%"/>
-				<col width="5%"/>
-				<col width="15%"/>
-				<col width="15%"/>
-			</colgroup>
-			<tr height="5%">
-				<th>증빙서번호</th>
-				<th colspan="2" rowspan="2">{{ year }}년도 수입<br>아래와 같이 수입함</th>
-				<th rowspan="2">결재</th>
-				<th>담당</th>
-				<th>원장</th>
-			</tr>
-			<tr height="10%">
-				<th>{% if transaction.0.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.0.proofnum|stringformat:"05d" }}</th>
-				<th></th>
-				<th></th>
-			</tr>
-		</thead>
-		<tbody style="text-align:center">
-			<tr height="8%">
-				<td>관</td>
-				<td>{{ data.item.context }}</td>
-				<td colspan="2">발의</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="8%">
-				<td>항</td>
-				<td>{{ data.item.paragraph.context }}</td>
-				<td colspan="2">현금출납부등재</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="8%">
-				<td>목</td>
-				<td>{{ data.item.paragraph.subsection.context }}</td>
-				<td colspan="2">총계정원장등재</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="10%">
-				<td colspan="6" style="font-weight:bold;">
-					일금 {{ data.item.sum_ko }}원정<br>
-					￦{{ data.item.sum|intcomma }}
-				</td>
-			</tr>
-			<tr height="36%">
-				<td>적요</td>
-				<td colspan="5" style="text-align:left">
-					{% for transaction in transaction %}
-					[{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}]{{ transaction.Bkjukyo }}:{{ transaction.Bkinput|intcomma }}<br>
-					{% endfor %}
-				</td>
-			</tr>
-			<tr height="15%">
-				<td>비고</td>
-				<td colspan="5">{{ transaction.remark }}</td>
-			</tr>
-		</tbody>
+	<table width="100%" height="800" class="table table-sm table-bordered th-nowrap td-nowrap">
+		<colgroup>
+			<col width="20%"/>
+			<col width="30%"/>
+			<col width="15%"/>
+			<col width="5%"/>
+			<col width="15%"/>
+			<col width="15%"/>
+		</colgroup>
+		<tr height="50">
+			<th>증빙서번호</th>
+			<th colspan="2" rowspan="2">{{ year }}년도 수입<br>아래와 같이 수입함</th>
+			<th rowspan="2">결재</th>
+			<th>담당</th>
+			<th>원장</th>
+		</tr>
+		<tr height="100">
+			<th>{% if transaction.0.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.0.proofnum|stringformat:"05d" }}</th>
+			<th>
+			{% if business.manager_stamp %}
+				<img src="{{ business.manager_stamp.url }}" width="100" height="100">
+			{% endif %}
+			</th>
+			<th>
+			{% if business.ceo_stamp %}
+				<img src="{{ business.ceo_stamp.url }}" width="100" height="100">
+			{% endif %}
+			</th>
+		</tr>
+		<tr height="80">
+			<td>관</td>
+			<td>{{ data.item.context }}</td>
+			<td colspan="2">발의</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="80">
+			<td>항</td>
+			<td>{{ data.item.paragraph.context }}</td>
+			<td colspan="2">현금출납부등재</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="80">
+			<td>목</td>
+			<td>{{ data.item.paragraph.subsection.context }}</td>
+			<td colspan="2">총계정원장등재</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="100">
+			<td colspan="6" style="font-weight:bold;">
+				일금 {{ data.item.sum_ko }}원정<br>
+				￦{{ data.item.sum|intcomma }}
+			</td>
+		</tr>
+		<tr>
+			<td>적요</td>
+			<td colspan="5" style="text-align:left">
+				{% for transaction in transaction %}
+				[{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}]{{ transaction.Bkjukyo }}:{{ transaction.Bkinput|intcomma }}<br>
+				{% endfor %}
+			</td>
+		</tr>
+		<tr>
+			<td>비고</td>
+			<td colspan="5">{{ transaction.remark }}</td>
+		</tr>
 	</table>
 </div>
 {% endfor %}
@@ -351,71 +355,75 @@
 {% for data in revenue_returned_voucher_list %}
 <div class="page">
 	<center><h1>수입반납결의서</h1></center>
-	<table width="100%" height="800" style="border-collapse:collapse;table-layout:fixed" border="1" cellpadding="2" class="th-nowrap td-nowrap">
-		<thead>
-			<colgroup>
-				<col width="20%"/>
-				<col width="30%"/>
-				<col width="15%"/>
-				<col width="5%"/>
-				<col width="15%"/>
-				<col width="15%"/>
-			</colgroup>
-			<tr height="5%">
-				<th>증빙서번호</th>
-				<th colspan="2" rowspan="2">{{ year }}년도 수입<br>아래와 같이 수입함</th>
-				<th rowspan="2">결재</th>
-				<th>담당</th>
-				<th>원장</th>
-			</tr>
-			<tr height="10%">
-				<th>{% if data.item.transaction.0.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ data.item.transaction.0.proofnum|stringformat:"05d" }}</th>
-				<th></th>
-				<th></th>
-			</tr>
-		</thead>
-		<tbody style="text-align:center">
-			<tr height="8%">
-				<td>관</td>
-				<td>{{ data.item.context }}</td>
-				<td colspan="2">발의</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="8%">
-				<td>항</td>
-				<td>{{ data.item.paragraph.context }}</td>
-				<td colspan="2">현금출납부등재</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="8%">
-				<td>목</td>
-				<td>{{ data.item.paragraph.subsection.context }}</td>
-				<td colspan="2">총계정원장등재</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="10%">
-				<td colspan="6" style="font-weight:bold;">
-					일금 {{ data.item.sum_ko }}원정<br>
-					￦{{ data.item.sum|intcomma }}
-				</td>
-			</tr>
-			<tr height="36%">
-				<td>적요</td>
-				<td colspan="5" style="text-align:left">
-					{% for transaction in data.item.transaction %}
-					[{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}]{{ transaction.Bkjukyo }}:{{ transaction.Bkinput|intcomma }}<br>
-					{% endfor %}
-				</td>
-			</tr>
-			<tr height="15%">
-				<td>비고</td>
-				<td colspan="5" style="text-align:left">
-					{% for transaction in data.item.transaction %}
-					{% if transaction.remark %}{{ transaction.remark }}<br>{% endif %}
-					{% endfor %}
-				</td>
-			</tr>
-		</tbody>
+	<table width="100%" height="800" class="table table-sm table-bordered th-nowrap td-nowrap">
+		<colgroup>
+			<col width="20%"/>
+			<col width="30%"/>
+			<col width="15%"/>
+			<col width="5%"/>
+			<col width="15%"/>
+			<col width="15%"/>
+		</colgroup>
+		<tr height="50">
+			<th>증빙서번호</th>
+			<th colspan="2" rowspan="2">{{ year }}년도 수입<br>아래와 같이 수입함</th>
+			<th rowspan="2">결재</th>
+			<th>담당</th>
+			<th>원장</th>
+		</tr>
+		<tr height="100">
+			<th>{% if data.item.transaction.0.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ data.item.transaction.0.proofnum|stringformat:"05d" }}</th>
+			<th>
+			{% if business.manager_stamp %}
+				<img src="{{ business.manager_stamp.url }}" width="100" height="100">
+			{% endif %}
+			</th>
+			<th>
+			{% if business.ceo_stamp %}
+				<img src="{{ business.ceo_stamp.url }}" width="100" height="100">
+			{% endif %}
+			</th>
+		</tr>
+		<tr height="80">
+			<td>관</td>
+			<td>{{ data.item.context }}</td>
+			<td colspan="2">발의</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="80">
+			<td>항</td>
+			<td>{{ data.item.paragraph.context }}</td>
+			<td colspan="2">현금출납부등재</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="80">
+			<td>목</td>
+			<td>{{ data.item.paragraph.subsection.context }}</td>
+			<td colspan="2">총계정원장등재</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="100">
+			<td colspan="6" style="font-weight:bold;">
+				일금 {{ data.item.sum_ko }}원정<br>
+				￦{{ data.item.sum|intcomma }}
+			</td>
+		</tr>
+		<tr>
+			<td>적요</td>
+			<td colspan="5" style="text-align:left">
+				{% for transaction in data.item.transaction %}
+				[{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}]{{ transaction.Bkjukyo }}:{{ transaction.Bkinput|intcomma }}<br>
+				{% endfor %}
+			</td>
+		</tr>
+		<tr>
+			<td>비고</td>
+			<td colspan="5" style="text-align:left">
+				{% for transaction in data.item.transaction %}
+				{% if transaction.remark %}{{ transaction.remark }}<br>{% endif %}
+				{% endfor %}
+			</td>
+		</tr>
 	</table>
 </div>
 {% endfor %}
@@ -430,67 +438,71 @@
 {% for transaction in data.item.transaction %}
 <div class="page">
 	<center><h1>지출결의서</h1></center>
-	<table width="100%" height="800" style="border-collapse:collapse;table-layout:fixed" border="1" cellpadding="2" class="th-nowrap td-nowrap">
-		<thead>
-			<colgroup>
-				<col width="20%"/>
-				<col width="30%"/>
-				<col width="15%"/>
-				<col width="5%"/>
-				<col width="15%"/>
-				<col width="15%"/>
-			</colgroup>
-			<tr height="5%">
-				<th>증빙서번호</th>
-				<th colspan="2" rowspan="2">{{ year }}년도 지출<br>아래와 같이 지출함</th>
-				<th rowspan="2">결재</th>
-				<th>담당</th>
-				<th>원장</th>
-			</tr>
-			<tr height="10%">
-				<th>{% if transaction.0.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.0.proofnum|stringformat:"05d" }}</th>
-				<th></th>
-				<th></th>
-			</tr>
-		</thead>
-		<tbody style="text-align:center">
-			<tr height="8%">
-				<td>관</td>
-				<td>{{ data.item.context }}</td>
-				<td colspan="2">발의</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="8%">
-				<td>항</td>
-				<td>{{ data.item.paragraph.context }}</td>
-				<td colspan="2">현금출납부등재</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="8%">
-				<td>목</td>
-				<td>{{ data.item.paragraph.subsection.context }}</td>
-				<td colspan="2">총계정원장등재</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="10%">
-				<td colspan="6" style="font-weight:bold;">
-					일금 {{ data.item.sum_ko }}원정<br>
-					￦{{ data.item.sum|intcomma }}
-				</td>
-			</tr>
-			<tr height="36%">
-				<td>적요</td>
-				<td colspan="5" style="text-align:left">
-					{% for transaction in transaction %}
-					[{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}]{{ transaction.Bkjukyo }}:{{ transaction.Bkoutput|intcomma }}<br>
-					{% endfor %}
-				</td>
-			</tr>
-			<tr height="15%">
-				<td>비고</td>
-				<td colspan="5">{{ transaction.remark }}</td>
-			</tr>
-		</tbody>
+	<table width="100%" height="800" class="table table-sm table-bordered th-nowrap td-nowrap">
+		<colgroup>
+			<col width="20%"/>
+			<col width="30%"/>
+			<col width="15%"/>
+			<col width="5%"/>
+			<col width="15%"/>
+			<col width="15%"/>
+		</colgroup>
+		<tr height="50">
+			<th>증빙서번호</th>
+			<th colspan="2" rowspan="2">{{ year }}년도 지출<br>아래와 같이 지출함</th>
+			<th rowspan="2">결재</th>
+			<th>담당</th>
+			<th>원장</th>
+		</tr>
+		<tr height="100">
+			<th>{% if transaction.0.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.0.proofnum|stringformat:"05d" }}</th>
+			<th>
+			{% if business.manager_stamp %}
+				<img src="{{ business.manager_stamp.url }}" width="100" height="100">
+			{% endif %}
+			</th>
+			<th>
+			{% if business.ceo_stamp %}
+				<img src="{{ business.ceo_stamp.url }}" width="100" height="100">
+			{% endif %}
+			</th>
+		</tr>
+		<tr height="80">
+			<td>관</td>
+			<td>{{ data.item.context }}</td>
+			<td colspan="2">발의</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="80">
+			<td>항</td>
+			<td>{{ data.item.paragraph.context }}</td>
+			<td colspan="2">현금출납부등재</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="80">
+			<td>목</td>
+			<td>{{ data.item.paragraph.subsection.context }}</td>
+			<td colspan="2">총계정원장등재</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="100">
+			<td colspan="6" style="font-weight:bold;">
+				일금 {{ data.item.sum_ko }}원정<br>
+				￦{{ data.item.sum|intcomma }}
+			</td>
+		</tr>
+		<tr>
+			<td>적요</td>
+			<td colspan="5" style="text-align:left">
+				{% for transaction in transaction %}
+				[{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}]{{ transaction.Bkjukyo }}:{{ transaction.Bkoutput|intcomma }}<br>
+				{% endfor %}
+			</td>
+		</tr>
+		<tr>
+			<td>비고</td>
+			<td colspan="5">{{ transaction.remark }}</td>
+		</tr>
 	</table>
 </div>
 {% endfor %}
@@ -505,71 +517,75 @@
 {% for data in expenditure_returned_voucher_list %}
 <div class="page">
 	<center><h1>지출반납결의서</h1></center>
-	<table width="100%" height="800" style="border-collapse:collapse;table-layout:fixed" border="1" cellpadding="2" class="th-nowrap td-nowrap">
-		<thead>
-			<colgroup>
-				<col width="20%"/>
-				<col width="30%"/>
-				<col width="15%"/>
-				<col width="5%"/>
-				<col width="15%"/>
-				<col width="15%"/>
-			</colgroup>
-			<tr height="5%">
-				<th>증빙서번호</th>
-				<th colspan="2" rowspan="2">{{ year }}년도 지출<br>아래와 같이 지출함</th>
-				<th rowspan="2">결재</th>
-				<th>담당</th>
-				<th>원장</th>
-			</tr>
-			<tr height="10%">
-				<th>{% if data.item.transaction.0.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ data.item.transaction.0.proofnum|stringformat:"05d" }}</th>
-				<th></th>
-				<th></th>
-			</tr>
-		</thead>
-		<tbody style="text-align:center">
-			<tr height="8%">
-				<td>관</td>
-				<td>{{ data.item.context }}</td>
-				<td colspan="2">발의</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="8%">
-				<td>항</td>
-				<td>{{ data.item.paragraph.context }}</td>
-				<td colspan="2">현금출납부등재</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="8%">
-				<td>목</td>
-				<td>{{ data.item.paragraph.subsection.context }}</td>
-				<td colspan="2">총계정원장등재</td>
-				<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
-			</tr>
-			<tr height="10%">
-				<td colspan="6" style="font-weight:bold;">
-					일금 {{ data.item.sum_ko }}원정<br>
-					￦{{ data.item.sum|intcomma }}
-				</td>
-			</tr>
-			<tr height="36%">
-				<td>적요</td>
-				<td colspan="5" style="text-align:left">
-					{% for transaction in data.item.transaction %}
-					[{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}]{{ transaction.Bkjukyo }}:{{ transaction.Bkoutput|intcomma }}<br>
-					{% endfor %}
-				</td>
-			</tr>
-			<tr height="15%">
-				<td>비고</td>
-				<td colspan="5" style="text-align:left">
-					{% for transaction in data.item.transaction %}
-					{% if transaction.remark %}{{ transaction.remark }}<br>{% endif %}
-					{% endfor %}
-				</td>
-			</tr>
-		</tbody>
+	<table width="100%" height="800" class="table table-sm table-bordered th-nowrap td-nowrap">
+		<colgroup>
+			<col width="20%"/>
+			<col width="30%"/>
+			<col width="15%"/>
+			<col width="5%"/>
+			<col width="15%"/>
+			<col width="15%"/>
+		</colgroup>
+		<tr height="50">
+			<th>증빙서번호</th>
+			<th colspan="2" rowspan="2">{{ year }}년도 지출<br>아래와 같이 지출함</th>
+			<th rowspan="2">결재</th>
+			<th>담당</th>
+			<th>원장</th>
+		</tr>
+		<tr height="100">
+			<th>{% if data.item.transaction.0.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ data.item.transaction.0.proofnum|stringformat:"05d" }}</th>
+			<th>
+			{% if business.manager_stamp %}
+				<img src="{{ business.manager_stamp.url }}" width="100" height="100">
+			{% endif %}
+			</th>
+			<th>
+			{% if business.ceo_stamp %}
+				<img src="{{ business.ceo_stamp.url }}" width="100" height="100">
+			{% endif %}
+			</th>
+		</tr>
+		<tr height="80">
+			<td>관</td>
+			<td>{{ data.item.context }}</td>
+			<td colspan="2">발의</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="80">
+			<td>항</td>
+			<td>{{ data.item.paragraph.context }}</td>
+			<td colspan="2">현금출납부등재</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="80">
+			<td>목</td>
+			<td>{{ data.item.paragraph.subsection.context }}</td>
+			<td colspan="2">총계정원장등재</td>
+			<td colspan="2">{{ data.date|date:"Y-m-d" }}</td>
+		</tr>
+		<tr height="100">
+			<td colspan="6" style="font-weight:bold;">
+				일금 {{ data.item.sum_ko }}원정<br>
+				￦{{ data.item.sum|intcomma }}
+			</td>
+		</tr>
+		<tr>
+			<td>적요</td>
+			<td colspan="5" style="text-align:left">
+				{% for transaction in data.item.transaction %}
+				[{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}]{{ transaction.Bkjukyo }}:{{ transaction.Bkoutput|intcomma }}<br>
+				{% endfor %}
+			</td>
+		</tr>
+		<tr>
+			<td>비고</td>
+			<td colspan="5" style="text-align:left">
+				{% for transaction in data.item.transaction %}
+				{% if transaction.remark %}{{ transaction.remark }}<br>{% endif %}
+				{% endfor %}
+			</td>
+		</tr>
 	</table>
 </div>
 {% endfor %}
