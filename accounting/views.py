@@ -42,6 +42,10 @@ from accounting.view.transaction import getTransactionList
 
 from accounting.view.bankda import account_info_xml
 
+# file 삭제
+import os
+from erowm import settings
+
 # Create your views here.
 
 ACCOUNTANT = 1
@@ -191,6 +195,17 @@ def business_edit(request, pk):
     owner = request.user.profile.owner
     if request.method == "POST":
         form = BusinessForm(request.POST, instance=business)
+
+        # if form.is_valid() 안에 삭제 구현 시 기존파일 참조 안되는 경우 있어서 밖에 구현
+        # 기존파일삭제(신규등록 시 기존파일 있는경우, 등록취소하는 경우 기존파일 삭제)
+        if (request.FILES.get('ceo_stamp') is not None and request.POST.get('ceo_stamp-clear') is None) \
+                or request.POST.get('ceo_stamp-clear') == 'on':
+            os.remove(os.path.join(settings.MEDIA_ROOT, business.ceo_stamp.name))
+        # 기존파일삭제(신규등록 시 기존파일 있는경우, 등록취소하는 경우 기존파일 삭제)
+        if (request.FILES.get('manager_stamp') is not None and request.POST.get('manager_stamp-clear') is None) \
+                or request.POST.get('manager_stamp-clear') == 'on':
+            os.remove(os.path.join(settings.MEDIA_ROOT, business.manager_stamp.name))
+
         if form.is_valid():
             business = form.save(commit=False)
             business.owner = owner
@@ -198,8 +213,12 @@ def business_edit(request, pk):
                 business.session_month = '03'
             else :
                 business.session_month = '01'
-            business.ceo_stamp = request.FILES['ceo_stamp']
-            business.manager_stamp = request.FILES['manager_stamp']
+
+            if request.FILES.get('ceo_stamp') is not None:
+                business.ceo_stamp = request.FILES.get('ceo_stamp')
+            if request.FILES.get('manager_stamp') is not None:
+                business.manager_stamp = request.FILES.get('manager_stamp')
+
             business.save()
             return redirect('business_list')
     else:
