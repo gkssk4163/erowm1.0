@@ -19,7 +19,7 @@
 				<li class="nav-item {{ agency_list_page }}">
 					<a class="nav-link" href="{% url 'agency_list' %}">대리점관리</a>
 				</li>
-				<li class="nav-item {{ bankda_account_page }}">
+				<li class="nav-item {{ bankda_account_page }} dropdown">
 					<a class="nav-link dropdown-toggle" href="#" id="navbarDropdownBankda" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">뱅크다연동관리</a>
 					<div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownBankda">
 						<a class="dropdown-item {{ bankda_account_page }}" href="{% url 'bankda_account' %}">계좌관리</a>
