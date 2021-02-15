@@ -40,7 +40,7 @@ from accounting.paragraph import getParagraphList
 from accounting.item import getItemList
 from accounting.view.transaction import getTransactionList
 
-from accounting.view.bankda import account_info_xml
+from accounting.view.bankda import account_info_xml, account_list_partnerid_xml
 
 # file 삭제
 import os
@@ -753,7 +753,7 @@ def bankda_join(request):
 
 @login_required(login_url='/')
 def bankda_account(request):
-    accounts = Account.objects.all()
+    accounts = account_list_partnerid_xml()
     return render(request, 'accounting/bankda_account.html', {
         'accounts': accounts, 'bankda_account_page': 'active',
     })

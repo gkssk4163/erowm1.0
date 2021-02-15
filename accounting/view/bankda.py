@@ -22,9 +22,10 @@ def account_list_partnerid_xml():
         , 'partner_pw': json_data['pw']
     }
     resMsg = requests.post(url, data=data)
-    print(resMsg.content)
-    print(type(resMsg.content))
-    # root = ET.fromstring(resMsg.content.decode('utf-8'))
-    # print(root)
-    # attrib = root.find("account").attrib
-    return resMsg
+
+    root = ET.fromstring(resMsg.content.decode('euc-kr'))
+    account_info = root.find("account").findall("account_info")
+    accounts = []
+    for account in account_info:
+        accounts.append(account.attrib)
+    return accounts
