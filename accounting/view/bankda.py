@@ -13,6 +13,13 @@ def user_join_prs(data):
     content = resMsg.content.decode('euc-kr')
     return content
 
+# 이용자(파트너쉽 회원사의 고객) 회원정보수정
+def user_info_edit(data):
+    url = "https://ssl.bankda.com/partnership/user/user_info_edit.php"
+    resMsg = requests.post(url, data=data)
+    content = resMsg.content.decode('euc-kr')
+    return content
+
 # 이용자(파트너쉽 회원사의 고객) 회원탈퇴(서비스해지)
 def user_withdraw(data):
     url = "https://ssl.bankda.com/partnership/user/user_withdraw.php"

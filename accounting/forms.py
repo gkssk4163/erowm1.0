@@ -211,12 +211,19 @@ class BusinessForm(forms.ModelForm):
         self.fields['fax'].required = False
         self.fields['zip_number'].widget.attrs['readonly'] = True
         self.fields['address'].widget.attrs['readonly'] = True
+        for field in iter(self.fields):
+            self.fields[field].widget.attrs.update({
+                'class': 'form-control input-sm'
+            })
 
 
 class EditOwnerForm(OwnerForm, BusinessForm):
     class Meta:
         model = Owner
-        fields = ('place_name', 'reg_number', 'type1', 'type2', 'name', 'owner_reg_number1', 'owner_reg_number2', 'email', 'cellphone', 'phone', 'fax', 'zip_number', 'address', 'detailed_address',)
+        fields = ('place_name', 'reg_number', 'type1', 'type2', 'name', 'owner_reg_number1', 'owner_reg_number2', 'email', 'cellphone', 'phone', 'fax', 'zip_number', 'address', 'detailed_address', 'bankda_password')
+        widgets = {
+            'bankda_password': forms.HiddenInput()
+        }
 
 
 class UserForm(UserCreationForm):

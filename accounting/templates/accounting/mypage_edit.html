@@ -5,6 +5,8 @@
 <div class="table-responsive">
 	<form method="POST">
 	{% csrf_token %}
+	<input type="hidden" name="username" id="username" value="{{ user.username }}"/>
+	{{ form.bankda_password }}
 	<table class="table table-bordered">
 		<tr>
 			<td class="td1">사업장명</td>
@@ -22,7 +24,13 @@
 			<td class="td1">대표자성명</td>
 			<td>{{ form.name }}</td>
 			<td class="td1">대표자주민번호</td>
-			<td>{{ form.owner_reg_number1 }}-{{form.owner_reg_number2 }}</td>
+			<td>
+				<div class="form-inline">
+					{{ form.owner_reg_number1 }}
+					<span style="margin: 0px 6px 0px 3px;">-</span>
+					{{form.owner_reg_number2 }}
+				</div>
+			</td>
 		</tr>
 		<tr>
 			<td class="td1">이메일</td>
@@ -38,11 +46,23 @@
 		</tr>
 		<tr>
 			<td class="td1" rowspan=2>주소</td>
-			<td colspan=3>[{{ form.zip_number }}] <input type="button" class="btn btn-primary btn-zip-search" onclick="ZipSearchDaumPostcode()" value="우편번호 찾기"></td>
+			<td colspan=3><div class="form-inline">{{ form.zip_number }}<input type="button" class="btn btn-sm btn-primary btn-zip-search" onclick="ZipSearchDaumPostcode()" value="우편번호 찾기"></div></td>
 		</tr>
 		<tr>
-			<td colspan=3>{{ form.address }}, {{ form.detailed_address }}</td>
+			<td colspan=3>
+				{{ form.address }}
+				{{ form.detailed_address }}
+			</td>
 		</tr>
+		{% if request.session.master_login is True %}
+		<tr>
+			<td>뱅크다 패스워드</td>
+			<td colspan="3">
+				<input type="text" class="form-control input-sm" name="user_pw_new" id="user_pw_new"
+					maxlength="10" placeholder="뱅크다 패스워드를 수정할 경우에만 입력하세요. 특별한 경우가 아니라면 수정하지 말 것!"/>
+			</td>
+		</tr>
+		{% endif %}
 		{% for field in form %}
 		{% if field.errors %}
 		<tr>
