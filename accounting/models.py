@@ -117,6 +117,7 @@ class Owner(models.Model):
     detailed_address = models.CharField(max_length=20)
     is_demo = models.BooleanField(default=True)
     sales = models.ForeignKey('accounting.Sales', on_delete=models.SET_NULL, null=True)
+    bankda_password = models.CharField(max_length=10)
 
     def __str__(self):
         return self.name

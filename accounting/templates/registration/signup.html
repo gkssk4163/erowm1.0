@@ -107,10 +107,12 @@
 		</div>
 	</div>
 
+	{{ ownerform.bankda_password }}
+
 	<!-- Button -->
 	<div class="row">
 		<div class="form-group">
-			<input class="btn btn-outline-primary" type="button" value="회원가입" id="btn-signup-bankda">
+			<input class="btn btn-outline-primary" type="submit" value="회원가입" id="btn-signup-bankda">
 			<hr>
 			<center>
 			Or <a href="{% url 'login' %}"><u>Log In</u></a>
@@ -123,51 +125,9 @@
 	</div>
 </div>
 <script type="text/javascript">
-$('#btn-signup-bankda').click(function() {
-	var formData = $("#signupForm").serialize();
-	var f = document.signupForm;
-	$.ajax({
-		type: "POST",
-		url: {% url 'id_check' %},
-		data: formData,
-		dataType: "json",
-		success: function(response) {
-			if ( response.id_check == 1 ) {
-				$("#signup_done").val(response.id_check);
-				$.ajax({
-					type: "POST",
-					url: "https://ssl.bankda.com/partnership/user/user_join_prs.php",
-					data: {
-						'directAccess': 'y',
-						'partner_id': "vizun21",
-						'partner_name': "이소프트",
-						'service_type': "basic",
-						'user_id': $('#id_username').val(),
-						'user_pw': response.password,
-						'user_name': $("#id_name").val(),
-						'user_tel': $("#id_cellphone").val(),
-						'user_email': $("#id_email").val(),
-						'char_set': "utf-8"
-					},
-					dataType: "html",
-					success: function(data) {
-						if( data == "ok" )
-							f.submit();
-						else 
-							alert(data);
-					},
-					error: function(request, status, error) {
-						alert("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
-						f.submit();
-					}
-				});
-			}
-			else {
-				$("#signup_done").val('');
-				f.submit();
-			}
-		}
-	});
+$(function () {
+	// 뱅크다 패스워드 생성
+	$("#id_bankda_password").val(generateRandomPassword(10));
 });
 </script>
 {% endblock %}

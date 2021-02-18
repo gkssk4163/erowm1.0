@@ -30,6 +30,8 @@ urlpatterns = [
     url(r'^agency/delete/(?P<pk>\d+)/$', views.agency_delete, name='agency_delete'),
     url(r'^bankda/join/$', views.bankda_join, name='bankda_join'),
     url(r'^bankda/account/$', views.bankda_account, name='bankda_account'),
+    url(r'^erowm/account/$', views.erowm_account, name='erowm_account'),
+    url(r'^bankda/account/delete$', views.bankda_account_delete, name='bankda_account_delete'),
     url(r'^account/list/$', views.account_list, name='account_list'),
     url(r'^account/create/$', views.account_create, name='account_create'),
     url(r'^account/edit/(?P<pk>\d+)/$', views.account_edit, name='account_edit'),
@@ -99,7 +101,6 @@ urlpatterns = [
     url(r'^regist/close/$', views.regist_close, name='regist_close'),
     url(r'^undo/close/$', views.undo_close, name='undo_close'),
 
-    url(r'^id_check/$', views.id_check, name='id_check'),
     url(r'^account_check/$', views.account_check, name='account_check'),
     url(r'^change_item_option/$', views.change_item_option, name='change_item_option'),
 

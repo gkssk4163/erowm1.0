@@ -116,7 +116,10 @@ class OwnerForm(forms.ModelForm):
 
     class Meta:
         model = Owner
-        fields = ('name', 'phone', 'cellphone', 'place_name', 'reg_number',)
+        fields = ('name', 'phone', 'cellphone', 'place_name', 'reg_number', 'bankda_password')
+        widgets = {
+            'bankda_password': forms.HiddenInput()
+        }
 
     def __init__(self, *args, **kwargs):
         super(OwnerForm, self).__init__(*args, **kwargs)

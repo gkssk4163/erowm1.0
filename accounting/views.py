@@ -1,50 +1,45 @@
 # -*- coding: utf-8 -*-
 
-from django.shortcuts import render,redirect, get_object_or_404
+import requests
+import datetime
+import logging
+import json
+import math
+import os   # 파일삭제 시 경로관련..
+
+from dateutil.relativedelta import relativedelta
+from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import Owner, Business, Profile, Sales, Agency, Account
-from .models import Subsection, Paragraph, Item, Subdivision
-from .models import Transaction, TBLBANK, Budget, Deadline
-from .models import Business_type
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Sum, Count, Case, When, Q
+from django.db.models.functions import Coalesce
+from django.http import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.dateformat import DateFormat
+
+from accounting.common import getBudgetSumBySubsection, getBudgetSumByItem
+from accounting.common import getLatestBudgetType
+from accounting.common import getTransactionListByName
+from accounting.common import getTransactionSumBySubsection, getTransactionSumByItem
+from accounting.item import getItemList
+from accounting.paragraph import getParagraphList
+from accounting.subsection import getSubsectionList
+from accounting.view.transaction import getTransactionList
+
+from accounting.view.bankda import user_join_prs, user_withdraw
+from accounting.view.bankda import account_info_xml, account_list_partnerid_xml, account_del
+
+from erowm import settings
+
+from .common import session_info, subsection_info, item_info
 from .forms import SignupForm, OwnerForm, BusinessForm, UserForm, SalesForm, AgencyForm, EditOwnerForm, AccountForm
 from .forms import SubsectionForm, ParagraphForm, ItemForm, SubdivisionForm
 from .forms import TblbankDirectForm, TransactionEditForm
-from .crypto import AESCipher
-from .common import session_info, subsection_info, item_info
-
-from django.contrib import auth
-from django.contrib.auth import authenticate
-from django.http import HttpResponse, HttpResponseRedirect
-import datetime
-from django.utils import timezone
-from django.utils.dateformat import DateFormat
-from dateutil.relativedelta import relativedelta
-
-import math
-from django.db.models import Sum, Count, Case, When, Q, Min, Value
-from django.db.models.functions import Coalesce, Concat
-from django.db.models import Max
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
-import json
-import requests
-
-from accounting.common import getLatestBudgetType
-from accounting.common import getTransactionSumBySubsection, getTransactionSumByItem
-from accounting.common import getTransactionSumByName, getTransactionSumByCode, getTransactionListByName
-from accounting.common import getBudgetSumBySubsection, getBudgetSumByItem
-
-from accounting.subsection import getSubsectionList
-from accounting.paragraph import getParagraphList
-from accounting.item import getItemList
-from accounting.view.transaction import getTransactionList
-
-from accounting.view.bankda import account_info_xml, account_list_partnerid_xml
-
-# file 삭제
-import os
-from erowm import settings
+from .models import Business_type
+from .models import Owner, Business, Profile, Sales, Agency, Account
+from .models import Subsection, Paragraph, Item, Subdivision
+from .models import Transaction, TBLBANK, Budget, Deadline
 
 # Create your views here.
 
@@ -67,12 +62,14 @@ def main(request):
         else:
             return redirect("business_list")
 
-def id_check(request):
-    id_check = False
+def signup(request):
     if request.method == "POST":
         signupform = SignupForm(request.POST)
         ownerform = OwnerForm(request.POST)
         if signupform.is_valid() and ownerform.is_valid():
+            # ** 뱅크다 계정등록 전에 erowm에 먼저 등록 필수 **
+            # ** (뱅크다 먼저 등록 후 erowm 계정 생성 실패 시 뱅크다 계정 삭제 불가) **
+            # erowm 계정등록
             user = signupform.save(commit=False)
             user.email = signupform.cleaned_data['email']
             user.save()
@@ -82,19 +79,31 @@ def id_check(request):
             owner.profile = profile
             owner.email = signupform.cleaned_data['email']
             owner.save()
-            password = user.password[34:]
-            id_check = True
-            return HttpResponse(json.dumps({'id_check': id_check, 'password': password}), content_type="application/json")
-    return HttpResponse(json.dumps({'id_check': id_check}), content_type="application/json")
 
-def signup(request):
-    if request.method == "POST":
-        signup_done = request.POST.get('signup_done')
-        if signup_done:
-            return redirect("signup_done")
-        else:
-            signupform = SignupForm(request.POST)
-            ownerform = OwnerForm(request.POST)
+            # 뱅크다 계정등록
+            with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
+                json_data = json.load(f)
+            data = {
+                'directAccess': "y"
+                , 'service_type': "basic"
+                , 'partner_id': json_data['id']
+                , 'partner_name': json_data['name']
+                , 'user_id': request.POST.get('username')
+                , 'user_pw': request.POST.get('bankda_password')
+                , 'user_name': request.POST.get('name')
+                , 'user_tel': request.POST.get('cellphone')
+                , 'user_email': request.POST.get('email')
+                , 'char_set': "utf-8"
+            }
+            result = user_join_prs(data)
+            if result != "ok" : # 뱅크다 계정등록 오류발생..
+                logging.basicConfig(filename='./accounting/bankda.log', level=logging.ERROR)
+                logging.error("\n"
+                      "[" + str(datetime.datetime.now()) + "] 회계연동서비스 회원가입 오류\n"
+                      "BANKDA_DATA : " + str(data) + '\n')
+                return render(request, "registration/bankda_join_error.html")
+            else :
+                return redirect("signup_done")
 
     elif request.method == "GET":
         signupform = SignupForm()
@@ -158,12 +167,41 @@ def logout(request):
 
 @login_required(login_url='/')
 def user_delete(request):
-    if request.user.profile.level_id < LOCAL:
-        return HttpResponse("<script>alert('권한이 없습니다.');history.back();</script>")
-    username = request.POST.get('username')
-    user = get_object_or_404(User, username=username)
-    user.delete()
-    return redirect('user_list')
+    if request.method == "POST":
+        if request.user.profile.level_id < LOCAL:
+            return HttpResponse("<script>alert('권한이 없습니다.');history.back();</script>")
+
+        message = ""
+        # 뱅크다 계정삭제
+        with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
+            json_data = json.load(f)
+        param = {
+            'directAccess': "y"
+            , 'service_type': "basic"
+            , 'partner_id': json_data['id']
+            , 'user_id': request.POST.get('username')
+            , 'user_pw': request.POST.get('bankda_password')
+            , 'command': "execute"
+        }
+        result = user_withdraw(param)
+        if result != "ok":  # 뱅크다 계정등록 오류발생..
+            logging.basicConfig(filename='./accounting/bankda.log', level=logging.ERROR)
+            logging.error("\n"
+                    "[" + str(datetime.datetime.now()) + "] 회계연동서비스 회원삭제 오류\n"
+                    "전송DATA : " + str(param) + "\n"
+                    "RESULT : " + result  + "\n")
+            message = result
+        else:
+            try:
+                username = request.POST.get('username')
+                user = get_object_or_404(User, username=username)
+                user.delete()
+            except:
+                message = "error: erowm 회원삭제 오류"
+
+        data = {'result': result, 'message': message}
+    # return HttpResponse(json.dumps(data), content_type="application/json")
+    return JsonResponse(data, safe=False)  # safe=False 필수
 
 @login_required(login_url='/')
 def business_list(request):
@@ -407,8 +445,13 @@ def account_create(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     main_acct = Account.objects.filter(business=business, main=True).count()
     if request.method == "POST":
-        account_flag = account_check(request)
-        if account_flag == True:
+        form = AccountForm(request.POST)
+        if form.is_valid():
+            account = form.save(commit=False)
+            if main_acct:
+                account.main = False
+
+            # 뱅크다 계좌등록
             Bjumin = business.reg_number.split("-")
             url = "https://ssl.bankda.com/partnership/user/account_add.php"
             data = {'directAccess': 'y', 'partner_id': "vizun21", 'service_type': "basic",
@@ -424,20 +467,16 @@ def account_create(request):
             }
             print(data)
             resMsg = requests.post(url, data=data)
-            if resMsg.content.decode('utf-8') == "ok":
+            content = resMsg.content.decode('utf-8')
+            if content == "ok":
+                # 뱅크다 계좌등록이 제대로 완료됐을 경우 account 저장
+                account.save()
                 return redirect('account_list')
             else:
-                pass
-                #등록한 계좌내용 삭제? 오류반환
-        else:
-            form = AccountForm(request.POST)
-            if form.is_valid():
-                account = form.save(commit=False)
-                if main_acct:
-                    account.main = False
-                #account.save()
-                return redirect('account_list')
-            return render(request, 'accounting/account_create.html', {'form': form, 'business': business})
+                print(content)
+                return HttpResponse("<script>alert('뱅크다 연동오류. 관리자에게 문의 바랍니다.');history.back();</script>")
+        return render(request, 'accounting/account_create.html', {'form': form, 'business': business})
+
     else:
         form = AccountForm(initial={'business': business})
         return render(request, 'accounting/account_create.html', {'form': form, 'business': business})
@@ -755,8 +794,30 @@ def bankda_join(request):
 def bankda_account(request):
     accounts = account_list_partnerid_xml()
     return render(request, 'accounting/bankda_account.html', {
-        'accounts': accounts, 'bankda_account_page': 'active',
+        'accounts': accounts, 'bankda_page': 'active', 'bankda_account_page': 'active',
     })
+
+@login_required(login_url='/')
+def bankda_account_delete(request):
+    username = request.POST.get('username')
+    bkacctno = request.POST.get('bkacctno')
+
+    user = get_object_or_404(User, username=username)
+
+    with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
+        json_data = json.load(f)
+
+    data = {
+        'directAccess': "y"
+        ,'service_type': "basic"
+        ,'partner_id': json_data['id']
+        ,'user_id': user.username
+        ,'user_pw': user.password[34:]
+        ,'Command': 'update'
+        ,'bkacctno': bkacctno
+    }
+    result = account_del(data)
+    return JsonResponse({"result": result}, safe=False)  # safe=False 필수
 
 @login_required(login_url='/')
 def transaction_history(request):
@@ -911,7 +972,6 @@ def transaction_list(request):
         transaction = getTransactionList(param)  # QuerySet
         data = list(transaction.values())  # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
 
-        from django.forms.models import model_to_dict
         for d in data:
             # item = model_to_dict(Item.objects.get(pk = d['item_id']))
             item = Item.objects.get(pk = d['item_id'])
@@ -1247,7 +1307,6 @@ def subdivision_create(request):
 
 @login_required(login_url='/')
 def select_item(request):
-    from django.core import serializers
     business = get_object_or_404(Business, pk=request.session['business'])
     today = datetime.datetime.now()
     this_year = DateFormat(today).format("Y")
@@ -3632,8 +3691,8 @@ def popup_upload(request):
     type = request.GET.get('type','')
     return render(request, 'accounting/popup_upload.html', {'type': type})
 
-import openpyxl
-from openpyxl import Workbook, load_workbook
+
+from openpyxl import load_workbook
 
 @login_required(login_url='/')
 def upload_transaction(request):
@@ -4085,6 +4144,25 @@ def budget_spi_total(request):
 
     context = {'total': total}
     return HttpResponse(json.dumps(context), content_type="application/json")
+
+@login_required(login_url='/')
+def erowm_account(request):
+    accounts = Account.objects.all()
+    with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
+        json_data = json.load(f)
+
+    for list in accounts:
+        data = {
+            'service_type': "basic"
+            ,'bkacctno': list.account_number
+            ,'partner_id': json_data['id']
+            ,'partner_pw': json_data['pw']
+        }
+        list.bankda = account_info_xml(data)
+    return render(request, 'accounting/erowm_account.html', {
+        'bankda_page': 'active', 'erowm_account_page': 'active',
+        'accounts': accounts
+    })
 
 
 # ajax
