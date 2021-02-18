@@ -48,22 +48,28 @@
 	</form>
 
 <script type="text/javascript">
-$('#id_bank').change(function() {
-	if( this.value == '04' || this.value == '26' || this.value == '28' || this.value == '31' || this.value == '48' || this.value == '91' ) {
-		$('#id_webid').removeAttr('disabled');
-		$('#id_webid').attr('required', 'required');
-		$('#id_webpw').removeAttr('disabled');
-		$('#id_webpw').attr('required', 'required');
-	}
-	else {
-		$('#id_webid').attr('disabled', true);
-		$('#id_webid').removeAttr('required');
-		$('#id_webid').val('');
-		$('#id_webpw').attr('disabled', true);
-		$('#id_webpw').removeAttr('required');
-		$('#id_webpw').val('');
-	}
+$(function() {
+	$('#id_bank').trigger("change");
+})
+
+$('#id_bank').on("change", function() {
+	/* 인터넷뱅킹 및 조회용 ID, PW 필요은행
+	* 04 국민은행	26 신한은행		31 대구은행
+	* 48 신협		91 케이뱅크
+	*/
+	if (['04', '26', '31', '48', '91'].includes(this.value))
+		setDataRequired('required');
+	else
+		setDataRequired('disabled');
 });
+
+function setDataRequired(attr) {
+	var removeAttr = (attr == 'required') ? 'disabled' : 'required';
+	$('#id_webid').attr(attr, true);
+	$('#id_webpw').attr(attr, true);
+	$('#id_webid').removeAttr(removeAttr);
+	$('#id_webpw').removeAttr(removeAttr);
+}
 </script>
 <!--
 <script type="text/javascript">

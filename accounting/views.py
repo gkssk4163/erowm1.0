@@ -28,6 +28,7 @@ from accounting.subsection import getSubsectionList
 from accounting.view.transaction import getTransactionList
 
 from accounting.view.bankda import user_join_prs, user_withdraw, user_info_edit
+from accounting.view.bankda import account_add
 from accounting.view.bankda import account_info_xml, account_list_partnerid_xml, account_del
 
 from erowm import settings
@@ -447,33 +448,34 @@ def account_create(request):
         form = AccountForm(request.POST)
         if form.is_valid():
             account = form.save(commit=False)
-            if main_acct:
-                account.main = False
+            if main_acct:   # 주계좌가 있는 경우
+                account.main = False    # 신규 등록계좌 주계좌로 설정하지 않음
 
             # 뱅크다 계좌등록
             Bjumin = business.reg_number.split("-")
-            url = "https://ssl.bankda.com/partnership/user/account_add.php"
-            data = {'directAccess': 'y', 'partner_id': "vizun21", 'service_type': "basic",
-                'user_id': request.user.username, 'user_pw': request.user.password[34:],
-                'Command': "update", 'bkdiv': request.POST.get('bkdiv'),
-                'bkcode': request.POST.get('bank'),
-                'bkacctno': request.POST.get('account_number'),
-                'bkacctpno_pw': request.POST.get('account_pw'),
-                'Mjumin_1': business.owner_reg_number1, 'Mjumin_2': "0000000",
-                'Bjumin_1': Bjumin[0], 'Bjumin_2': Bjumin[1], 'Bjumin_3': Bjumin[2],
-                'webid': request.POST.get('webid'), 'webpw': request.POST.get('webpw'),
-                'renames': request.POST.get('renames'), 'char_set': "utf-8"
+            param = {
+                'user_id': request.user.username
+                , 'user_pw': request.user.profile.owner.bankda_password
+                , 'bkdiv': request.POST.get('bkdiv')
+                , 'bkcode': request.POST.get('bank')
+                , 'bkacctno': request.POST.get('account_number')
+                , 'bkacctpno_pw': request.POST.get('account_pw')
+                , 'Mjumin_1': business.owner_reg_number1
+                , 'Bjumin_1': Bjumin[0]
+                , 'Bjumin_2': Bjumin[1]
+                , 'Bjumin_3': Bjumin[2]
+                , 'webid': request.POST.get('webid')
+                , 'webpw': request.POST.get('webpw')
+                , 'renames': request.POST.get('renames')
             }
-            print(data)
-            resMsg = requests.post(url, data=data)
-            content = resMsg.content.decode('utf-8')
-            if content == "ok":
-                # 뱅크다 계좌등록이 제대로 완료됐을 경우 account 저장
+            result = account_add(param)
+
+            if result == "OK":  # 뱅크다 계좌 정상등록
+                # EROWM 계좌등록
                 account.save()
                 return redirect('account_list')
-            else:
-                print(content)
-                return HttpResponse("<script>alert('뱅크다 연동오류. 관리자에게 문의 바랍니다.');history.back();</script>")
+            else:   # 뱅크다 계좌등록 오류
+                return render(request, "accounting/bankda_error.html")
         return render(request, 'accounting/account_create.html', {'form': form, 'business': business})
 
     else:

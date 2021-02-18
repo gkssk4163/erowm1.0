@@ -225,6 +225,16 @@ class EditOwnerForm(OwnerForm, BusinessForm):
             'bankda_password': forms.HiddenInput()
         }
 
+    def __init__(self, *args, **kwargs):
+        super(EditOwnerForm, self).__init__(*args, **kwargs)
+        self.fields['type1'].required = False
+        self.fields['type2'].required = False
+        self.fields['owner_reg_number1'].required = False
+        self.fields['owner_reg_number2'].required = False
+        self.fields['zip_number'].required = False
+        self.fields['address'].required = False
+        self.fields['detailed_address'].required = False
+
 
 class UserForm(UserCreationForm):
     email = forms.EmailField(
@@ -435,6 +445,11 @@ class AccountForm(forms.ModelForm):
         super(AccountForm, self).__init__(*args, **kwargs)
         self.fields['webpw'].widget = forms.PasswordInput()
         self.fields['webpw'].strip = False
+        for field in iter(self.fields):
+            if field != 'bkdiv':
+                self.fields[field].widget.attrs.update({
+                    'class': 'form-control input-sm'
+                })
 
 
 class SubsectionForm(forms.ModelForm):

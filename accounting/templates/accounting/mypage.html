@@ -40,7 +40,7 @@
 		</tr>
 		<tr>
 			<th class="td1">주소</th>
-			<td colspan=3>[{{ owner.zip_number }}] {{ owner.address }}, {{ owner.detailed_address }}</td>
+			<td colspan=3>{% if owner.zip_number %}[{{ owner.zip_number }}]{% endif %} {{ owner.address }}{% if owner.detailed_address %}, {{ owner.detailed_address }}{% endif %}</td>
 		</tr>
 	</table>
 	</div>
