@@ -72,6 +72,29 @@ def account_add(data):
     bankda_log(result, data, "계좌추가")    # 로그기록
     return result
 
+# 이용자(파트너쉽 회원사의 고객) 계좌수정
+def account_fix(data):
+    url = "https://ssl.bankda.com/partnership/user/account_fix.php"
+    data = setDefaultValue(data)
+    data.setdefault('Command', "update")
+    data.setdefault('Mjumin_2', "0000000")
+
+    resMsg = requests.post(url, data=data)  # 데이터전송
+    result = resMsg.content.decode('utf-8').upper() # 결과
+    bankda_log(result, data, "계좌수정")    # 로그기록
+    return result
+
+# 이용자(파트너쉽 회원사의 고객) 계좌삭제
+def account_del(data):
+    url = "https://ssl.bankda.com/partnership/user/account_del.php"
+    data = setDefaultValue(data)
+    data.setdefault('Command', "update")
+
+    resMsg = requests.post(url, data=data)  # 데이터전송
+    result = resMsg.content.decode('utf-8').upper()  # 결과
+    bankda_log(result, data, "계좌삭제")  # 로그기록
+    return result
+
 # 특정계좌의 상태정보 조회(HTML)
 def account_info_xml(data):
     url = "https://ssl.bankda.com/partnership/partner/account_info_xml.php"
@@ -99,13 +122,5 @@ def account_list_partnerid_xml():
     for account in account_info:
         accounts.append(account.attrib)
     return accounts
-
-def account_del(data):
-    url = "https://ssl.bankda.com/partnership/user/account_del.php"
-    resMsg = requests.post(url, data=data)
-    print(resMsg.content)
-    # root = ET.fromstring(resMsg.content.decode('euc-kr'))
-    # attrib = root.find("account").attrib
-    return resMsg.content
 
 # =============== 계좌관련 ===============

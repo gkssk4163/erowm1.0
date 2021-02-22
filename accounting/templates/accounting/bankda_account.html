@@ -45,23 +45,4 @@
 		</div>
 	</div>
 </div>
-<script type="text/javascript">
-	function accountDelete(mid, actaccountnum) {
-		$.ajax({
-			type: "post"
-			,url: "{% url 'bankda_account_delete' %}"
-            ,data: {
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
-                ,'username': mid
-                ,'bkacctno': actaccountnum
-            }
-			,dataType: "json"
-			,success: function(data) {
-
-			}
-			,error: function(xhr, status, message) {
-			}
-		});
-	}
-</script>
 {% endblock %}

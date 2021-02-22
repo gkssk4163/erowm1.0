@@ -410,9 +410,7 @@ class AccountForm(forms.ModelForm):
     account_pw = forms.CharField(
         label="비밀번호",
         strip=False,
-        widget=forms.PasswordInput(
-            attrs={
-        })
+        widget=forms.PasswordInput(render_value = True)
     )
 
     bkdiv = forms.ChoiceField(
@@ -443,7 +441,7 @@ class AccountForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(AccountForm, self).__init__(*args, **kwargs)
-        self.fields['webpw'].widget = forms.PasswordInput()
+        self.fields['webpw'].widget = forms.PasswordInput(render_value = True)
         self.fields['webpw'].strip = False
         for field in iter(self.fields):
             if field != 'bkdiv':

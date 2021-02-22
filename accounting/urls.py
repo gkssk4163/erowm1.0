@@ -31,11 +31,10 @@ urlpatterns = [
     url(r'^bankda/join/$', views.bankda_join, name='bankda_join'),
     url(r'^bankda/account/$', views.bankda_account, name='bankda_account'),
     url(r'^erowm/account/$', views.erowm_account, name='erowm_account'),
-    url(r'^bankda/account/delete$', views.bankda_account_delete, name='bankda_account_delete'),
     url(r'^account/list/$', views.account_list, name='account_list'),
     url(r'^account/create/$', views.account_create, name='account_create'),
     url(r'^account/edit/(?P<pk>\d+)/$', views.account_edit, name='account_edit'),
-    url(r'^account/delete/(?P<pk>\d+)/$', views.account_delete, name='account_delete'),
+    url(r'^account/delete/$', views.account_delete, name='account_delete'),
     url(r'^transaction/history/$', views.transaction_history, name='transaction_history'),
     url(r'^transaction/list/$', views.transaction_list, name='transaction_list'),
 
@@ -101,7 +100,6 @@ urlpatterns = [
     url(r'^regist/close/$', views.regist_close, name='regist_close'),
     url(r'^undo/close/$', views.undo_close, name='undo_close'),
 
-    url(r'^account_check/$', views.account_check, name='account_check'),
     url(r'^change_item_option/$', views.change_item_option, name='change_item_option'),
 
     url(r'^authkey_list/$', views.authkey_list, name='authkey_list'),

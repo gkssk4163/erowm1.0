@@ -5,11 +5,13 @@
 {% endblock %}
 
 {% block content %}
-	<h1>계좌등록</h1>
+	<h1>계좌{% if editType == "create" %}등록{% else %}수정{% endif %}</h1>
+	<span class="text-danger">
+		계좌번호 및 은행정보는 수정이 불가능합니다. 해당 내용을 잘못 입력한 경우 계좌를 삭제 후 다시 등록해주세요.<br>
+		계정삭제는 시스템관리자를 통해 문의 바랍니다.
+	</span>
 	<form name="writeForm" id="writeForm" method="POST">
 		{% csrf_token %}
-		<input type="hidden" name="command" value="edit">
-		<input type="hidden" name="acctpk" value="{{ acctpk }}">
 		<table class="table table-sm">
 		{% if form.errors %}
 		<tr>
@@ -43,103 +45,37 @@
 			{% endif %}
 		{% endfor %}
 		</table>
-		<!--<button type="submit" class="save btn btn-outline-primary">등록</button>-->
-		<button class="btn btn-outline-primary" type="submit">등록</button>
+		<button class="btn btn-outline-primary" type="submit">{% if editType == "create" %}등록{% else %}수정{% endif %}</button>
 		<button type="button" class="btn btn-outline-primary" onclick="cancelCheck();">취소</button>
 	</form>
+
 <script type="text/javascript">
-$(document).ready(function() {
-	var bankId = $('#id_bank').value
-	if( bankId == '04' || bankId == '26' || bankId == '28' || bankId == '31' || bankId == '48' || bankId == '91' ) {
-		$('#id_webid').removeAttr('disabled');
-		$('#id_webid').attr('required', 'required');
-		$('#id_webpw').removeAttr('disabled');
-		$('#id_webpw').attr('required', 'required');
-	}
-	else {
-		$('#id_webid').attr('disabled', true);
-		$('#id_webid').removeAttr('required');
-		$('#id_webid').val('');
-		$('#id_webpw').attr('disabled', true);
-		$('#id_webpw').removeAttr('required');
-		$('#id_webpw').val('');
-	}
+$(function() {
+	$('#id_bank').trigger("change");
+	{% if editType != "create" %}
+	$("#id_bank").attr('readonly', true);
+	$("#id_bank option").not(":selected").attr("disabled", "disabled");
+	$("#id_account_number").attr('readonly', true);
+	{% endif %}
+})
+
+$('#id_bank').on("change", function() {
+	/* 인터넷뱅킹 및 조회용 ID, PW 필요은행
+	* 04 국민은행	26 신한은행		31 대구은행
+	* 48 신협		91 케이뱅크
+	*/
+	if (['04', '26', '31', '48', '91'].includes(this.value))
+		setDataRequired('required');
+	else
+		setDataRequired('disabled');
 });
-$('#id_bank').change(function() {
-	if( this.value == '04' || this.value == '26' || this.value == '28' || this.value == '31' || this.value == '48' || this.value == '91' ) {
-		$('#id_webid').removeAttr('disabled');
-		$('#id_webid').attr('required', 'required');
-		$('#id_webpw').removeAttr('disabled');
-		$('#id_webpw').attr('required', 'required');
-	}
-	else {
-		$('#id_webid').attr('disabled', true);
-		$('#id_webid').removeAttr('required');
-		$('#id_webid').val('');
-		$('#id_webpw').attr('disabled', true);
-		$('#id_webpw').removeAttr('required');
-		$('#id_webpw').val('');
-	}
-});
+
+function setDataRequired(attr) {
+	var removeAttr = (attr == 'required') ? 'disabled' : 'required';
+	$('#id_webid').attr(attr, true);
+	$('#id_webpw').attr(attr, true);
+	$('#id_webid').removeAttr(removeAttr);
+	$('#id_webpw').removeAttr(removeAttr);
+}
 </script>
-<!--
-<script type="text/javascript">
-$('#btn-regist-account').click(function() {
-	var formData = $("#writeForm").serialize();
-	var f = document.writeForm;
-	$.ajax({
-		type: "POST",
-		url: {% url 'account_check' %},
-		data: formData,
-		dataType: "json",
-		success: function(response) {
-			//alert(response.username+"\n"+response.password+"\n"+response.Mjumin_1+"\n"+response.Bjumin_1+"\n"+response.Bjumin_2+"\n"+response.Bjumin_3);
-			if ( response.account_check == 1 ) {
-				$("#regist_done").val(response.account_check);
-				$.ajax({
-					type: "POST",
-					url: "https://ssl-new.bankda.com/partnership/user/account_fix.php",
-					data: {
-						'directAccess': 'y',
-						'partner_id': "vizun21",
-						'service_type': "basic",
-						'user_id': response.username,
-						'user_pw': response.password,
-						'Command': "update",
-						'bkdiv': $("input:radio[name=bkdiv]:checked").val(),
-						'bkcode': $("#id_bank").val(),
-						'bkacctno': $("#id_account_number").val(),
-						'bkacctno_pw': $("#id_account_pw").val(),
-						'Mjumin_1': response.Mjumin_1,
-						'Mjumin_2': "0000000",
-						'Bjumin_1': response.Bjumin_1,
-						'Bjumin_2': response.Bjumin_2,
-						'Bjumin_3': response.Bjumin_3,
-						'webid': $("#id_webid").val(),
-						'webpw': $("#id_webpw").val(),
-						'renames': $("#id_renames").val(),
-						'char_set': "utf-8"
-					},
-					dataType: "html",
-					success: function(data) {
-						if( data == "ok" )
-							f.submit();
-						else 
-							alert(data);
-					},
-					error: function(request, status, error) {
-						//alert("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
-						f.submit();
-					}
-				});
-			}
-			else {
-				$("#regist_done").val('');
-				f.submit();
-			}
-		}
-	});
-});
-</script>
--->
 {% endblock %}

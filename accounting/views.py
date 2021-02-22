@@ -28,8 +28,8 @@ from accounting.subsection import getSubsectionList
 from accounting.view.transaction import getTransactionList
 
 from accounting.view.bankda import user_join_prs, user_withdraw, user_info_edit
-from accounting.view.bankda import account_add
-from accounting.view.bankda import account_info_xml, account_list_partnerid_xml, account_del
+from accounting.view.bankda import account_add, account_fix, account_del
+from accounting.view.bankda import account_info_xml, account_list_partnerid_xml
 
 from erowm import settings
 
@@ -476,85 +476,74 @@ def account_create(request):
                 return redirect('account_list')
             else:   # 뱅크다 계좌등록 오류
                 return render(request, "accounting/bankda_error.html")
-        return render(request, 'accounting/account_create.html', {'form': form, 'business': business})
-
     else:
         form = AccountForm(initial={'business': business})
-        return render(request, 'accounting/account_create.html', {'form': form, 'business': business})
+        return render(request, 'accounting/account_edit.html', {
+            'form': form, 'business': business, "editType": "create"})
 
 @login_required(login_url='/')
 def account_edit(request, pk):
     account = get_object_or_404(Account, pk=pk)
     business = get_object_or_404(Business, pk=request.session['business'])
-    main_acct = Account.objects.filter(business=business, main=True).count()
     if request.method == "POST":
-        account_flag = account_check(request)
-        if account_flag == True:
+        form = AccountForm(request.POST, instance=account)
+        if form.is_valid():
+            account = form.save(commit=False)
+
+            # 뱅크다 계좌수정(은행명/계좌번호 수정불가)
             Bjumin = business.reg_number.split("-")
-            url = "https://ssl.bankda.com/partnership/user/account_fix.php"
-            data = {'directAccess': 'y', 'partner_id': "vizun21", 'service_type': "basic",
-                'user_id': request.user.username, 'user_pw': request.user.password[34:],
-                'Command': "update", 'bkdiv': request.POST.get('bkdiv'),
-                'bkcode': request.POST.get('bank'),
-                'bkacctno': request.POST.get('account_number'),
-                'bkacctpno_pw': request.POST.get('account_pw'),
-                'Mjumin_1': business.owner_reg_number1, 'Mjumin_2': "0000000",
-                'Bjumin_1': Bjumin[0], 'Bjumin_2': Bjumin[1], 'Bjumin_3': Bjumin[2],
-                'webid': request.POST.get('webid'), 'webpw': request.POST.get('webpw'),
-                'renames': request.POST.get('renames'), 'char_set': "utf-8"
+            param = {
+                'user_id': request.user.username
+                , 'user_pw': request.user.profile.owner.bankda_password
+                , 'bkdiv': request.POST.get('bkdiv')
+                , 'bkcode': request.POST.get('bank')
+                , 'bkacctno': request.POST.get('account_number')
+                , 'bkacctpno_pw': request.POST.get('account_pw')
+                , 'Mjumin_1': business.owner_reg_number1
+                , 'Bjumin_1': Bjumin[0]
+                , 'Bjumin_2': Bjumin[1]
+                , 'Bjumin_3': Bjumin[2]
+                , 'webid': request.POST.get('webid')
+                , 'webpw': request.POST.get('webpw')
+                , 'renames': request.POST.get('renames')
             }
-            print(data)
-            resMsg = requests.post(url, data=data)
-            if resMsg.content.decode('utf-8') == "ok":
+            result = account_fix(param)
+
+            if result == "OK":  # 뱅크다 계좌 정상수정
+                # EROWM 계좌수정
+                account.save()
                 return redirect('account_list')
-            else:
-                print(resMsg.content.decode('utf-8'))
-                print("뱅크다등록오류")
-                #등록한 계좌내용 삭제? 오류반환
-                return redirect('account_list')
-        else:
-            form = AccountForm(request.POST, instance=account)
-            if not form.is_valid():
-                return render(request, 'accounting/account_edit.html', {'form': form, 'business': business})
+            else:   # 뱅크다 계좌수정 오류
+                return render(request, "accounting/bankda_error.html")
     else:
         form = AccountForm(instance=account)
-        return render(request, 'accounting/account_edit.html', {'acctpk':pk, 'form': form, 'business': business})
+    return render(request, 'accounting/account_edit.html', {'acctpk':pk, 'form': form, 'business': business})
 
 @login_required(login_url='/')
-def account_check(request):
-    command = request.POST.get("command", "create")
-    print(command)
-    business = get_object_or_404(Business, pk=request.session['business'])
-    main_acct = Account.objects.filter(business=business, main=True).count()
-    if request.method == "POST":
-        if command == "edit":
-            account = get_object_or_404(Account, pk=request.POST.get("acctpk"))
-            form = AccountForm(request.POST, instance=account)
-            if form.is_valid():
-                account = form.save(commit=False)
-                if main_acct:
-                    account.main = False
-                account.save()
-                return True
-        else:
-            accountform = AccountForm(request.POST)
-            if accountform.is_valid():
-                account = accountform.save(commit=False)
-                if main_acct:
-                    account.main = False
-                account.save()
-                return True
-    return False
+def account_delete(request):
+    # 삭제권한 확인
+    user = get_object_or_404(User, pk = request.POST.get('user_pk'))
+    account = get_object_or_404(Account, pk = request.POST.get('account_pk'))
 
-@login_required(login_url='/')
-def account_delete(request, pk):
-    #아이디에해당하는사업장만 삭제할수 있도록
-    account = get_object_or_404(Account, pk=pk)
     if request.user.profile.level_id < LOCAL:
-    #    if account.business.owner.profile.user != request.user: #사용자페이지삭제구현시 확인필요
+        # 사용자페이지 삭제구현 시 계좌소유자만 삭제할 수 있도록 함(기능 확인필요)
+        # if account.business.owner.profile.user != request.user:
         return HttpResponse("<script>alert('권한이 없습니다.');history.back();</script>")
-    account.delete()
-    return redirect('bankda_account')
+
+    param = {
+        'user_id': user.username
+        , 'user_pw': user.profile.owner.bankda_password
+        , 'bkacctno': account.account_number
+    }
+    result = account_del(param)
+    print(result)
+
+    if result == "OK":  # 뱅크다 계좌 정상삭제
+        # EROWM 계좌삭제
+        account.delete()
+
+    data = {'result': result}
+    return JsonResponse(data, safe=False)  # safe=False 필수
 
 @login_required(login_url='/')
 def user_list(request):
@@ -833,28 +822,6 @@ def bankda_account(request):
     return render(request, 'accounting/bankda_account.html', {
         'accounts': accounts, 'bankda_page': 'active', 'bankda_account_page': 'active',
     })
-
-@login_required(login_url='/')
-def bankda_account_delete(request):
-    username = request.POST.get('username')
-    bkacctno = request.POST.get('bkacctno')
-
-    user = get_object_or_404(User, username=username)
-
-    with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
-        json_data = json.load(f)
-
-    data = {
-        'directAccess': "y"
-        ,'service_type': "basic"
-        ,'partner_id': json_data['id']
-        ,'user_id': user.username
-        ,'user_pw': user.password[34:]
-        ,'Command': 'update'
-        ,'bkacctno': bkacctno
-    }
-    result = account_del(data)
-    return JsonResponse({"result": result}, safe=False)  # safe=False 필수
 
 @login_required(login_url='/')
 def transaction_history(request):
