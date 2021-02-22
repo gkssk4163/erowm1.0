@@ -73,38 +73,32 @@ def signup(request):
             # erowm 계정등록
             user = signupform.save(commit=False)
             user.email = signupform.cleaned_data['email']
-            user.save()
-            Profile.objects.create(user=user, level_id=OWNER)
-            profile =  Profile.objects.get(user=user)
             owner = ownerform.save(commit=False)
-            owner.profile = profile
             owner.email = signupform.cleaned_data['email']
-            owner.save()
 
             # 뱅크다 계정등록
-            with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
-                json_data = json.load(f)
-            data = {
-                'directAccess': "y"
-                , 'service_type': "basic"
-                , 'partner_id': json_data['id']
-                , 'partner_name': json_data['name']
-                , 'user_id': request.POST.get('username')
+            param = {
+                'user_id': request.POST.get('username')
                 , 'user_pw': request.POST.get('bankda_password')
                 , 'user_name': request.POST.get('name')
                 , 'user_tel': request.POST.get('cellphone')
                 , 'user_email': request.POST.get('email')
-                , 'char_set': "utf-8"
             }
-            result = user_join_prs(data)
-            if result != "ok" : # 뱅크다 계정등록 오류발생..
-                logging.basicConfig(filename='./accounting/bankda.log', level=logging.ERROR)
-                logging.error("\n"
-                      "[" + str(datetime.datetime.now()) + "] 회계연동서비스 회원가입 오류\n"
-                      "BANKDA_DATA : " + str(data) + '\n')
-                return render(request, "registration/bankda_join_error.html")
-            else :
+            result = user_join_prs(param)
+
+            if result == "OK":  # 뱅크다 계정 정상등록
+                # EROWM 계정등록
+                try:
+                    user.save()
+                    Profile.objects.create(user=user, level_id=OWNER)
+                    profile = Profile.objects.get(user=user)
+                    owner.profile = profile
+                    owner.save()
+                except:
+                    return render(request, "registration/bankda_join_error.html")
                 return redirect("signup_done")
+            else :
+                return render(request, "registration/bankda_join_error.html")
 
     elif request.method == "GET":
         signupform = SignupForm()
@@ -169,39 +163,25 @@ def logout(request):
 @login_required(login_url='/')
 def user_delete(request):
     if request.method == "POST":
+        # 삭제권한 확인
         if request.user.profile.level_id < LOCAL:
             return HttpResponse("<script>alert('권한이 없습니다.');history.back();</script>")
 
-        message = ""
         # 뱅크다 계정삭제
-        with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
-            json_data = json.load(f)
         param = {
-            'directAccess': "y"
-            , 'service_type': "basic"
-            , 'partner_id': json_data['id']
-            , 'user_id': request.POST.get('username')
+            'user_id': request.POST.get('username')
             , 'user_pw': request.POST.get('bankda_password')
-            , 'command': "execute"
         }
         result = user_withdraw(param)
-        if result != "ok":  # 뱅크다 계정등록 오류발생..
-            logging.basicConfig(filename='./accounting/bankda.log', level=logging.ERROR)
-            logging.error("\n"
-                    "[" + str(datetime.datetime.now()) + "] 회계연동서비스 회원삭제 오류\n"
-                    "전송DATA : " + str(param) + "\n"
-                    "RESULT : " + result  + "\n")
-            message = result
-        else:
-            try:
-                username = request.POST.get('username')
-                user = get_object_or_404(User, username=username)
-                user.delete()
-            except:
-                message = "error: erowm 회원삭제 오류"
 
-        data = {'result': result, 'message': message}
-    return JsonResponse(data, safe=False)  # safe=False 필수
+        if result == "OK":  # 뱅크다 계정 정상삭제
+            # EROWM 계정삭제
+            username = request.POST.get('username')
+            user = get_object_or_404(User, username=username)
+            user.delete()
+
+        data = {'result': result}
+        return JsonResponse(data, safe=False)  # safe=False 필수
 
 @login_required(login_url='/')
 def business_list(request):
@@ -424,16 +404,8 @@ def account_list(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     lists = Account.objects.filter(business=business)
 
-    with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
-        json_data = json.load(f)
-
     for list in lists:
-        data = {
-            'service_type': "basic"
-            ,'bkacctno': list.account_number
-            ,'partner_id': json_data['id']
-            ,'partner_pw': json_data['pw']
-        }
+        data = {'bkacctno': list.account_number}
         list.bankda = account_info_xml(data)
 
     return render(request, 'accounting/account_list.html', {
@@ -521,10 +493,10 @@ def account_edit(request, pk):
 
 @login_required(login_url='/')
 def account_delete(request):
-    # 삭제권한 확인
     user = get_object_or_404(User, pk = request.POST.get('user_pk'))
     account = get_object_or_404(Account, pk = request.POST.get('account_pk'))
 
+    # 삭제권한 확인
     if request.user.profile.level_id < LOCAL:
         # 사용자페이지 삭제구현 시 계좌소유자만 삭제할 수 있도록 함(기능 확인필요)
         # if account.business.owner.profile.user != request.user:
@@ -536,7 +508,6 @@ def account_delete(request):
         , 'bkacctno': account.account_number
     }
     result = account_del(param)
-    print(result)
 
     if result == "OK":  # 뱅크다 계좌 정상삭제
         # EROWM 계좌삭제
@@ -767,44 +738,27 @@ def mypage_edit(request):
     if request.method == "POST":
         form = EditOwnerForm(request.POST, instance=owner)
         if form.is_valid():
-            # erowm 계정 정보세팅
+            # EROWM 계정 정보세팅
             owner = form.save(commit=False)
 
             # 뱅크다 계정수정
-            with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
-                json_data = json.load(f)
             param = {
-                'directAccess': "y"
-                , 'service_type': "basic"
-                , 'partner_id': json_data['id']
-                , 'user_id': request.POST.get('username')
+                'user_id': request.POST.get('username')
                 , 'user_pw': request.POST.get('bankda_password')
                 , 'user_name': request.POST.get('name')
                 , 'user_tel': request.POST.get('cellphone')
                 , 'user_email': request.POST.get('email')
                 , 'user_pw_new': request.POST.get('user_pw_new')
-                , 'char_set': "utf-8"
             }
             result = user_info_edit(param)
-            if result != "OK":  # 뱅크다 계정등록 오류발생..
-                logging.basicConfig(filename='./accounting/bankda.log', level=logging.ERROR)
-                logging.error("\n"
-                        "[" + str(datetime.datetime.now()) + "] 회계연동서비스 회원정보수정 오류\n"
-                        "전송DATA : " + str(param) + "\n"
-                        "RESULT : " + result + "\n")
-                return render(request, "accounting/bankda_error.html")
-            else:
-                # 뱅크다 회원정보 수정 후 erowm회원정보 수정 오류날 경우 대비하여 전송 데이터 기록
-                logging.basicConfig(filename='./accounting/bankda.log', level=logging.INFO)
-                logging.info("\n"
-                        "[" + str(datetime.datetime.now()) + "] 회계연동서비스 회원정보수정 완료\n"
-                        "전송DATA : " + str(param) + "\n"
-                        "RESULT : " + result + "\n")
-                # 뱅크다 회원정보수정이 정상적으로 된 경우 erowm계정 변경사항 저장
-                if request.POST.get('user_pw_new'):
+            if result == "OK":  # 뱅크다 계정 정상수정
+                # EROWM 계정등록
+                if request.POST.get('user_pw_new'): # 뱅크다 PW는 PW가 입력된 경우만 변경
                     owner.bankda_password = request.POST.get('user_pw_new')
                 owner.save()
-            return redirect('mypage')
+                return redirect('mypage')
+            else:  # 뱅크다 계정수정 오류
+                return render(request, "accounting/bankda_error.html")
     else:
         form = EditOwnerForm(instance=owner)
     return render(request, 'accounting/mypage_edit.html', {'user': user, 'form': form})
@@ -4152,20 +4106,13 @@ def budget_spi_total(request):
 @login_required(login_url='/')
 def erowm_account(request):
     accounts = Account.objects.all()
-    with open('/home/ubuntu/erowm/accounting/bankdakey.json', 'r') as f:
-        json_data = json.load(f)
 
     for list in accounts:
-        data = {
-            'service_type': "basic"
-            ,'bkacctno': list.account_number
-            ,'partner_id': json_data['id']
-            ,'partner_pw': json_data['pw']
-        }
+        data = {'bkacctno': list.account_number}
         list.bankda = account_info_xml(data)
+
     return render(request, 'accounting/erowm_account.html', {
-        'bankda_page': 'active', 'erowm_account_page': 'active',
-        'accounts': accounts
+        'bankda_page': 'active', 'erowm_account_page': 'active', 'accounts': accounts
     })
 
 

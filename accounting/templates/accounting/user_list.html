@@ -122,11 +122,11 @@ function deleteUser(index) {
 		},
 		dataType: "json",
 		success: function(data) {
-			if( data.result == "ok" ) {
+			if( data.result == "OK" ) {
 				alert("계정이 정상적으로 삭제되었습니다.");
 			}
 			else {
-				alert(data.message);
+				alert(data.result);
 			}
 			window.location.reload();
 		},
