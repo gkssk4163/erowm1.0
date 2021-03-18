@@ -3810,7 +3810,6 @@ def upload_voucher(request):
     today = datetime.datetime.now()
     ymd = DateFormat(today).format("ymdHis")
     upfile = request.FILES.get('file')
-    upload_type = request.POST.get('type')
 
     if upfile == None:
         return HttpResponse("<script>alert('파일을 선택해주세요.');history.back();</script>")
@@ -3818,66 +3817,111 @@ def upload_voucher(request):
     created_file = UploadFile.objects.create(title=str(ymd)+'_'+business.name+'_현금출납장', file=upfile, user=request.user)
 
     wb = load_workbook(filename='./media/'+upfile.name)
-    sheet = wb.worksheets[0]
+    sheet = wb.worksheets[1]
+
+    # 년도 유효성검증
+    year = str(sheet['B2'].value).strip()
+    if len(year) != 4 or not year.isdigit():
+        return HttpResponse("<script>alert('년도 입력형식이 잘못되었습니다. 확인 후 다시 등록해주세요.');history.back();</script>")
 
     num = TBLBANK.objects.all().order_by('-Bkid').first().Bkid + 1
     error = ""
-    for index in range(2, sheet.max_row + 1):
+    for index in range(4, sheet.max_row + 1):
         sindex = str(index)
+        isValid = True
+
+        mmdd = str(sheet['A' + sindex].value)
+        jukyo = sheet['B' + sindex].value
+        item_context = sheet['C' + sindex].value
+        input = sheet['D' + sindex].value
+        output = sheet['E' + sindex].value
+        jango = sheet['F' + sindex].value
+
+        # 필수입력 체크
+        if mmdd == None or jukyo == None or item_context == None \
+                or input == None or output == None or jango == None:
+            error += "[" + sindex + "행] 입력항목 누락\\n"
+            continue
+
+        # 날짜 유효성검증
         try:
-            if sheet['E'+sindex].value and not sheet['F'+sindex].value:
-                Bkinput = sheet['E'+sindex].value
-                Bkoutput = 0
-            elif sheet['F'+sindex].value and not sheet['E'+sindex].value:
-                Bkinput = 0
-                Bkoutput = sheet['F'+sindex].value
-
-            datetimecell = str(sheet['A'+sindex].value)
-            Bkdate = datetime.datetime.strptime(datetimecell, '%Y%m%d')
-
-            with transaction.atomic():
-                TBLBANK.objects.create(
-                    Bkid = num,
-                    Bkdivision = 1,
-                    Mid = request.user.username,
-                    Bkacctno = None,
-                    Bkname = None,
-                    Bkdate = Bkdate,
-                    Bkjukyo = sheet['B'+sindex].value,
-                    Bkinput = Bkinput,
-                    Bkoutput = Bkoutput,
-                    Bkjango = sheet['G'+sindex].value,
-                    business = business,
-                    direct = True
-                )
-
-                item = Item.objects.get(paragraph__subsection__institution=business.type3, context=sheet['C'+sindex].value.replace(" ", ""))
-
-                Transaction.objects.create(
-                    Bkid = num,
-                    Bkdivision = 1,
-                    Mid = request.user.username,
-                    Bkacctno = None,
-                    Bkname = None,
-                    Bkdate = Bkdate,
-                    Bkjukyo = sheet['B'+sindex].value,
-                    Bkinput = Bkinput,
-                    Bkoutput = Bkoutput,
-                    Bkjango = sheet['G'+sindex].value,
-                    business = business,
-                    regdatetime = today,
-                    item = item
-                )
-            num += 1
+            datetimecell = year + "/" + mmdd
+            Bkdate = datetime.datetime.strptime(datetimecell, '%Y/%m/%d')
         except Exception as e:
-            print (e)
-            error += sindex + ","
+            print(e)
+            isValid = False
+            error += "[" + sindex + "행] 날짜형식 오류\\n"
 
-    #잔액계산 고려 (등록/삭제/수정 시)
+        # 적요 유효성검증
+        if len(jukyo) > 100:
+            isValid = False
+            error += "[" + sindex + "행] 적요 100자 초과\\n"
+
+        # 관항목 유효성검증 (목명칭으로 검증)
+        try:
+            item = Item.objects.get(
+                paragraph__subsection__institution=business.type3,
+                paragraph__subsection__year=year,
+                context=item_context.replace(" ", "").replace(".", "·"))
+        except Exception as e:
+            print(e)
+            isValid = False
+            error += "[" + sindex + "행] 관항목 매칭오류\\n"
+
+        # 금액 유효성검증 (수입/지출금액은 둘 중 하나만 있어야 함)
+        if input and not output:
+            Bkinput = input
+            Bkoutput = 0
+        elif output and not input:
+            Bkinput = 0
+            Bkoutput = output
+        else:
+            isValid = False
+            error += "[" + sindex + "행] 금액입력 오류\\n"
+
+        if isValid:
+            try:
+                with transaction.atomic():
+                    TBLBANK.objects.create(
+                        Bkid = num,
+                        Bkdivision = 1,
+                        Mid = request.user.username,
+                        Bkacctno = None,
+                        Bkname = None,
+                        Bkdate = Bkdate,
+                        Bkjukyo = jukyo,
+                        Bkinput = Bkinput,
+                        Bkoutput = Bkoutput,
+                        Bkjango = jango,
+                        business = business,
+                        direct = True
+                    )
+
+                    Transaction.objects.create(
+                        Bkid = num,
+                        Bkdivision = 1,
+                        Mid = request.user.username,
+                        Bkacctno = None,
+                        Bkname = None,
+                        Bkdate = Bkdate,
+                        Bkjukyo = jukyo,
+                        Bkinput = Bkinput,
+                        Bkoutput = Bkoutput,
+                        Bkjango = jango,
+                        business = business,
+                        regdatetime = today,
+                        item = item
+                    )
+                num += 1
+            except Exception as e:
+                print (e)
+                error += "[" + sindex + "행] 거래내역 등록오류\\n"
+    print(error)
     if error != "":
-        error = error[:-1] + "번째행 업로드 실패"
+        error += "위 오류항목들은 확인하여 다시 등록해주시기 바랍니다."
         return HttpResponse("<script>alert('"+error+"');window.close(); window.opener.parent.location.reload(); window.parent.location.href='/';</script>")
     else:
+        created_file.delete()   # 오류항목 없는 경우 등록한 파일 삭제
         return HttpResponse('<script type="text/javascript">window.close(); window.opener.parent.location.reload(); window.parent.location.href="/";</script>')
 
 @login_required(login_url='/')

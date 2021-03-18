@@ -22,8 +22,8 @@ body {
 	font-family:'Times New Roman', Times, serif;
     position: relative;
     width: 21cm;
-    min-height: 29.3cm;
-	padding: 1cm;
+    min-height: 29.7cm;
+	padding: 2cm;
 	margin: 1cm auto;
 	border: 1px #D3D3D3 solid;
 	border-radius: 5px;
@@ -43,7 +43,7 @@ body {
 @media print {
     @page {
         size: A4;
-        margin: 1cm;
+        margin: 0;
     }
     .page {
 		margin: 0;

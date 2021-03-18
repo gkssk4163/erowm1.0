@@ -353,7 +353,7 @@
 							</td>
 							<td>
 								{% if dt.item.code != 0 %}
-								<a href="#" onclick="window.open('{% url "print_voucher2" %}?pk={{dt.id}}', '출력','width=800, height=500, scrollbars=1');" class="btn btn-primary btn-sm py-0">출력</a>
+								<a href="#" onclick="window.open('{% url "print_voucher2" %}?pk={{dt.id}}', '출력','scrollbars=1');" class="btn btn-primary btn-sm py-0">출력</a>
 								{% endif %}
 							</td>
 						</tr>

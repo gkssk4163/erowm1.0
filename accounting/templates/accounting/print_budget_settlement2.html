@@ -11,19 +11,32 @@
 		<p style="margin:2px 2px">(단위 : 원)</p>
 	</div>
 	<table width="100%" height="100%" style="border-collapse:collapse;" border="1" cellpadding="2" class="th-nowrap">
+		<colgroup>
+			<col />
+			<col />
+			<col />
+			<col />
+			<col />
+			<col />
+			<col width="10%"/>
+			<col width="10%"/>
+			<col width="10%"/>
+			<col width="10%"/>
+			<col width="5%"/>
+		</colgroup>
 		<thead>
 			<tr>
-				<th colspan="6" width="60%">과목</th>
-				<th rowspan="2" width="11%">예산액</th>
+				<th colspan="6">과목</th>
+				<th rowspan="2">예산액</th>
 				<th rowspan="2">예산현액</th>
-				<th rowspan="2" width="11%">{% if budget_type == 'revenue' %}수납액{% else %}지출액{% endif %}</th>
-				<th rowspan="2" width="11%">{% if budget_type == 'revenue' %}미납액{% else %}잔액{% endif %}</th>
-				<th rowspan="2" width="7%">비고</th>
+				<th rowspan="2">{% if budget_type == 'revenue' %}수납액{% else %}지출액{% endif %}</th>
+				<th rowspan="2">{% if budget_type == 'revenue' %}미납액{% else %}잔액{% endif %}</th>
+				<th rowspan="2">비고</th>
 			</tr>
 			<tr>
-				<th colspan="2" width="20%">관</th>
-				<th colspan="2" width="20%">항</th>
-				<th colspan="2" width="20%">목</th>
+				<th colspan="2">관</th>
+				<th colspan="2">항</th>
+				<th colspan="2">목</th>
 			</tr>
 			<tr>
 				<th colspan="6">총계</th>
