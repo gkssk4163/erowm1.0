@@ -3859,9 +3859,12 @@ def upload_voucher(request):
 
         # 관항목 유효성검증 (목명칭으로 검증)
         try:
+            month = str(Bkdate.month)
+            sessionInfo = session_info(year, month, business.session_month)
+            sessionYear = sessionInfo['year']
             item = Item.objects.get(
                 paragraph__subsection__institution=business.type3,
-                paragraph__subsection__year=year,
+                paragraph__subsection__year=sessionYear,
                 context=item_context.replace(" ", "").replace(".", "·"))
         except Exception as e:
             print(e)
