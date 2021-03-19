@@ -80,7 +80,8 @@
 						<span class="text-danger">관항목은 조회시작일을 기준으로 해당 회계년도의 관항목이 표시됩니다.</span>
 					</div>
 					<div class="float-right">
-						<button class="btn btn-sm btn-primary enter-data" id="btnSearch" style="width: 100px;">검색</button>
+						<button class="btn btn-sm btn-dark enter-data" id="btnPrintTable" style="width: 100px;" onclick="printTable('divPrintTable');"><i class="fa fa-print"></i> 인쇄</button>
+						<button class="btn btn-sm btn-primary enter-data" id="btnSearch" style="width: 100px;"><i class="fa fa-search"></i> 검색</button>
 					</div>
 				</div>
 			</div>
@@ -88,9 +89,9 @@
 	</div>
 </div>
 <div class="row">
-	<div class="col-md-12">
+	<div id="divPrintTable" class="col-md-12">
 		<table id="tbList" class="table table-sm table-bordered">
-			<thead class="thead-dark text-nowrap">
+			<thead class="thead-dark text-nowrap text-center">
 			<tr>
 				<th>번호</th>
 				<th>출납일</th>
@@ -104,6 +105,14 @@
 			</tr>
 			</thead>
 			<tbody></tbody>
+			<tfoot class="thead-dark text-nowrap text-center">
+			<tr>
+				<th colspan="6">합계</th>
+				<th class="text-right"><span id="span_input_total"></span></th>
+				<th class="text-right"><span id="span_output_total"></span></th>
+				<th></th>
+			</tr>
+			</tfoot>
 		</table>
 	</div>
 </div>
@@ -179,18 +188,22 @@
 			,dataType: "json"
 			,success: function(data) {
 				$('#tbList tbody').empty();
+				var inputTotal = 0;
+				var outputTotal = 0;
 				if (data.length > 0) {
 					var html = [];
 					$.each(data, function(index, item) {
+						inputTotal += item.Bkinput;
+						outputTotal += item.Bkoutput;
 						var rowItem = "<tr>"
-						rowItem += "<td>" + (index + 1) + "</td>"
-						rowItem += "<td>" + item.Bkdate + "</td>"
-						rowItem += "<td>" + item.io_type + "</td>"
-						rowItem += "<td>" + item.spi_code + "</td>"
-						rowItem += "<td class='text-left'>" + item.item_context + "</td>"
+						rowItem += "<td class='text-nowrap text-center'>" + (index + 1) + "</td>"
+						rowItem += "<td class='text-nowrap text-center'>" + item.Bkdate + "</td>"
+						rowItem += "<td class='text-nowrap text-center'>" + item.io_type + "</td>"
+						rowItem += "<td class='text-nowrap text-center'>" + item.spi_code + "</td>"
+						rowItem += "<td class='text-nowrap text-left'>" + item.item_context + "</td>"
 						rowItem += "<td class='text-left'>" + item.Bkjukyo + "</td>"
-						rowItem += "<td class='text-right'>" + item.Bkinput.comma() + "</td>"
-						rowItem += "<td class='text-right'>" + item.Bkoutput.comma() + "</td>"
+						rowItem += "<td class='text-nowrap text-right'>" + item.Bkinput.comma() + "</td>"
+						rowItem += "<td class='text-nowrap text-right'>" + item.Bkoutput.comma() + "</td>"
 						rowItem += "<td class='text-left'>" + ChkIsEmpty(item.remark) + "</td>"
 						rowItem += "</tr>"
 						html.push(rowItem);
@@ -200,6 +213,8 @@
 				else {
 					$("#tbList").append("<tr><td colspan='9'>조회된 데이터가 없습니다.</td></tr>");
 				}
+				$("#span_input_total").html(inputTotal.comma());
+				$("#span_output_total").html(outputTotal.comma());
 				$(".overlay").hide();
 			}
 			,error: function(xhr, status, message) {
@@ -280,6 +295,54 @@
 				alert(xhr + '\n' + status + '\n' + message);
 			}
 		});
+	}
+
+	function printTable(divTableName) {
+		var title = "거래내역";
+		var subsection = $("#subsection option:selected");
+		var paragraph = $("#paragraph option:selected");
+		var item = $("#item option:selected");
+
+		/* title은 선택된 관항목 중 하위항목 출력 */
+		if (subsection.val() != "")
+			title = subsection.html().substr(3);
+		if (paragraph.val() != "")
+			title = paragraph.html().substr(3);
+		if (item.val() != "")
+			title = item.html().substr(3);
+
+		printSpecificArea(title, $("#" + divTableName).html());
+
+		/* document.write 사용 시 document.write 를 자주 호출할 경우 cross site script 발생하여 화면이 안나오는 경우가 있음 */
+		/*var html = '<html>' +
+				'<head>' + document.head.innerHTML + '<style>body {padding-top: 0px;}</style>' + '</head>' +
+				'<body>' + '<center><h3>' + title + '</h3></center>' + $("#"+tableName).html() + '</body>' +
+				'</html>';
+		html.replaceAll("<", "&lt;");
+		html.replaceAll(">", "&gt;");
+		html.replaceAll("&", "&amp;");
+		html.replaceAll("\"", "&quot;");
+		html.replaceAll("'", "&#039;");
+		win.document.write(html);*/
+		/*win.document.write(
+				'<html>' +
+				'<head>' + document.head.innerHTML + '<style>body {padding-top: 0px;}</style>' + '</head>' +
+				'<body>' + '<center><h3>' + title + '</h3></center>' + $("#"+tableName).html() + '</body>' +
+				'</html>');*/
+
+		/* document.head, document.body 사용 시 화면이 안나오는 경우는 없지만, css가 적용되지 않아 style을 별도로 추가해줘야 함 */
+		// win.document.head.innerHTML = '<link href="/static/css/bootstrap/bootstrap.min.css" rel="stylesheet">';
+		// win.document.head.innerHTML = '<style>html {height: 100%;} body {position: relative;margin: 0;height: 100%;width: 100%;}</style>';
+		// win.document.head.innerHTML = '<style>html {height: 100%;} body {position: relative;margin: 0;height: 100%;width: 100%;}</style>';
+		// win.document.head.innerHTML = '<style>table{border-collapse:collapse} .table{border-collapse:collapse!important}</style>';
+		// win.document.head.innerHTML = '<style>.table{border-collapse: collapse;width: 100%;margin-bottom: 1rem;background-color: transparent;}</style>';
+		// win.document.head.innerHTML = '<style>.table-bordered{border:1px solid #dee2e6}.table-bordered td,.table-bordered th{border:1px solid #dee2e6}.table-bordered thead td,.table-bordered thead th{border-bottom-width:2px}</style>';
+		// win.document.body.innerHTML = '<center><h3>' + title + '</h3></center>' + $("#" + divTableName).html();
+		//
+		// win.document.close(); // IE >= 10에 필요
+		// win.focus(); // necessary for IE >= 10
+		// win.print();
+		// win.close();
 	}
 
 </script>
