@@ -312,37 +312,6 @@
 			title = item.html().substr(3);
 
 		printSpecificArea(title, $("#" + divTableName).html());
-
-		/* document.write 사용 시 document.write 를 자주 호출할 경우 cross site script 발생하여 화면이 안나오는 경우가 있음 */
-		/*var html = '<html>' +
-				'<head>' + document.head.innerHTML + '<style>body {padding-top: 0px;}</style>' + '</head>' +
-				'<body>' + '<center><h3>' + title + '</h3></center>' + $("#"+tableName).html() + '</body>' +
-				'</html>';
-		html.replaceAll("<", "&lt;");
-		html.replaceAll(">", "&gt;");
-		html.replaceAll("&", "&amp;");
-		html.replaceAll("\"", "&quot;");
-		html.replaceAll("'", "&#039;");
-		win.document.write(html);*/
-		/*win.document.write(
-				'<html>' +
-				'<head>' + document.head.innerHTML + '<style>body {padding-top: 0px;}</style>' + '</head>' +
-				'<body>' + '<center><h3>' + title + '</h3></center>' + $("#"+tableName).html() + '</body>' +
-				'</html>');*/
-
-		/* document.head, document.body 사용 시 화면이 안나오는 경우는 없지만, css가 적용되지 않아 style을 별도로 추가해줘야 함 */
-		// win.document.head.innerHTML = '<link href="/static/css/bootstrap/bootstrap.min.css" rel="stylesheet">';
-		// win.document.head.innerHTML = '<style>html {height: 100%;} body {position: relative;margin: 0;height: 100%;width: 100%;}</style>';
-		// win.document.head.innerHTML = '<style>html {height: 100%;} body {position: relative;margin: 0;height: 100%;width: 100%;}</style>';
-		// win.document.head.innerHTML = '<style>table{border-collapse:collapse} .table{border-collapse:collapse!important}</style>';
-		// win.document.head.innerHTML = '<style>.table{border-collapse: collapse;width: 100%;margin-bottom: 1rem;background-color: transparent;}</style>';
-		// win.document.head.innerHTML = '<style>.table-bordered{border:1px solid #dee2e6}.table-bordered td,.table-bordered th{border:1px solid #dee2e6}.table-bordered thead td,.table-bordered thead th{border-bottom-width:2px}</style>';
-		// win.document.body.innerHTML = '<center><h3>' + title + '</h3></center>' + $("#" + divTableName).html();
-		//
-		// win.document.close(); // IE >= 10에 필요
-		// win.focus(); // necessary for IE >= 10
-		// win.print();
-		// win.close();
 	}
 
 </script>

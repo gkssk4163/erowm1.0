@@ -3853,9 +3853,11 @@ def upload_voucher(request):
             error += "[" + sindex + "행] 날짜형식 오류\\n"
 
         # 적요 유효성검증
+        # 100자 이상 넘어갈 경우 100자까지 잘라서 저장하도록 변경
         if len(jukyo) > 100:
-            isValid = False
-            error += "[" + sindex + "행] 적요 100자 초과\\n"
+            # isValid = False
+            # error += "[" + sindex + "행] 적요 100자 초과\\n"
+            jukyo = jukyo[:100]
 
         # 관항목 유효성검증 (목명칭으로 검증)
         try:
