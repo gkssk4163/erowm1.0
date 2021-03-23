@@ -1,11 +1,11 @@
 {% extends 'accounting/popup_base.html' %}
 
 {% block content %}
-<form name="mediaForm" method="POST" action="/upload/{{ type }}/" enctype="multipart/form-data">
+<form name="mediaForm" method="POST" action="/upload/{{ type }}/" enctype="multipart/form-data"  onsubmit="$('.overlay').show();">
 	{% csrf_token %}
 	<input type="hidden" name="type" value="{{ type }}" />
 	<div class="my-3">
-		<input type="file" name="file" accept=".xls, .xlsx" />
+		<input type="file" name="file" accept=".xlsx" />
 	</div>
 	<center><button type="submit">업로드</button></center>
 </form>
