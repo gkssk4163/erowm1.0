@@ -189,9 +189,9 @@ class BusinessForm(forms.ModelForm):
 
     class Meta:
         model = Business
-        fields = ('name', 'place_name', 'reg_number', 'owner_name', 'owner_reg_number1',
-                  'owner_reg_number2', 'type1', 'type2', 'type3','cellphone', 'phone', 'fax',
-                  'email', 'zip_number', 'address', 'detailed_address', 'ceo_stamp', 'manager_stamp')
+        fields = ('name', 'place_name', 'reg_number', 'owner_name', 'owner_reg_number1', 'owner_reg_number2',
+                  'type1', 'type2', 'type3','cellphone', 'phone', 'fax', 'email', 'zip_number',
+                  'address', 'detailed_address', 'ceo_stamp', 'manager_stamp', 'business_stamp')
         labels = {
             'name': '사업명',
             'place_name': '사업장명',
@@ -204,6 +204,7 @@ class BusinessForm(forms.ModelForm):
             'detailed_address': '상세주소',
             'ceo_stamp': '원장 도장',
             'manager_stamp': '담당자 도장',
+            'business_stamp': '직인',
         }
     def __init__(self, *args, **kwargs):
         super(BusinessForm, self).__init__(*args, **kwargs)
@@ -212,9 +213,14 @@ class BusinessForm(forms.ModelForm):
         self.fields['zip_number'].widget.attrs['readonly'] = True
         self.fields['address'].widget.attrs['readonly'] = True
         for field in iter(self.fields):
-            self.fields[field].widget.attrs.update({
-                'class': 'form-control input-sm'
-            })
+            if 'stamp' in field:
+                self.fields[field].widget.attrs.update({
+                    'class': 'float-left'
+                })
+            else:
+                self.fields[field].widget.attrs.update({
+                    'class': 'form-control input-sm'
+                })
 
 
 class EditOwnerForm(OwnerForm, BusinessForm):

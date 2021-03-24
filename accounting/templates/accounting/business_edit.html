@@ -7,6 +7,10 @@
 	<div class="col-md-12">
 		<form method="POST" class="business-form" enctype="multipart/form-data">
 			{% csrf_token %}
+			<input type="hidden" name="ceo_stamp_change" value="false">
+			<input type="hidden" name="manager_stamp_change" value="false">
+			<input type="hidden" name="business_stamp_change" value="false">
+
 			<table class="table table-sm">
 				{% for field in form %}
 				<tr>
@@ -19,7 +23,10 @@
 					<td>
 						{{ field }}
 						{% if field.name == 'zip_number' %}
-						<input type="button" class="btn btn-primary btn-zip-search" onclick="ZipSearchDaumPostcode()" value="우편번호 찾기">
+						<style>
+							#id_zip_number {display: inline; width: 20%; float: left;}
+						</style>
+						<input type="button" class="btn btn-sm btn-primary btn-zip-search float-left" onclick="ZipSearchDaumPostcode()" value="우편번호 찾기">
 						{% endif %}
 					</td>
 					</tr>
@@ -40,5 +47,16 @@
 		</form>
 	</div>
 </div>
+<script>
+	$("#id_ceo_stamp").on("change", function () {
+		$("input[name='ceo_stamp_change']").val(true);
+	});
+	$("#id_manager_stamp").on("change", function () {
+		$("input[name='manager_stamp_change']").val(true);
+	});
+	$("#id_business_stamp").on("change", function () {
+		$("input[name='business_stamp_change']").val(true);
+	});
+</script>
 {% include 'accounting/zip_search.html' %}
 {% endblock %}

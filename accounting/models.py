@@ -156,6 +156,7 @@ class Business(models.Model):
     session_month = models.CharField(max_length=2)
     ceo_stamp = models.ImageField(blank=True, null=True, upload_to="image")
     manager_stamp = models.ImageField(blank=True, null=True, upload_to="image")
+    business_stamp = models.ImageField(blank=True, null=True, upload_to="image")
 
     def __str__(self):
         return self.name

@@ -215,14 +215,16 @@ def business_edit(request, pk):
         form = BusinessForm(request.POST, instance=business)
 
         # if form.is_valid() 안에 삭제 구현 시 기존파일 참조 안되는 경우 있어서 밖에 구현
-        # 기존파일삭제(신규등록 시 기존파일 있는경우, 등록취소하는 경우 기존파일 삭제)
-        if (request.FILES.get('ceo_stamp') is not None and request.POST.get('ceo_stamp-clear') is None) \
+        # 기존파일삭제 (파일을 변경하거나 삭제하는 경우 기존파일 삭제)
+        if (business.ceo_stamp and request.POST.get('ceo_stamp_change') == 'true') \
                 or request.POST.get('ceo_stamp-clear') == 'on':
             os.remove(os.path.join(settings.MEDIA_ROOT, business.ceo_stamp.name))
-        # 기존파일삭제(신규등록 시 기존파일 있는경우, 등록취소하는 경우 기존파일 삭제)
-        if (request.FILES.get('manager_stamp') is not None and request.POST.get('manager_stamp-clear') is None) \
+        if (business.manager_stamp and request.POST.get('manager_stamp_change') == 'true') \
                 or request.POST.get('manager_stamp-clear') == 'on':
             os.remove(os.path.join(settings.MEDIA_ROOT, business.manager_stamp.name))
+        if (business.business_stamp and request.POST.get('business_stamp_change') == 'true') \
+                or request.POST.get('business_stamp-clear') == 'on':
+            os.remove(os.path.join(settings.MEDIA_ROOT, business.business_stamp.name))
 
         if form.is_valid():
             business = form.save(commit=False)
@@ -236,6 +238,8 @@ def business_edit(request, pk):
                 business.ceo_stamp = request.FILES.get('ceo_stamp')
             if request.FILES.get('manager_stamp') is not None:
                 business.manager_stamp = request.FILES.get('manager_stamp')
+            if request.FILES.get('business_stamp') is not None:
+                business.business_stamp = request.FILES.get('business_stamp')
 
             business.save()
             return redirect('business_list')
