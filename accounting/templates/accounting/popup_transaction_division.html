@@ -100,8 +100,7 @@
 		<input type="text" class="form-control-sm" name="Bkjukyo_list" style="width: 100%;">
 	</td>
 	<td class="text-right">
-		<input type="text" class="form-control-sm type-number" name="Bkinout_list"
-			   onchange="calc();" style="width: 100%;">
+		<input type="text" class="form-control-sm type-number" name="Bkinout_list" onchange="calc();" style="width: 100%;" autocomplete="off">
 	</td>
 	<td class="text-center">
 		<input type="button" id="btn-delete-row" value="삭제" class="btn btn-sm btn-danger py-0" onclick="deleteRow('{{numb}}');"/>
@@ -195,11 +194,27 @@
 		$(".type-number")
 			.css("text-align", "right")
 			.on("keyup", function (event) {
-					$(this).val($(this).val().number());
+				$(this).val($(this).val().number());
 			})
 			.on("blur", function (event) {
 				$(this).val($(this).val().number());
 			});
+
+		$("input[name='Bkjukyo_list']").on("keydown", function (e) {
+			if ((e.shiftKey && e.keyCode == "13") || e.keyCode == 38) {	// shift+enter, 방향키(위) 클릭 시 이전 요소로 이동
+				$(this).parent().parent().prev().find("input[name='Bkjukyo_list']").focus();
+			} else if (e.keyCode === 13 || e.keyCode == 40) {	// enter, 방향키(아래) 클릭 시 다음 요소로 이동
+				$(this).parent().parent().next().find("input[name='Bkjukyo_list']").focus();
+			}
+		});
+
+		$("input[name='Bkinout_list']").on("keydown", function (e) {
+			if ((e.shiftKey && e.keyCode == "13") || e.keyCode == 38) {	// shift+enter, 방향키(위) 클릭 시 이전 요소로 이동
+				$(this).parent().parent().prev().find("input[name='Bkinout_list']").focus();
+			} else if (e.keyCode === 13 || e.keyCode == 40) {	// enter, 방향키(아래) 클릭 시 다음 요소로 이동
+				$(this).parent().parent().next().find("input[name='Bkinout_list']").focus();
+			}
+		});
 	}
 
 	// 행 삭제
@@ -209,7 +224,6 @@
 			alert("항목이 1개인 경우 삭제할 수 없습니다.");
 			return;
 		}
-		console.log(len);
 		$("#frmList tbody tr.row_" + numb).remove();
 	}
 
