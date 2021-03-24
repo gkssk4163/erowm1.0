@@ -66,6 +66,13 @@ String.prototype.comma = function(gubn) {
 
 Number.prototype.comma = String.prototype.comma;
 
+String.prototype.number = function() {
+	var num = this.replace(/[^0-9]/g, "");
+	return num;
+}
+
+Number.prototype.number = String.prototype.number;
+
 
 $.datepicker.regional['ko'] = {
 	closeText: '닫기',
@@ -148,4 +155,15 @@ function ChkIsEmpty(str) {
 	if (chkStr == null) return "";
 	if (chkStr.toString().length == 0 ) return "";
 	return str;
+}
+
+function ChkIsNull(str) {
+	if (str == null) return true;
+	if (str == "NaN") return true;
+	if (new String(str).valueOf() == "undefined") return true;
+	var chkStr = new String(str);
+	if( chkStr.valueOf() == "undefined" ) return true;
+	if (chkStr == null) return true;
+	if (chkStr.toString().length == 0 ) return true;
+	return false;
 }

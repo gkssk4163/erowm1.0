@@ -1354,10 +1354,10 @@ def popup_transaction_division(request, Bkid):
     tblbank_tr = TBLBANK.objects.get(Bkid=Bkid)
     total = 0
     if tblbank_tr.Bkinput:
-        total=tblbank_tr.Bkinput
+        total = tblbank_tr.Bkinput
         filter_type = "수입"
     elif tblbank_tr.Bkoutput:
-        total=tblbank_tr.Bkoutput
+        total = tblbank_tr.Bkoutput
         filter_type = "지출"
     
     sessionInfo = session_info(str(tblbank_tr.Bkdate.year), str(tblbank_tr.Bkdate.month), business.session_month)
@@ -1405,17 +1405,22 @@ def regist_division(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     today = datetime.datetime.now()
     if request.method == "POST":
-        row = int(request.POST.get('row'))
+
         Bkid = request.POST.get('Bkid')
         tblbank_tr = TBLBANK.objects.get(Bkid=Bkid)
         Mid = request.user.username
         inoutType = request.POST.get('inoutType')
         itemId_list = request.POST.getlist('itemId_list')
+        # print(len(itemId_list))
         subdivisionId_list = request.POST.getlist('subdivisionId_list')
+        # print(len(subdivisionId_list))
         month = request.POST.get('month')
-        Bkjukyo = request.POST.getlist('Bkjukyo')
-        Bkinout = request.POST.getlist('Bkinout')
+        Bkjukyo_list = request.POST.getlist('Bkjukyo_list')
+        # print(len(Bkjukyo_list))
+        Bkinout_list = request.POST.getlist('Bkinout_list')
+        # print(len(Bkinout_list))
         Bkdate = request.POST.get('Bkdate')
+        row = len(itemId_list) - 1
 
         try:
             close = Deadline.objects.get(business=business,year=Bkdate[:4],month=Bkdate[5:7])
@@ -1466,11 +1471,11 @@ def regist_division(request):
             Bkoutput = 0
             Bkjango = 0
             if inoutType == "input":
-                Bkinput = Bkinout[r]
-                Bkjango = jango + int(Bkinout[r])
+                Bkinput = Bkinout_list[r]
+                Bkjango = jango + int(Bkinout_list[r])
             elif inoutType == "output":
-                Bkoutput = Bkinout[r]
-                Bkjango = jango - int(Bkinout[r])
+                Bkoutput = Bkinout_list[r]
+                Bkjango = jango - int(Bkinout_list[r])
 
             item = Item.objects.get(id=itemId_list[r])
 
@@ -1486,7 +1491,7 @@ def regist_division(request):
                 Bkacctno = tblbank_tr.Bkacctno,
                 Bkname = tblbank_tr.Bkname,
                 Bkdate = Bkdate,
-                Bkjukyo = "[분할]"+Bkjukyo[r],
+                Bkjukyo = "[분할]"+Bkjukyo_list[r],
                 Bkinput = Bkinput,
                 Bkoutput = Bkoutput,
                 Bkjango = Bkjango,
@@ -1497,18 +1502,15 @@ def regist_division(request):
             )
 
             update_list = Transaction.objects.filter(business=business, Bkdate__gt=Bkdate, Bkdate__lt=a_month_later)
-            print(update_list)
             for update in update_list:
-                print(Bkinout[r])
                 if inoutType == "input":
-                    update.Bkjango = int(update.Bkjango) + int(Bkinout[r])
+                    update.Bkjango = int(update.Bkjango) + int(Bkinout_list[r])
                 if inoutType == "output":
-                    update.Bkjango = int(update.Bkjango) - int(Bkinout[r])
-                print(update.Bkjango)
+                    update.Bkjango = int(update.Bkjango) - int(Bkinout_list[r])
                 update.save()
 
             tr, created = TBLBANK.objects.get_or_create(business=business, Bkid=Bkid, Bkdivision=r, Mid=Mid, Bkacctno=tblbank_tr.Bkacctno, Bkname=tblbank_tr.Bkname, Bkdate=tblbank_tr.Bkdate)
-            tr.sub_Bkjukyo="[분할]"+Bkjukyo[r]
+            tr.sub_Bkjukyo="[분할]"+Bkjukyo_list[r]
             tr.regdatetime=today
             tr.item = item
             tr.subdivision = subdivision

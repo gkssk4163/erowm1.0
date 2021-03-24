@@ -242,7 +242,7 @@
 							</td>
 							<td>
 								{% if not dt.regdatetime %}
-								<a href="#" onclick="window.open('{% url "popup_transaction_division" Bkid=dt.Bkid %}?month={{ month }}', '분할등록','width=1000, height=300, scrollbars=1');" class="btn btn-primary btn-sm py-0">분할</a>
+								<a href="#" onclick="window.open('{% url "popup_transaction_division" Bkid=dt.Bkid %}?month={{ month }}', '분할등록','width=900, height=300, scrollbars=1');" class="btn btn-primary btn-sm py-0">분할</a>
 								{% elif dt.Bkdivision == 1 %}
 								<button type="button" class="btn btn-light btn-sm py-0" disabled>분할</button>
 								{% endif %}
