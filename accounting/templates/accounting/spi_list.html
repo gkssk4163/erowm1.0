@@ -8,7 +8,7 @@
 <h1 class="mb-3">관항목관리</h1>
 
 <div class="row mb-4">
-	<div class="col-md-12">
+	<div class="col-md-8">
 		<ul class="nav nav-tabs">
 			{% for institution in institution_list %}
 			<li class="nav-item">
@@ -16,6 +16,13 @@
 			</li>
 			{% endfor %}
 		</ul>
+	</div>
+	<div class="col-md-4">
+		<div class="float-right">
+			<a class="btn btn-outline-primary" href="{% url 'subsection_create' %}">관등록</a>
+			<a class="btn btn-outline-primary" href="{% url 'paragraph_create' %}">항등록</a>
+			<a class="btn btn-outline-primary" href="{% url 'item_create' %}">목등록</a>
+		</div>
 	</div>
 	<div class="col-md-12 table-responsive">
 		<table class="table table-bordered table-sm">
