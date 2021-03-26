@@ -849,7 +849,7 @@ def transaction_history(request):
             selected_input_subdivision_list.append(0)
 
     data_list = TBLBANK.objects.filter(Bkacctno=acct.account_number, Bkdate__gte=start_date, Bkdate__lt=end_date).order_by('-Bkdate', '-Bkid', 'Bkdivision')
-    transaction_list = Transaction.objects.filter(business=business, Bkdate__gte=start_date, Bkdate__lt=end_date).order_by('-Bkdate', '-id', 'Bkdivision')
+    transaction_list = Transaction.objects.filter(business=business, Bkdate__gte=start_date, Bkdate__lt=end_date).exclude(item__code=0).order_by('-Bkdate', '-id', 'Bkdivision')
     #print(start_date, data_list[0].Bkdate)
 
     #--수입/지출계
@@ -999,9 +999,16 @@ def regist_transaction(request):
             except Transaction.DoesNotExist:
                 #--전월이월금 없는 경우 주계좌의 이전달 마지막 내역을 전월이월금으로 등록
                 main_acct = Account.objects.get(business=business, main=True)
+                # 전월 마지막거래
                 last_tr = TBLBANK.objects.filter(Bkacctno=main_acct.account_number, Bkdivision=1,Bkdate__gte=a_month_ago, Bkdate__lt=start_date).order_by('Bkdate', 'Bkid').last()
-                if last_tr == None:
-                    return HttpResponse("<script>alert('주계좌의 전월 거래내역이 없습니다. 전월거래내역이 있는 계좌를 주계좌로 변경하세요.');history.back();</script>")
+                # 당월 첫거래
+                first_tr = TBLBANK.objects.filter(Bkacctno=main_acct.account_number, Bkdivision=1,
+                         Bkdate__gte=start_date, Bkdate__lt=a_month_later).order_by('Bkdate', 'Bkid').first()
+                if last_tr == None: # 전월 마지막 거래가 없고
+                    if first_tr.Bkjango == 0:   # 당월 첫거래가 0이면 (처음개설계좌)
+                        last_tr = first_tr      # 마지막거래 대신 첫거래를 전월이월금으로 등록
+                    else:
+                        return HttpResponse("<script>alert('주계좌의 전월 거래내역이 없습니다. 전월거래내역이 있는 계좌를 주계좌로 변경하세요.');history.back();</script>")
                 Transaction.objects.create(
                     Bkid=last_tr.Bkid,
                     Bkdivision=0,
