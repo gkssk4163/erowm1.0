@@ -219,7 +219,7 @@
 
 	// 행 삭제
 	function deleteRow(numb) {
-		var len = $("#frmList tbody tr").size();
+		var len = $("#frmList tbody tr").length;
 		if (len == 1) {
 			alert("항목이 1개인 경우 삭제할 수 없습니다.");
 			return;
