@@ -561,13 +561,14 @@ class TblbankDirectForm(forms.ModelForm):
 class TransactionEditForm(forms.ModelForm):
     class Meta:
         model = Transaction
-        fields = ('Bkdate', 'item', 'Bkjukyo', 'Bkinput', 'Bkoutput')
+        fields = ('Bkdate', 'item', 'Bkjukyo', 'Bkinput', 'Bkoutput', 'remark')
         labels = {
             'Bkdate': '거래일자',
             'item': '계정',
             'Bkjukyo': '적요',
             'Bkinput': '수입',
             'Bkoutput': '지출',
+            'remark': '비고',
         }
 
     def __init__(self, *args, **kwargs):

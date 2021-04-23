@@ -2881,8 +2881,6 @@ def popup_transaction_edit(request):
 def edit_transaction(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     today = datetime.datetime.now()
-    inout_type = request.POST.get('inout')
-    remark = request.POST.get('remark')
     pk = request.POST.get('pk', '')
     year = request.POST.get('year', '')
     month = request.POST.get('month', '')
