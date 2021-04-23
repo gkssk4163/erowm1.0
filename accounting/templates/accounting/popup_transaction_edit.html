@@ -2,6 +2,9 @@
 
 {% block content %}
 {% load humanize %}
+<style>
+	 #id_remark { width:100%; }
+</style>
 <div class="table-responsive">
 	<form name="writeForm" method="POST" action="{% url 'edit_transaction' %}">
 		{% csrf_token %}

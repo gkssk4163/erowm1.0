@@ -286,7 +286,7 @@ class Transaction(models.Model):
     subdivision = models.ForeignKey('accounting.Subdivision',on_delete = models.PROTECT, null=True, blank=True)
     relative_subsection = models.ForeignKey('accounting.Subsection', on_delete = models.PROTECT, null=True, blank=True)
     relative_item = models.ForeignKey('accounting.Item', on_delete = models.PROTECT, related_name="relative_item", null=True, blank=True)
-    remark = models.CharField(max_length=50, null=True, blank=True)
+    remark = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return str(self.Bkid)
