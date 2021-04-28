@@ -69,8 +69,11 @@
 		</tr>
 		<tr height="100">
 			<td>비고</td>
-			<td colspan="5">{{ transaction.remark|default:"" }}</td>
+			<td colspan="5" style="text-align:left">{{ transaction.remark|default:"" }}</td>
 		</tr>
 	</table>
+	<div class="footer">
+		<div style="font-size: 11pt;float: right;">{{ business.name }}</div>
+	</div>
 </div>
 {% endblock %}
