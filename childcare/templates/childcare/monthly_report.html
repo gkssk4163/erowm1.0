@@ -36,7 +36,7 @@
 						<td>{{ ym.month }}</td>
 						<td>
 							{% if ym.year == this_y and ym.month == this_m %}
-							<input type="button" class="btn btn-primary btn-sm py-0" value="전송" onClick="showIframe('submit', '{{ym.year}}', '{{ym.month}}', '{{ym.recorded}}');"/>
+							<input type="button" class="btn btn-primary btn-sm py-0" value="전송" onClick="submitReport('{{ym.year}}', '{{ym.month}}', '{{ym.recorded}}');"/>
 							{% endif %}
 						</td><!--이미전송됐을경우 비활성화 조건 추가-->
 						<td>
@@ -55,32 +55,60 @@
 	</div>
 </div>
 <script type="text/javascript">
-function showIframe(role, year, gubun, recorded) {
-	if(role == 'submit'){
-		var form = document.createElement("form");
-		form.setAttribute("charset", "UTF-8");
-		form.setAttribute("method", "Post");  //Post 방식
-		form.setAttribute("action", ""); //요청 보낼 주소
-		form.setAttribute("target", "result"); //요청 보낼 주소
-		document.body.appendChild(form);
-		hiddenField = document.createElement("input");
-		hiddenField.setAttribute("type", "hidden");
-		hiddenField.setAttribute("name", "csrfmiddlewaretoken");
-		hiddenField.setAttribute("value", "{{ csrf_token }}");
-		form.appendChild(hiddenField);
-		
-		if(recorded != 0){
-			if(confirm('이미 제출이력이 있습니다. 덮어쓰시겠습니까?')){
+	function submitReport(year, gubun, recorded) {
+		console.log(recorded);
+		if(recorded != 0) {	// 전송한 적이 있으면
+			if(!confirm('이미 제출한 이력이 있습니다. 덮어쓰시겠습니까?')) {
+				return false;
+			}
+		}
+		console.log("제출");
+		$.ajax({
+			type: "post"
+			,url: "{% url 'ajax_monthly_report' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'year': year
+                ,'gubun': gubun
+            }
+			,dataType: "text"
+			,success: function(data) {
+				console.log(data);
+				$("#iFrame").contents().find("body").html("");
+                $("#iFrame").contents().find("body").append(data);
+			}
+			,error: function(xhr, status, message) {
+				alert(xhr + '\n' + status + '\n' + message);
+			}
+		});
+	}
+
+	function showIframe(role, year, gubun, recorded) {
+		if(role == 'submit'){
+			var form = document.createElement("form");
+			form.setAttribute("charset", "UTF-8");
+			form.setAttribute("method", "Post");  //Post 방식
+			form.setAttribute("action", ""); //요청 보낼 주소
+			form.setAttribute("target", "result"); //요청 보낼 주소
+			document.body.appendChild(form);
+			hiddenField = document.createElement("input");
+			hiddenField.setAttribute("type", "hidden");
+			hiddenField.setAttribute("name", "csrfmiddlewaretoken");
+			hiddenField.setAttribute("value", "{{ csrf_token }}");
+			form.appendChild(hiddenField);
+
+			if(recorded != 0){
+				if(confirm('이미 제출이력이 있습니다. 덮어쓰시겠습니까?')){
+					form.submit();
+				}
+			}
+			else {
 				form.submit();
 			}
 		}
-		else {
-			form.submit();
+		else if(role == "show_record") {
+			document.getElementById("iFrame").src = "{% url 'show_record' %}?operation=acRptMonthSum&year="+year+"&gubun="+gubun;
 		}
 	}
-	else if(role == "show_record") {
-		document.getElementById("iFrame").src = "{% url 'show_record' %}?operation=acRptMonthSum&year="+year+"&gubun="+gubun;
-	}
-}
 </script>
 {% endblock %}

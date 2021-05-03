@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.shortcuts import render, redirect, get_object_or_404
+import datetime
+
+import requests
+from dateutil.relativedelta import relativedelta
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Case, When, Count, Q
 from django.db.models.functions import Coalesce
-from http.client import HTTPConnection as _HTTPConnection, HTTPException
-#import urllib
-from accounting.models import Business, Item, Transaction, Budget
+from django.shortcuts import render, redirect, get_object_or_404
+
+from accounting.common import session_info
+from accounting.models import Business, Item, Budget
 from .models import Record
-from dateutil.relativedelta import relativedelta
-import datetime
-import requests
+
 
 @login_required(login_url='/')
 def monthly_report(request):
@@ -38,49 +40,50 @@ def monthly_report(request):
                 recorded = 0
             ym_range.append({'year': y, 'month': m, 'recorded': recorded})
 
-    elif request.method == "POST":
-        #--SR
-        item_list = Item.objects.filter(
-            paragraph__subsection__year = selected_year,
-            paragraph__subsection__institution = business.type3,
-        ).annotate(
-            total_sum=Coalesce(
-                Sum(Case(
-                    When(transaction__business = business, then=Case(
-                        When(transaction__Bkdate__year = request_y, then=Case(
-                            When(transaction__Bkdate__month = report_m, then=Case(
-                                When(
-                                    transaction__Bkoutput=0,
-                                    then='transaction__Bkinput'
-                                ),
-                                default='transaction__Bkoutput')))))))),0),
-            count=Count(Case(
-                When(transaction__business = business, then=Case(
-                    When(transaction__Bkdate__year = request_y, then=Case(
-                        When(transaction__Bkdate__month = report_m, then='id')))))))
-        ).exclude(code=0).exclude(total_sum=0).exclude(count=0).order_by(
-            'paragraph__subsection__type',
-            'paragraph__subsection__code',
-            'paragraph__code',
-            'code'
-        )
-        #--END SR
-
-        body =  "<S_AUTH_KEY>"+business.s_auth_key+"</S_AUTH_KEY>\n" + \
-                "<MON>"+today.strftime("%Y%m")+"</MON>\n"
-        print("aaa")
-        for item in item_list:
-            print(item)
-            GB = "1" if item.paragraph.subsection.type=="수입" else "2"
-            CD = str(item.paragraph.subsection.code)+str(item.paragraph.code)+str(item.code)
-            body += "<SR>\n"
-            body += "   <GB>"+GB+"</GB>\n"
-            body += "   <CD>"+CD+"</CD>\n"
-            body += "   <AMT>"+str(item.total_sum)+"</AMT>\n"
-            body += "   <CNT>"+str(item.count)+"</CNT>\n"
-            body += "</SR>\n"
-        response = request_childcare(business, operation, request_y, report_m, body)
-        return response
+    # def ajax_monthly_report 로 기능분리
+    # elif request.method == "POST":
+    #     #--SR
+    #     item_list = Item.objects.filter(
+    #         paragraph__subsection__year = selected_year,
+    #         paragraph__subsection__institution = business.type3,
+    #     ).annotate(
+    #         total_sum=Coalesce(
+    #             Sum(Case(
+    #                 When(transaction__business = business, then=Case(
+    #                     When(transaction__Bkdate__year = request_y, then=Case(
+    #                         When(transaction__Bkdate__month = report_m, then=Case(
+    #                             When(
+    #                                 transaction__Bkoutput=0,
+    #                                 then='transaction__Bkinput'
+    #                             ),
+    #                             default='transaction__Bkoutput')))))))),0),
+    #         count=Count(Case(
+    #             When(transaction__business = business, then=Case(
+    #                 When(transaction__Bkdate__year = request_y, then=Case(
+    #                     When(transaction__Bkdate__month = report_m, then='id')))))))
+    #     ).exclude(code=0).exclude(total_sum=0).exclude(count=0).order_by(
+    #         'paragraph__subsection__type',
+    #         'paragraph__subsection__code',
+    #         'paragraph__code',
+    #         'code'
+    #     )
+    #     #--END SR
+    #
+    #     body =  "<S_AUTH_KEY>"+business.s_auth_key+"</S_AUTH_KEY>\n" + \
+    #             "<MON>"+today.strftime("%Y%m")+"</MON>\n"
+    #     print("aaa")
+    #     for item in item_list:
+    #         print(item)
+    #         GB = "1" if item.paragraph.subsection.type=="수입" else "2"
+    #         CD = str(item.paragraph.subsection.code)+str(item.paragraph.code)+str(item.code)
+    #         body += "<SR>\n"
+    #         body += "   <GB>"+GB+"</GB>\n"
+    #         body += "   <CD>"+CD+"</CD>\n"
+    #         body += "   <AMT>"+str(item.total_sum)+"</AMT>\n"
+    #         body += "   <CNT>"+str(item.count)+"</CNT>\n"
+    #         body += "</SR>\n"
+    #     response = request_childcare(business, operation, request_y, report_m, body)
+    #     return response
 
     return render(request, 'childcare/monthly_report.html', {
         'accounting_report': 'active', 'monthly_report': 'active','business': business,
@@ -367,3 +370,62 @@ def non_request_childcare(business, operation, year, gubun, body):
     reqMsg = preXml+body+tailXml
     print(reqMsg)
     return None
+
+def ajax_monthly_report(request):
+    if request.method == "POST":
+        business = get_object_or_404(Business, pk=request.session['business'])
+
+        # 월회계보고 전송 : 전월 데이터를 금월보고 하는 것임. 보고데이터는 전월기준, 보고년월을 금월기준으로 전송해야 함
+        # 예) 금월이 6월이라면 5월의 회계보고를 진행함.
+        #     데이터는 5월 회계데이터를 전송하며 MON(보고년월)은 금월(6월)로 설정
+        report_y = request.POST.get('year')
+        report_m = request.POST.get('gubun')
+        report_ym = datetime.datetime.strptime(report_y + "-" + report_m + "-01", "%Y-%m-%d")
+        current_ym = report_ym + relativedelta(months = 1)
+
+        sessionInfo = session_info(str(report_y), str(report_m), business.session_month)
+
+        operation = "acRptMonthSum"
+
+        #--SR
+        item_list = Item.objects.filter(
+            paragraph__subsection__year = sessionInfo['year'],
+            paragraph__subsection__institution = business.type3,
+        ).annotate(
+            total_sum=Coalesce(
+                Sum(Case(
+                    When(transaction__business = business, then=Case(
+                        When(transaction__Bkdate__year = report_y, then=Case(
+                            When(transaction__Bkdate__month = report_m, then=Case(
+                                When(
+                                    transaction__Bkoutput=0,
+                                    then='transaction__Bkinput'
+                                ),
+                                default='transaction__Bkoutput')))))))),0),
+            count=Count(Case(
+                When(transaction__business = business, then=Case(
+                    When(transaction__Bkdate__year = report_y, then=Case(
+                        When(transaction__Bkdate__month = report_m, then='id')))))))
+        ).exclude(code=0).exclude(total_sum=0).exclude(count=0).order_by(
+            'paragraph__subsection__type',
+            'paragraph__subsection__code',
+            'paragraph__code',
+            'code'
+        )
+        #--END SR
+
+        body =  "<S_AUTH_KEY>"+business.s_auth_key+"</S_AUTH_KEY>\n" + \
+                "<MON>"+current_ym.strftime("%Y%m")+"</MON>\n"
+        print("aaa")
+        for item in item_list:
+            print(item)
+            GB = "1" if item.paragraph.subsection.type=="수입" else "2"
+            CD = str(item.paragraph.subsection.code)+str(item.paragraph.code)+str(item.code)
+            body += "<SR>\n"
+            body += "   <GB>"+GB+"</GB>\n"
+            body += "   <CD>"+CD+"</CD>\n"
+            body += "   <AMT>"+str(item.total_sum)+"</AMT>\n"
+            body += "   <CNT>"+str(item.count)+"</CNT>\n"
+            body += "</SR>\n"
+        response = request_childcare(business, operation, report_y, report_m, body)
+        return response
