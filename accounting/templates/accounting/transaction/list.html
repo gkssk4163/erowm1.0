@@ -75,12 +75,11 @@
 				</tr>
 			</table>
 			<div class="row">
-				<div class="col-md-12 mb-3">
+				<div class="col-md-12">
 					<div class="float-left">
 						<span class="text-danger">관항목은 조회시작일을 기준으로 해당 회계년도의 관항목이 표시됩니다.</span>
 					</div>
 					<div class="float-right">
-						<button class="btn btn-sm btn-dark enter-data" id="btnPrintTable" style="width: 100px;" onclick="printTable('divPrintTable');"><i class="fa fa-print"></i> 인쇄</button>
 						<button class="btn btn-sm btn-primary enter-data" id="btnSearch" style="width: 100px;"><i class="fa fa-search"></i> 검색</button>
 					</div>
 				</div>
@@ -106,13 +105,14 @@
 			</thead>
 			<tbody></tbody>
 			<tfoot class="thead-dark text-nowrap text-center">
-			<tr>
-				<th colspan="6">합계</th>
-				<th class="text-right"><span id="span_input_total"></span></th>
-				<th class="text-right"><span id="span_output_total"></span></th>
-				<th></th>
-			</tr>
-			</tfoot>
+            <tr>
+				<th colspan="5"></th>
+				<th>합계</th>
+                <th class="text-right"></th>
+                <th class="text-right"></th>
+                <th></th>
+            </tr>
+        </tfoot>
 		</table>
 	</div>
 </div>
@@ -121,6 +121,47 @@
 <script type="text/javascript">
 	$(function () {
 		getSubsectionList();
+
+		var args = {
+			hideColumns: []
+			, orderColumns: []
+			, excludeOrderColumns: []
+			, title: "거래내역"
+			, footerCallback: function (row, data, start, end, display) {
+				var api = this.api(), data;
+
+				var intVal = function ( i ) {
+					return typeof i === 'string' ?
+						i.replace(/[\-<>/='a-zA-Z\$,]/g, '') * 1 :
+						typeof i === 'number' ?
+							i : 0;
+				};
+
+				input_total = api
+					.column( 6 )
+					.data()
+					.reduce( function (a, b) {
+						return intVal(a) + intVal(b);
+					}, 0 );
+
+				console.log(input_total);
+
+				output_total = api
+					.column( 7 )
+					.data()
+					.reduce( function (a, b) {
+						return intVal(a) + intVal(b);
+					}, 0 );
+
+				console.log(output_total);
+
+				// Update footer
+				$( api.column( 6 ).footer() ).html(input_total.comma());
+				$( api.column( 7 ).footer() ).html(output_total.comma());
+			}
+		}
+		setDatatables("tbList", args);
+
 		getPage();
 	})
 
@@ -172,6 +213,7 @@
 
 	function getPage() {
 		$(".overlay").show();
+
 		$.ajax({
 			type: "post"
 			,url: "{% url 'transaction_list' %}"
@@ -187,34 +229,47 @@
             }
 			,dataType: "json"
 			,success: function(data) {
-				$('#tbList tbody').empty();
-				var inputTotal = 0;
-				var outputTotal = 0;
-				if (data.length > 0) {
+				var title = "거래내역";
+				var subsection = $("#subsection option:selected");
+				var paragraph = $("#paragraph option:selected");
+				var item = $("#item option:selected");
+
+				/* title은 선택된 관항목 중 하위항목 출력 */
+				if (subsection.val() != "")
+					title = subsection.html().substr(3);
+				if (paragraph.val() != "")
+					title = paragraph.html().substr(3);
+				if (item.val() != "")
+					title = item.html().substr(3);
+
+				if($.fn.DataTable.isDataTable("#tbList")) {
+					$("#tbList").DataTable().clear();
+				}
+				// var inputTotal = 0;
+				// var outputTotal = 0;
+				$.each(data, function(index, item) {
+					// inputTotal += item.Bkinput;
+					// outputTotal += item.Bkoutput;
 					var html = [];
-					$.each(data, function(index, item) {
-						inputTotal += item.Bkinput;
-						outputTotal += item.Bkoutput;
-						var rowItem = "<tr>"
-						rowItem += "<td class='text-nowrap text-center'>" + (index + 1) + "</td>"
-						rowItem += "<td class='text-nowrap text-center'>" + item.Bkdate + "</td>"
-						rowItem += "<td class='text-nowrap text-center'>" + item.io_type + "</td>"
-						rowItem += "<td class='text-nowrap text-center'>" + item.spi_code + "</td>"
-						rowItem += "<td class='text-nowrap text-left'>" + item.item_context + "</td>"
-						rowItem += "<td class='text-left'>" + item.Bkjukyo + "</td>"
-						rowItem += "<td class='text-nowrap text-right'>" + item.Bkinput.comma() + "</td>"
-						rowItem += "<td class='text-nowrap text-right'>" + item.Bkoutput.comma() + "</td>"
-						rowItem += "<td class='text-left'>" + ChkIsEmpty(item.remark) + "</td>"
-						rowItem += "</tr>"
-						html.push(rowItem);
-					});
-					$("#tbList").append(html);
-				}
-				else {
-					$("#tbList").append("<tr><td colspan='9'>조회된 데이터가 없습니다.</td></tr>");
-				}
-				$("#span_input_total").html(inputTotal.comma());
-				$("#span_output_total").html(outputTotal.comma());
+					html.push(index + 1);	// dtr-control 위치
+					html.push(item.Bkdate);
+					html.push(item.io_type);
+					html.push(item.spi_code);
+					html.push("<div class='text-left'>" + item.item_context + "</div>");
+					html.push("<div class='text-left'>" + item.Bkjukyo + "</div>");
+					html.push("<div class='text-right'>" + item.Bkinput.comma() + "</div>");
+					html.push("<div class='text-right'>" + item.Bkoutput.comma() + "</div>");
+					html.push("<div class='text-left'>" + ChkIsEmpty(item.remark) + "</div>");
+
+					var rowNode = $("#tbList").DataTable().row.add(html).node();
+					$(rowNode).attr('data-comp_code', item.comp_code);
+				});
+
+				// $("#span_input_total").html(inputTotal.comma());
+				// $("#span_output_total").html(outputTotal.comma());
+
+				$("#tbList").DataTable().draw(false);
+
 				$(".overlay").hide();
 			}
 			,error: function(xhr, status, message) {
@@ -295,23 +350,6 @@
 				alert(xhr + '\n' + status + '\n' + message);
 			}
 		});
-	}
-
-	function printTable(divTableName) {
-		var title = "거래내역";
-		var subsection = $("#subsection option:selected");
-		var paragraph = $("#paragraph option:selected");
-		var item = $("#item option:selected");
-
-		/* title은 선택된 관항목 중 하위항목 출력 */
-		if (subsection.val() != "")
-			title = subsection.html().substr(3);
-		if (paragraph.val() != "")
-			title = paragraph.html().substr(3);
-		if (item.val() != "")
-			title = item.html().substr(3);
-
-		printSpecificArea(title, $("#" + divTableName).html());
 	}
 
 </script>
