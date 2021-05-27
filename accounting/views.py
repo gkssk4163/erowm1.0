@@ -454,8 +454,8 @@ def account_create(request):
                 return render(request, "accounting/bankda_error.html")
     else:
         form = AccountForm(initial={'business': business})
-        return render(request, 'accounting/account_edit.html', {
-            'form': form, 'business': business, "editType": "create"})
+    return render(request, 'accounting/account_edit.html', {
+        'form': form, 'business': business, "editType": "create"})
 
 @login_required(login_url='/')
 def account_edit(request, pk):
@@ -818,7 +818,7 @@ def transaction_history(request):
             selected_item_list.append(int(val))
         else:
             selected_item_list.append(0)
-        subdivisions = Subdivision.objects.filter(item__id = selected_item_list[idx])
+        subdivisions = Subdivision.objects.filter(business = business, item__id = selected_item_list[idx])
         subdivision_list.append(subdivisions)
 
     input_subsection_list = request.POST.getlist('input_subsection_list')
