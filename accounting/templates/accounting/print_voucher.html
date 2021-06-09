@@ -70,7 +70,11 @@
 			</tr>
 			<tr height="100">
 				<td>비고</td>
-				<td colspan="5">{{ transaction.remark }}</td>
+				<td colspan="5" style="text-align:left">
+					{% for transaction in transaction %}
+					{% if transaction.remark %}[{% if transaction.item.paragraph.subsection.type == "수입" %}I{% else %}O{% endif %}{{ transaction.proofnum|stringformat:"05d" }}]{{ transaction.remark }}<br>{% endif %}
+					{% endfor %}
+				</td>
 			</tr>
 		</table>
 	</div>

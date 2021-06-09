@@ -2559,7 +2559,7 @@ def print_voucher(request, voucher_type):
 
             item.transaction = transaction
             item.sum = tr_sum['input'] + tr_sum['output']
-            item.sum_ko = readNumber(str(item.sum))
+            item.sum_ko = readNumber(item.sum)
             data_list.append({'date': ymd, 'item': item})
 
     return render(request,'accounting/print_voucher.html', {'settlement_management': 'active', 'master_login': request.session['master_login'], 'business': business, 'year': year, 'month': month, 'year2': year2, 'month2': month2, 'data_list': data_list, 'voucher_type': voucher_type})
@@ -2570,9 +2570,9 @@ def print_voucher2(request):
     pk = request.GET.get('pk')
     transaction = get_object_or_404(Transaction, id=pk, business=business)
     if transaction.item.paragraph.subsection.type == "수입":
-        transaction.sum_ko = readNumber(str(transaction.Bkinput))
+        transaction.sum_ko = readNumber(transaction.Bkinput)
     else:
-        transaction.sum_ko = readNumber(str(transaction.Bkoutput))
+        transaction.sum_ko = readNumber(transaction.Bkoutput)
 
     return render(request,'accounting/print_voucher2.html', {'settlement_management': 'active', 'master_login': request.session['master_login'], 'business': business, 'transaction': transaction})
 
@@ -2948,13 +2948,10 @@ def print_returned_voucher(request, voucher_type):
                 transaction = Transaction.objects.filter(business=business, Bkdate=ymd, item=item, Bkinput__lt=0)
             else:
                 transaction = Transaction.objects.filter(business=business, Bkdate=ymd, item=item, Bkoutput__lt=0)
-            for tr_list in transaction:
-                tr_list.Bkinput = tr_list.Bkinput * -1
-                tr_list.Bkoutput = tr_list.Bkoutput * -1
             tr_sum = transaction.aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
             item.transaction = transaction
-            item.sum = tr_sum['input'] * -1 + tr_sum['output'] * -1
-            item.sum_ko = readNumber(str(item.sum))
+            item.sum = tr_sum['input'] + tr_sum['output']
+            item.sum_ko = readNumber(item.sum)
             data_list.append({'date': ymd, 'item': item})
 
     return render(request,'accounting/print_returned_voucher.html', {
@@ -3142,7 +3139,7 @@ def monthly_print_all(request):
             tr_sum = tr_in_item.aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
             item.transaction = transaction
             item.sum = tr_sum['input'] + tr_sum['output']
-            item.sum_ko = readNumber(str(item.sum))
+            item.sum_ko = readNumber(item.sum)
             revenue_voucher_list.append({'date': ymd, 'item': item})
 
     #--------지출결의서----------
@@ -3166,7 +3163,7 @@ def monthly_print_all(request):
             tr_sum = tr_in_item.aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
             item.transaction = transaction
             item.sum = tr_sum['input'] + tr_sum['output']
-            item.sum_ko = readNumber(str(item.sum))
+            item.sum_ko = readNumber(item.sum)
             expenditure_voucher_list.append({'date': ymd, 'item': item})
 
     #--------수입반납결의서----------
@@ -3183,13 +3180,10 @@ def monthly_print_all(request):
         item_list = Item.objects.filter(transaction__business=business, transaction__Bkdate=ymd, paragraph__subsection__type="수입").exclude(paragraph__subsection__code=0).distinct()
         for item in item_list:
             transaction = Transaction.objects.filter(business=business, Bkdate=ymd, item=item, Bkinput__lt=0)
-            for tr_list in transaction:
-                tr_list.Bkinput = tr_list.Bkinput * -1
-                tr_list.Bkoutput = tr_list.Bkoutput * -1
             tr_sum = transaction.aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
             item.transaction = transaction
-            item.sum = tr_sum['input'] * -1 + tr_sum['output'] * -1
-            item.sum_ko = readNumber(str(item.sum))
+            item.sum = tr_sum['input'] + tr_sum['output']
+            item.sum_ko = readNumber(item.sum)
             revenue_returned_voucher_list.append({'date': ymd, 'item': item})
 
     #--------지출반납결의서----------
@@ -3206,13 +3200,10 @@ def monthly_print_all(request):
         item_list = Item.objects.filter(transaction__business=business, transaction__Bkdate=ymd, paragraph__subsection__type="지출").exclude(paragraph__subsection__code=0).distinct()
         for item in item_list:
             transaction = Transaction.objects.filter(business=business, Bkdate=ymd, item=item, Bkoutput__lt=0)
-            for tr_list in transaction:
-                tr_list.Bkinput = tr_list.Bkinput * -1
-                tr_list.Bkoutput = tr_list.Bkoutput * -1
             tr_sum = transaction.aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
             item.transaction = transaction
-            item.sum = tr_sum['input'] * -1 + tr_sum['output'] * -1
-            item.sum_ko = readNumber(str(item.sum))
+            item.sum = tr_sum['input'] + tr_sum['output']
+            item.sum_ko = readNumber(item.sum)
             expenditure_returned_voucher_list.append({'date': ymd, 'item': item})
 
     return render(request,'accounting/monthly_print_all.html', {
@@ -4027,7 +4018,10 @@ def check_date(request):
     return HttpResponse(json.dumps(context), content_type="application/json")
 
 
-def readNumber(strNum):
+def readNumber(num):
+    isMinus = True if num < 0 else False;
+    strNum = str(abs(num))
+
     # 만 단위 자릿수
     tenThousandPos = 4
     # 억 단위 자릿수
@@ -4076,6 +4070,9 @@ def readNumber(strNum):
                 
         digitCount = digitCount - 1
         index = index + 1
+
+    # ----------마이너스표기----------
+    resultStr = "-" + resultStr if isMinus else resultStr
 
     return resultStr
 
