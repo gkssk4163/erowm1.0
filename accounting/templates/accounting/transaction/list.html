@@ -70,6 +70,11 @@
 									<option value="">목선택</option>
 								</select>
 							</div>
+							<div class="form-group">
+								<select id="subdivision" class="form-control input-sm" style="width: 120px;margin-right: 3px;">
+									<option value="">세목선택</option>
+								</select>
+							</div>
 						</div>
 					</td>
 				</tr>
@@ -96,7 +101,8 @@
 				<th>출납일</th>
 				<th>구분</th>
 				<th>계정번호</th>
-				<th>계정명</th>
+				<th>계정</th>
+				<th>세목</th>
 				<th>적요</th>
 				<th>입금</th>
 				<th>출금</th>
@@ -106,7 +112,7 @@
 			<tbody></tbody>
 			<tfoot class="thead-dark text-nowrap text-center">
             <tr>
-				<th colspan="5"></th>
+				<th colspan="6"></th>
 				<th>합계</th>
                 <th class="text-right"></th>
                 <th class="text-right"></th>
@@ -138,26 +144,22 @@
 				};
 
 				input_total = api
-					.column( 6 )
-					.data()
-					.reduce( function (a, b) {
-						return intVal(a) + intVal(b);
-					}, 0 );
-
-				console.log(input_total);
-
-				output_total = api
 					.column( 7 )
 					.data()
 					.reduce( function (a, b) {
 						return intVal(a) + intVal(b);
 					}, 0 );
 
-				console.log(output_total);
+				output_total = api
+					.column( 8 )
+					.data()
+					.reduce( function (a, b) {
+						return intVal(a) + intVal(b);
+					}, 0 );
 
 				// Update footer
-				$( api.column( 6 ).footer() ).html(input_total.comma());
-				$( api.column( 7 ).footer() ).html(output_total.comma());
+				$( api.column( 7 ).footer() ).html(input_total.comma());
+				$( api.column( 8 ).footer() ).html(output_total.comma());
 			}
 		}
 		setDatatables("tbList", args);
@@ -205,6 +207,10 @@
 		}
 	});
 
+	$("#item").on("change", function () {
+		getSubdivisionList();
+	});
+
 	$("#keyword").on("keyup", function(event) {
 		if (event.keyCode == 13) {
 			$("#btnSearch").trigger("click");
@@ -226,6 +232,7 @@
 				,'subsection': $("#subsection").val()
 				,'paragraph': $("#paragraph").val()
 				,'item': $("#item").val()
+				,'subdivision': $("#subdivision").val()
             }
 			,dataType: "json"
 			,success: function(data) {
@@ -245,17 +252,15 @@
 				if($.fn.DataTable.isDataTable("#tbList")) {
 					$("#tbList").DataTable().clear();
 				}
-				// var inputTotal = 0;
-				// var outputTotal = 0;
+
 				$.each(data, function(index, item) {
-					// inputTotal += item.Bkinput;
-					// outputTotal += item.Bkoutput;
 					var html = [];
 					html.push(index + 1);	// dtr-control 위치
 					html.push(item.Bkdate);
 					html.push(item.io_type);
 					html.push(item.spi_code);
 					html.push("<div class='text-left'>" + item.item_context + "</div>");
+					html.push("<div class='text-left'>" + item.subdivision_context + "</div>");
 					html.push("<div class='text-left'>" + item.Bkjukyo + "</div>");
 					html.push("<div class='text-right'>" + item.Bkinput.comma() + "</div>");
 					html.push("<div class='text-right'>" + item.Bkoutput.comma() + "</div>");
@@ -264,9 +269,6 @@
 					var rowNode = $("#tbList").DataTable().row.add(html).node();
 					$(rowNode).attr('data-comp_code', item.comp_code);
 				});
-
-				// $("#span_input_total").html(inputTotal.comma());
-				// $("#span_output_total").html(outputTotal.comma());
 
 				$("#tbList").DataTable().draw(false);
 
@@ -344,6 +346,27 @@
 
 				$.each(data, function(index, item) {
 					$("#item").append("<option value='" + item.id + "'>[" + item.code + "]" + item.context + "</option>");
+				});
+			}
+			,error: function(xhr, status, message) {
+				alert(xhr + '\n' + status + '\n' + message);
+			}
+		});
+	}
+
+	function getSubdivisionList() {
+		$.ajax({
+			type: "post"
+			,url: "{% url 'subdivision_list' %}"
+            ,data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                ,'item': $("#item").val()
+            }
+			,dataType: "json"
+			,success: function(data) {
+				$("#subdivision").find("option:not(:first)").remove();
+				$.each(data, function(index, item) {
+					$("#subdivision").append("<option value='" + item.id + "'>[" + item.code + "]" + item.context + "</option>");
 				});
 			}
 			,error: function(xhr, status, message) {

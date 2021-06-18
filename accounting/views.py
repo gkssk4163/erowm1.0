@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import requests
 import datetime
-import logging
 import json
 import math
 import os   # 파일삭제 시 경로관련..
@@ -22,6 +20,7 @@ from accounting.common import getBudgetSumBySubsection, getBudgetSumByItem
 from accounting.common import getLatestBudgetType
 from accounting.common import getTransactionListByName
 from accounting.common import getTransactionSumBySubsection, getTransactionSumByItem
+from accounting.view.subdivision import getSubdivisionList
 from accounting.item import getItemList
 from accounting.paragraph import getParagraphList
 from accounting.subsection import getSubsectionList
@@ -254,12 +253,12 @@ def home(request):
     year = request.GET.get('year', today.strftime("%Y"))
     month = request.GET.get('month', today.strftime("%m"))
     inout_type = request.GET.get('type', 'input')
-    
+
     sessionInfo = session_info(str(year), str(month), business.session_month)
 
     start_date = datetime.datetime.strptime(year+"-"+month+"-01", "%Y-%m-%d")
     end_date = start_date + relativedelta(months=1)
-    
+
     #--마감자료
     try:
         deadline = Deadline.objects.get(business=business, year=year, month=month)
@@ -321,7 +320,7 @@ def home(request):
     ).annotate(price=Case(When(Bkinput__gt=0, then='Bkinput'), default='Bkoutput')
     ).annotate(count=Count('Bkdate')).filter(count__gte=2)
     #--중복거래 내역 END
-    
+
     #--세입, 세출에 따른 목별 예산 결산 자료
     if inout_type == "input":
         filter_type = "수입"
@@ -561,9 +560,9 @@ def user_transform(request):
         owners = owners.filter(place_name__icontains=keyword)
     elif where == 'name' and keyword:
         owners = owners.filter(name__icontains=keyword)
-    
+
     owner_exists = owners.exists()
-    
+
     return render(request, 'accounting/user_transform.html', {
         'owners': owners, 'owner_exists': owner_exists, 'user_transform_page': 'active'})
 
@@ -796,13 +795,13 @@ def transaction_history(request):
     month = request.GET.get('month', DateFormat(today).format("m"))
     page = request.GET.get('page', 1)
     page2 = request.GET.get('page2', 1)
-    
+
     sessionInfo = session_info(year, month, business.session_month)
 
     acct = get_object_or_404(Account, business=business, id=acctid)
     start_date = datetime.datetime.strptime(year+'-'+month+'-01', '%Y-%m-%d')
     end_date = start_date + relativedelta(months=1)
-    
+
     input_items = item_info(sessionInfo['year'], business.type3, 'i')
     output_items = item_info(sessionInfo['year'], business.type3, 'o')
     input_subsections = subsection_info(sessionInfo['year'], business.type3, 'i')
@@ -875,7 +874,7 @@ def transaction_history(request):
 
     paginator = Paginator(data_list, 10)
     paginator2 = Paginator(transaction_list, 10)
-    
+
     try:
         data = paginator.page(page)
     except PageNotAnInteger:
@@ -928,8 +927,11 @@ def transaction_list(request):
             ,'subsection': request.POST.get('subsection')
             ,'paragraph': request.POST.get('paragraph')
             ,'item': request.POST.get('item')
+            ,'subdivision': request.POST.get('subdivision')
             ,'codeYN': 'N'
         }
+
+        print(param)
 
         transaction = getTransactionList(param)  # QuerySet
         data = list(transaction.values())  # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
@@ -940,6 +942,12 @@ def transaction_list(request):
             d['io_type'] = item.paragraph.subsection.type
             d['spi_code'] = str(item.paragraph.subsection.code) + str(item.paragraph.code) + str(item.code)
             d['item_context'] = item.context
+            print(d['subdivision_id'])
+            if d['subdivision_id'] is not None:
+                subdivision = Subdivision.objects.get(pk=d['subdivision_id'])
+                d['subdivision_context'] = subdivision.context
+            else:
+                d['subdivision_context'] = ""
 
         return JsonResponse(data, safe=False)  # safe=False 필수
 
@@ -1103,7 +1111,7 @@ def transaction_delete(request):
     month = request.POST.get('month')
     page = request.POST.get('page')
     page2 = request.POST.get('page2')
-    
+
     try:
         close = Deadline.objects.get(business=business, year=year, month=month)
         if close.regdatetime:
@@ -1228,24 +1236,32 @@ def item_edit(request, pk):
 
 @login_required(login_url='/')
 def subdivision_list(request):
-    business = get_object_or_404(Business, pk=request.session['business'])
-    today = datetime.datetime.now()
-    this_year = DateFormat(today).format("Y")
-    this_month = DateFormat(today).format("m")
-    sessionInfo = session_info(this_year, this_month, business.session_month)
-    year = int(request.GET.get('year', sessionInfo['year']))
-    subdivisions = Subdivision.objects.filter(
-        business = business
-        ,item__paragraph__subsection__year = year
-    ).order_by(
-            'item__paragraph__subsection__type', 'item__paragraph__subsection__code'
-            , 'item__paragraph__code', 'item__code', 'code')
-    return render(request, 'accounting/subdivision_list.html', {
-        'business': business, 'subdivisions': subdivisions
-        ,'master_login': request.session['master_login']
-        ,'accounting_management': 'active', 'subdivision_list': 'active'
-        ,'year': year, 'year_range': range(int(sessionInfo['year']), 2018, -1)
-        })
+    if request.method == "POST":
+        item = request.POST.get('item')
+
+        subdivision = getSubdivisionList(request.session['business'], item)  # QuerySet
+        data = list(subdivision.values())  # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
+
+        return JsonResponse(data, safe=False)  # safe=False 필수
+    else:
+        business = get_object_or_404(Business, pk=request.session['business'])
+        today = datetime.datetime.now()
+        this_year = DateFormat(today).format("Y")
+        this_month = DateFormat(today).format("m")
+        sessionInfo = session_info(this_year, this_month, business.session_month)
+        year = int(request.GET.get('year', sessionInfo['year']))
+        subdivisions = Subdivision.objects.filter(
+            business = business
+            ,item__paragraph__subsection__year = year
+        ).order_by(
+                'item__paragraph__subsection__type', 'item__paragraph__subsection__code'
+                , 'item__paragraph__code', 'item__code', 'code')
+        return render(request, 'accounting/subdivision_list.html', {
+            'business': business, 'subdivisions': subdivisions
+            ,'master_login': request.session['master_login']
+            ,'accounting_management': 'active', 'subdivision_list': 'active'
+            ,'year': year, 'year_range': range(int(sessionInfo['year']), 2018, -1)
+            })
 
 @login_required(login_url='/')
 def subdivision_create(request):
@@ -1341,7 +1357,7 @@ def database_syn(request):
 def popup_change_main_account(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     acct_list = Account.objects.filter(business=business)
-    
+
     return render(request, 'accounting/popup_change_mainaccount.html', {'acct_list' :acct_list})
 
 @login_required(login_url='/')
@@ -1370,7 +1386,7 @@ def popup_transaction_division(request, Bkid):
     elif tblbank_tr.Bkoutput:
         total = tblbank_tr.Bkoutput
         filter_type = "지출"
-    
+
     sessionInfo = session_info(str(tblbank_tr.Bkdate.year), str(tblbank_tr.Bkdate.month), business.session_month)
 
     item_list=Item.objects.filter(
@@ -1439,7 +1455,7 @@ def regist_division(request):
                 return HttpResponse("<script>alert('해당월은 마감완료되었습니다.');history.back();</script>")
         except:
             pass
-        
+
         sessionInfo = session_info(Bkdate[:4], Bkdate[5:7], business.session_month)
         start_date = datetime.datetime.strptime(Bkdate[:8]+'01', "%Y-%m-%d")
         a_month_ago = start_date - relativedelta(months=1)
@@ -1494,7 +1510,7 @@ def regist_division(request):
                 subdivision = Subdivision.objects.get(id=subdivisionId_list[r])
             except Subdivision.DoesNotExist:
                 subdivision = None
-            
+
             Transaction.objects.create(
                 Bkid=Bkid,
                 Bkdivision = r,
@@ -1859,7 +1875,7 @@ def regist_annual_budget(request):
                 #이미 등록되어있는 경우 새로등록이 아닌 찾아 바꾸기
                 budget, created = Budget.objects.get_or_create(business=business, year=budget_year, item=Item.objects.get(id=budget_spi[idx]), type=budget_type, defaults={'row': int(budget_row[idx]), 'price': 0, 'context': '', 'unit_price': '', 'cnt': '', 'months': '', 'percent': '', 'sub_price': '0'})
                 budget.row = int(budget_row[idx])
-                if budget_price[idx] != '': 
+                if budget_price[idx] != '':
                     budget.price = int(budget_price[idx])
                 budget.context = context_list
                 budget.unit_price = unit_price_list
@@ -1883,7 +1899,7 @@ def budget_settlement(request, budget_type):
 
     sessionInfo = session_info(str(year), str(month), business.session_month)
 
-    
+
     if s_type == '1':
         start_date = datetime.datetime.strptime(str(year)+'-'+business.session_month+'-01', '%Y-%m-%d')
         print(start_date)
@@ -2316,7 +2332,7 @@ def print_budget_settlement(request, budget_type):
     if budget_type == "revenue":
         item_list2 = Item.objects.filter(
             paragraph__subsection__year = year,
-            paragraph__subsection__institution = business.type3, 
+            paragraph__subsection__institution = business.type3,
             paragraph__subsection__type = filter_type
         ).exclude(code=0).annotate(
             total_sum=Coalesce(Sum(Case(
@@ -2462,7 +2478,7 @@ def print_transaction(request):
         tr_paginator = Paginator(ym_tr, 40)
         for tr_page in range(1, tr_paginator.num_pages+1):
             transaction.append(tr_paginator.page(tr_page))
-        
+
         total = Transaction.objects.filter(business=business, Bkdate__year=ym[:4], Bkdate__month=ym[-2:]).aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
         sub_date =  datetime.datetime.strptime(ym[:4]+'-'+ym[-2:]+'-01', '%Y-%m-%d')
         sub_end_date = DateFormat(sub_date + relativedelta(months=1)).format("Y-m-d")
@@ -2473,7 +2489,7 @@ def print_transaction(request):
             output = Coalesce(Sum('Bkoutput'),0))
 
         ym_range.append({'ym': ym, 'total_input': total['input'], 'total_output': total['output'], 'transaction': transaction, 'accumulated_input': accumulated['input'], 'accumulated_output': accumulated['output']})
-    
+
     return render(request,'accounting/print_transaction.html', {'settlement_management': 'active', 'master_login': request.session['master_login'], 'business': business, 'year': year, 'month': month, 'year2': year2, 'month2': month2, 'ym_range': ym_range, 'total_input': total_input, 'total_output':total_output})
 
 @login_required(login_url='/')
@@ -2653,7 +2669,7 @@ def regist_returned_transaction(request):
                 paragraph__subsection__code=0, paragraph__code=0, code=0),
             regdatetime=today
         )
-    
+
     latest_tr = Transaction.objects.filter(business=business, Bkdate__lte=Bkdate).order_by('-Bkdate','-id').first()
     if tr.Bkinput > 0 :
         Bkinput = 0
@@ -2663,7 +2679,7 @@ def regist_returned_transaction(request):
         Bkinput = tr.Bkoutput * -1
         Bkoutput = 0
         Bkjango = latest_tr.Bkjango + Bkinput
-    
+
     transaction = Transaction(
         Bkid=tr.Bkid,
         Bkdivision=1,
@@ -2757,7 +2773,7 @@ def regist_transaction_direct(request):
             return HttpResponse("<script>alert('해당월은 마감완료되었습니다.');history.back();</script>")
     except:
         pass
-    
+
     Bkid = TBLBANK.objects.all().order_by('-Bkid').first().Bkid + 1
     if tblbankform.is_valid():
         tr = tblbankform.save(commit=False)
@@ -2893,7 +2909,7 @@ def edit_transaction(request):
             return HttpResponse("<script>alert('해당월은 마감완료되었습니다.');history.back();</script>")
     except:
         pass
-    
+
     #금액수정불가, 관항목만 수정가능
     if transactionform.is_valid():
         tr = transactionform.save(commit=False)
@@ -2903,7 +2919,7 @@ def edit_transaction(request):
             tr.Bkoutput = 0
         tr.regdatetime = today
         tr.save()
-        
+
         #TBLBANK테이블 동일한 항목 update
         update_tr = TBLBANK.objects.get(business=business, Bkid=tr.Bkid, Bkdivision=tr.Bkdivision)
         update_tr.item = tr.item
@@ -2935,7 +2951,7 @@ def print_returned_voucher(request, voucher_type):
         ymd_list.append(transaction.Bkdate)
     ymd_list = list(set(ymd_list))
     ymd_list.sort()
-    
+
 
     data_list = []
     for ymd in ymd_list:
@@ -3080,7 +3096,7 @@ def monthly_print_all(request):
         tr_paginator = Paginator(ym_tr, 40)
         for tr_page in range(1, tr_paginator.num_pages+1):
             transaction.append(tr_paginator.page(tr_page))
-        
+
         total = Transaction.objects.filter(business=business, Bkdate__year=ym[:4], Bkdate__month=ym[-2:]).aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
         sub_date =  datetime.datetime.strptime(ym[:4]+'-'+ym[-2:]+'-01', '%Y-%m-%d')
         sub_end_date = DateFormat(sub_date + relativedelta(months=1)).format("Y-m-d")
@@ -3312,7 +3328,7 @@ def regist_close(request):
         ym = request.POST.get('ym')
         year = ym[:4]
         month = ym[5:]
-        
+
         main_acct = Account.objects.get(business=business, main=True)
         try:
             tblbank_last_jango = TBLBANK.objects.filter(Bkacctno=main_acct.account_number, Bkdivision=1, Bkdate__year=year, Bkdate__month=month).order_by('Bkdate','id').last().Bkjango
@@ -3328,7 +3344,7 @@ def regist_close(request):
             deadline.save()
         else:
             return HttpResponse("<script>alert('주계좌의 잔액과 거래내역의 잔액이 일치하지 않습니다.');history.back();</script>")
-        
+
     response = redirect('close_list')
     if business.type3_id == "어린이집" and int(month) < 3:
         response['Location'] += '?year='+str(int(year)-1) #회기년도
@@ -3941,7 +3957,7 @@ def tr_syn(request):
     page = request.GET.get('page')
     page2 = request.GET.get('page2')
     update_list = Transaction.objects.filter(business=business, Bkdate__year = year, Bkdate__month = month).order_by('Bkdate', 'id')
-    
+
     first_tr = update_list.first()
     jango = first_tr.Bkjango
 
@@ -4032,12 +4048,12 @@ def readNumber(num):
     resultStr = ''
     #자릿수 카운트
     digitCount = len(strNum) - 1
-    
+
     index = 0
     while index < len(strNum):
         showDigit = True
         ch = strNum[index]
-        
+
         #----------숫자표기----------
         #자릿수가 2자리이상이고 1이면 '일'은 표시 안함.
         # 단 '만' '억'에서는 표시 함
@@ -4054,7 +4070,7 @@ def readNumber(num):
                 showDigit = False
         else:
             resultStr = resultStr + txtNumber[int(ch)]
-                
+
         #----------단위표기----------
         # 1억 이상
         if digitCount > hundredMillionPos:
@@ -4067,7 +4083,7 @@ def readNumber(num):
         else:
             if showDigit:
                 resultStr = resultStr + txtDigit[digitCount]
-                
+
         digitCount = digitCount - 1
         index = index + 1
 
@@ -4144,7 +4160,7 @@ def budget_spi_total(request):
     year = request.POST.get('year')
     type = request.POST.get('type')
     context = request.POST.get('context')
-    
+
     total = Budget.objects.filter(
         business = business, year = year, type=type
     ).filter(
@@ -4191,8 +4207,8 @@ def paragraph_list(request):
     if request.method == "POST":
         subsection = request.POST.get('subsection')
 
-        subsection = getParagraphList(subsection)   # QuerySet
-        data = list(subsection.values())     # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
+        paragraph = getParagraphList(subsection)   # QuerySet
+        data = list(paragraph.values())     # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
 
         return JsonResponse(data, safe=False)   # safe=False 필수
 
@@ -4200,7 +4216,7 @@ def item_list(request):
     if request.method == "POST":
         paragraph = request.POST.get('paragraph')
 
-        paragraph = getItemList(paragraph)  # QuerySet
-        data = list(paragraph.values())  # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
+        item = getItemList(paragraph)  # QuerySet
+        data = list(item.values())  # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
 
         return JsonResponse(data, safe=False)  # safe=False 필수

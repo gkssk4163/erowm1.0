@@ -17,6 +17,8 @@ def getTransactionList(param):
         transaction = transaction.filter(item__paragraph = int(param['paragraph']))
     if 'item' in param.keys() and param['item'] != "":
         transaction = transaction.filter(item = int(param['item']))
+    if 'subdivision' in param.keys() and param['subdivision'] != "":
+        transaction = transaction.filter(subdivision = int(param['subdivision']))
 
     if 'codeYN' in param.keys() and param['codeYN'] == "N":
         transaction = transaction.exclude(item__paragraph__subsection__code = 0)
