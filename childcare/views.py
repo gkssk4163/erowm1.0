@@ -8,6 +8,7 @@ from dateutil.relativedelta import relativedelta
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Case, When, Count, Q
 from django.db.models.functions import Coalesce
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from accounting.common import session_info
@@ -112,6 +113,9 @@ def budget_report(request):
             n_range.append({'n': n, 'recorded': recorded})
         
     elif request.method == "POST":
+        if (business.s_auth_key is None) :
+            return HttpResponse("<script>alert('인증키가 등록되지 않았습니다.\\n사업장관리 > 인증키등록 메뉴에서 인증키 등록 후 다시 시도해주세요.');</script>")
+
         gubun = request.POST.get('gubun', 0)
         #--BGTR
         if int(gubun) == 0:
@@ -191,6 +195,9 @@ def settlement_report(request):
             recorded = 0
 
     if request.method == "POST":
+        if (business.s_auth_key is None) :
+            return HttpResponse("<script>alert('인증키가 등록되지 않았습니다.\\n사업장관리 > 인증키등록 메뉴에서 인증키 등록 후 다시 시도해주세요.');</script>")
+        
         #--STR
         item_list = Item.objects.filter(
             paragraph__subsection__year = selected_year,
@@ -374,6 +381,9 @@ def non_request_childcare(business, operation, year, gubun, body):
 def ajax_monthly_report(request):
     if request.method == "POST":
         business = get_object_or_404(Business, pk=request.session['business'])
+
+        if (business.s_auth_key is None) :
+            return HttpResponse("<script>alert('인증키가 등록되지 않았습니다.\\n사업장관리 > 인증키등록 메뉴에서 인증키 등록 후 다시 시도해주세요.');</script>")
 
         # 월회계보고 전송 : 전월 데이터를 금월보고 하는 것임. 보고데이터는 전월기준, 보고년월을 금월기준으로 전송해야 함
         # 예) 금월이 6월이라면 5월의 회계보고를 진행함.
