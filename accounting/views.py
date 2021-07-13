@@ -3193,7 +3193,7 @@ def monthly_print_all(request):
 
     revenue_returned_voucher_list = []
     for ymd in ymd_list:
-        item_list = Item.objects.filter(transaction__business=business, transaction__Bkdate=ymd, paragraph__subsection__type="수입").exclude(paragraph__subsection__code=0).distinct()
+        item_list = Item.objects.filter(transaction__business=business, transaction__Bkdate=ymd, transaction__Bkinput__lt=0, paragraph__subsection__type="수입").exclude(paragraph__subsection__code=0).distinct()
         for item in item_list:
             transaction = Transaction.objects.filter(business=business, Bkdate=ymd, item=item, Bkinput__lt=0)
             tr_sum = transaction.aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
@@ -3213,7 +3213,7 @@ def monthly_print_all(request):
 
     expenditure_returned_voucher_list = []
     for ymd in ymd_list:
-        item_list = Item.objects.filter(transaction__business=business, transaction__Bkdate=ymd, paragraph__subsection__type="지출").exclude(paragraph__subsection__code=0).distinct()
+        item_list = Item.objects.filter(transaction__business=business, transaction__Bkdate=ymd, transaction__Bkoutput__lt=0, paragraph__subsection__type="지출").exclude(paragraph__subsection__code=0).distinct()
         for item in item_list:
             transaction = Transaction.objects.filter(business=business, Bkdate=ymd, item=item, Bkoutput__lt=0)
             tr_sum = transaction.aggregate(input=Coalesce(Sum('Bkinput'),0), output=Coalesce(Sum('Bkoutput'),0))
