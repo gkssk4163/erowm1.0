@@ -4,7 +4,7 @@
 {% block content %}
 {% for page in page_list %}
 <div class="page">
-	<center><h1>{{ year }}년 추경{% if 'revenue' in budget_type %}세입{% else %}세출{% endif %}예산서</h1></center>
+	<center><h1>{{ year }}년 {{degree}}차추경{% if 'revenue' in budget_type %}세입{% else %}세출{% endif %}예산서</h1></center>
 	<div style="text-align:right">
 		<p style="margin:2px 2px">(단위 : 원)</p>
 	</div>

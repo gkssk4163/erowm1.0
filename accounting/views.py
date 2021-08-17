@@ -1870,7 +1870,6 @@ def print_supplementary_budget(request, budget_type):
             for item in item_list:
                 # 선택한 추경예산정보 불러오기
                 try:
-                    print(business.id, year, item.id, degree)
                     budget = Budget.objects.get(business=business, year=year, item=item, degree=degree)
                     item.i_total = budget.price
 
