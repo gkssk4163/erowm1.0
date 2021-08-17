@@ -307,6 +307,7 @@ class Budget(models.Model):
     business = models.ForeignKey('accounting.Business', on_delete = models.CASCADE)
     year = models.IntegerField()
     type = models.CharField(max_length=27)
+    degree = models.PositiveSmallIntegerField(validators=[MinValueValidator(0), MaxValueValidator(9)], default=0)
     item = models.ForeignKey('accounting.Item', on_delete = models.PROTECT)
     price = models.BigIntegerField(null=True, blank=True)
     row = models.IntegerField()

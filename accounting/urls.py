@@ -66,6 +66,7 @@ urlpatterns = [
     url(r'^regist/division/$', views.regist_division, name='regist_division'),
     url(r'^budget/(?P<budget_type>[a-z_]\w+)/$', views.annual_budget, name='annual_budget'),
     url(r'^print/yearly/(?P<budget_type>[a-z_]\w+)/$', views.print_yearly_budget, name='print_yearly_budget'),
+    url(r'^print/supplementary/budget/(?P<budget_type>[a-z_]\w+)/$', views.print_supplementary_budget, name='print_supplementary_budget'),
     url(r'^regist/annual/budget/$', views.regist_annual_budget, name='regist_annual_budget'),
     url(r'^budget/settlement/(?P<budget_type>[a-z]\w+)/$', views.budget_settlement, name='budget_settlement'),
     url(r'^trial/balance$', views.trial_balance, name='trial_balance'),

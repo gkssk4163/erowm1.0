@@ -56,6 +56,14 @@ def getLatestBudgetType(business, year, budget_type):
     else:
         return None
 
+# 최근예산 타입 가져오기
+# 본예산만 등록된 경우 본예산, 추경예산 등록된 경우 가장 높은 버전의 추경예산
+from django.db.models import Max
+def validBudgetDegree(business, year, degree):
+    latestBudget = Budget.objects.filter(business=business, year=year, degree=degree)
+    degree = latestBudget.aggregate(Max('degree'))['degree__max']
+    return degree is not None
+
 
 #=============== 예산 관련 ===============#
 # 관별 예산액

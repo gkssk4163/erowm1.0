@@ -17,7 +17,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.dateformat import DateFormat
 
 from accounting.common import getBudgetSumBySubsection, getBudgetSumByItem
-from accounting.common import getLatestBudgetType
+from accounting.common import getLatestBudgetType, validBudgetDegree
 from accounting.common import getTransactionListByName
 from accounting.common import getTransactionSumBySubsection, getTransactionSumByItem
 from accounting.view.subdivision import getSubdivisionList
@@ -1833,6 +1833,123 @@ def print_yearly_budget(request, budget_type):
         })
 
 @login_required(login_url='/')
+def print_supplementary_budget(request, budget_type):
+    business = get_object_or_404(Business, pk=request.session['business'])
+    if request.method == "POST":
+        year = int(request.POST.get('year'))
+
+    if budget_type in ['revenue', 'supplementary_revenue']:
+        stype_filter = '수입'
+        degree = int(request.POST.get('revenue_degree'))
+    elif budget_type in ['expenditure', 'supplementary_expenditure']:
+        stype_filter='지출'
+        degree = int(request.POST.get('expenditure_degree'))
+
+    # 추경예산 등록확인
+    if not validBudgetDegree(business, year, degree):  # 추경예산 안 된 경우 알림 및 창닫기
+        return HttpResponse("<script>alert('추경예산이 등록되지 않았습니다.');close();</script>")
+
+    # 비교대상 설정 : 이전예산 (1차추경은 본예산(0), n차 추경은 n-1차 추경)
+    x_degree = degree - 1
+
+    total = 0
+    xtotal = 0
+    dtotal = 0
+
+    subsection_list = Subsection.objects.filter(year=year, type=stype_filter, institution=business.type3).exclude(code=0)
+    for subsection in subsection_list:
+        s_total = 0
+        xs_total = 0
+
+        paragraph_list = Paragraph.objects.filter(subsection=subsection)
+        for paragraph in paragraph_list:
+            p_total = 0
+            xp_total = 0
+
+            item_list = Item.objects.filter(paragraph=paragraph)
+            for item in item_list:
+                # 선택한 추경예산정보 불러오기
+                try:
+                    print(business.id, year, item.id, degree)
+                    budget = Budget.objects.get(business=business, year=year, item=item, degree=degree)
+                    item.i_total = budget.price
+
+                    percent_list = []
+                    sub_columns = ['item','context','unit_price','cnt','months','percent','sub_price']
+                    context_list = budget.context.split("|")
+                    unit_price_list = budget.unit_price.split("|")
+                    cnt_list = budget.cnt.split("|")
+                    months_list = budget.months.split("|")
+                    if budget.percent is not None:
+                        percent_list = budget.percent.split("|")
+                    sub_price_list = budget.sub_price.split("|")
+                    row_list = []
+                    for idx, val in enumerate(context_list):
+                        r = []
+                        if val != None:
+                            r.append(budget.item.id)
+                            r.append(context_list[idx])
+                            r.append(unit_price_list[idx])
+                            r.append(cnt_list[idx])
+                            r.append(months_list[idx])
+                            if budget.percent is not None:
+                                r.append(percent_list[idx])
+                            else:
+                                r.append('')
+                            r.append(sub_price_list[idx])
+                        row_list.append(r)
+                        item.sub_data = [ dict(zip(sub_columns,row)) for row in row_list ]
+                except Exception as ex:
+                    print(ex)
+                    item.i_total = 0
+                    item.sub_data = []
+
+                # 선택한 추경예산의 이전예산정보 불러오기
+                try :
+                    item.xi_total = Budget.objects.get(business=business, year=year, item=item, degree=x_degree).price
+                except Exception as ex:
+                    print(ex)
+                    item.xi_total = 0
+
+                item.di_total = item.i_total - item.xi_total
+                p_total += item.i_total
+                xp_total += item.xi_total
+
+            paragraph.item_list = item_list
+            paragraph.p_total = p_total
+            paragraph.xp_total = xp_total
+            paragraph.dp_total = paragraph.p_total - paragraph.xp_total
+            s_total += paragraph.p_total
+            xs_total += paragraph.xp_total
+
+        subsection.paragraph_list = paragraph_list
+        subsection.s_total = s_total
+        subsection.xs_total = xs_total
+        subsection.ds_total = subsection.s_total - subsection.xs_total
+        total += subsection.s_total
+        xtotal += subsection.xs_total
+        dtotal += subsection.ds_total
+
+    page_list = []
+    sub_row = []
+    for index, subsection in enumerate(subsection_list):
+        # print(index, subsection)
+        sub_row.append(subsection)
+        if (budget_type in ['revenue', 'supplementary_revenue', 'supplementary_revenue']) and (index+1 in [3,9]):
+            page_list.append(sub_row)
+            # print(index, sub_row)
+            sub_row = []
+        elif (budget_type in ['expenditure', 'supplementary_expenditure', 'supplementary_expenditure']) and (index+1 in [1,2,5,10]):
+            page_list.append(sub_row)
+            # print(index, sub_row)
+            sub_row = []
+
+    return render(request, 'accounting/print_supplementary_budget.html', {
+        'budget_type': budget_type, 'degree': degree, 'year': year, 'page_list': page_list,
+        'total': total, 'xtotal': xtotal, 'dtotal': dtotal
+        })
+
+@login_required(login_url='/')
 def regist_annual_budget(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     if request.method == "POST":
@@ -1847,6 +1964,7 @@ def regist_annual_budget(request):
         budget_months = request.POST.getlist('budget_months')
         budget_percent = request.POST.getlist('budget_percent')
         budget_sub_price = request.POST.getlist('budget_sub_price')
+        degree = budget_type[-1] if 'supplementary' in budget_type else 0
 
         row_idx = 1
         for idx, val in enumerate(budget_spi):
@@ -1873,7 +1991,7 @@ def regist_annual_budget(request):
                 sub_price_list = sub_price_list[:-1]
 
                 #이미 등록되어있는 경우 새로등록이 아닌 찾아 바꾸기
-                budget, created = Budget.objects.get_or_create(business=business, year=budget_year, item=Item.objects.get(id=budget_spi[idx]), type=budget_type, defaults={'row': int(budget_row[idx]), 'price': 0, 'context': '', 'unit_price': '', 'cnt': '', 'months': '', 'percent': '', 'sub_price': '0'})
+                budget, created = Budget.objects.get_or_create(business=business, year=budget_year, item=Item.objects.get(id=budget_spi[idx]), type=budget_type, degree=degree, defaults={'row': int(budget_row[idx]), 'price': 0, 'context': '', 'unit_price': '', 'cnt': '', 'months': '', 'percent': '', 'sub_price': '0'})
                 budget.row = int(budget_row[idx])
                 if budget_price[idx] != '':
                     budget.price = int(budget_price[idx])

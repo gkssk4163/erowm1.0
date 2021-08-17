@@ -26,8 +26,18 @@
 				<input type="button" onclick="yearPost('{% url 'print_budget_all' %}');" value="전체출력">
 				<input type="button" onclick="yearPost('{% url 'print_yearly_budget' budget_type='revenue' %}');" value="세입예산서">
 				<input type="button" onclick="yearPost('{% url 'print_yearly_budget' budget_type='expenditure' %}');" value="세출예산서">
-				<input type="button" onclick="yearPost('{% url 'print_yearly_budget' budget_type='supplementary_revenue' %}');" value="추경세입예산서">
-				<input type="button" onclick="yearPost('{% url 'print_yearly_budget' budget_type='supplementary_expenditure' %}');" value="추경세출예산서">
+
+				<select class="ml-2" name="revenue_degree">
+					<option value="1">1차</option>
+					<option value="2">2차</option>
+				</select>
+				<input type="button" onclick="yearPost('{% url 'print_supplementary_budget' budget_type='revenue' %}');" value="추경세입예산서">
+
+				<select class="ml-2" name="expenditure_degree">
+					<option value="1">1차</option>
+					<option value="2">2차</option>
+				</select>
+				<input type="button" onclick="yearPost('{% url 'print_supplementary_budget' budget_type='expenditure' %}');" value="추경세출예산서">
 			</div>
 		</form>
 	</div>
