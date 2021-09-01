@@ -3098,14 +3098,12 @@ def monthly_print(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     today = datetime.datetime.now()
     this_year = int(DateFormat(today).format("Y"))
-    this_month = int(DateFormat(today).format("m"))
-    year = this_year
-    month = 3
-    year2 = this_year
-    month2 = this_month
-    if this_month < 3:
-        year = this_year - 1
-    return render(request,'accounting/monthly_print.html', {'print_menu': 'active', 'monthly_print': 'active', 'master_login': request.session['master_login'], 'business': business, 'year_range': range(this_year, 1999, -1), 'month_range': range(1, 13), 'year': year, 'month': month, 'year2': year2, 'month2': month2})
+
+    print_date = today - relativedelta(months = 1)
+    year = int(DateFormat(print_date).format("Y"))
+    month = int(DateFormat(print_date).format("m"))
+
+    return render(request,'accounting/monthly_print.html', {'print_menu': 'active', 'monthly_print': 'active', 'master_login': request.session['master_login'], 'business': business, 'year_range': range(this_year, 1999, -1), 'month_range': range(1, 13), 'year': year, 'month': month})
 
 @login_required(login_url='/')
 def monthly_print_all(request):
