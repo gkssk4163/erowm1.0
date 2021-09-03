@@ -2627,9 +2627,16 @@ def print_general_ledger(request):
         paragraph__subsection__institution = business.type3
     ).exclude(paragraph__subsection__code=0)
     for item in item_list :
+        # 거래내역 가져오기
         transaction = []
         tr_in_item = Transaction.objects.filter(business = business, Bkdate__gte = start_date, Bkdate__lt = end_date, item = item).order_by('Bkdate','Bkid','Bkdivision')
+
+        # 누계구하기
+        tr_cumulative_total = Transaction.objects.filter(business = business, Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date, item = item).order_by('Bkdate','Bkid','Bkdivision').aggregate(Bkinput=Coalesce(Sum('Bkinput'),0), Bkoutput=Coalesce(Sum('Bkoutput'),0))
+
+        # 월계구하기
         tr_total = Transaction.objects.filter(business = business, Bkdate__gte = start_date, Bkdate__lt = end_date, item = item).order_by('Bkdate','Bkid','Bkdivision').aggregate(Bkinput=Coalesce(Sum('Bkinput'),0), Bkoutput=Coalesce(Sum('Bkoutput'),0))
+
         tr_paginator = Paginator(tr_in_item, 40)
         for tr_page in range(1, tr_paginator.num_pages+1):
             transaction.append(tr_paginator.page(tr_page))
@@ -2637,15 +2644,20 @@ def print_general_ledger(request):
             filter_type = "revenue"
         elif item.paragraph.subsection.type == "지출":
             filter_type = "expenditure"
+
+        # 예산액 가져오기
         budget = Budget.objects.filter(business = business, year = sessionInfo['year'], item=item, type__icontains=filter_type).order_by('type').last()
         item.transaction = transaction
+        item.cumulative_input = tr_cumulative_total['Bkinput']
+        item.cumulative_output = tr_cumulative_total['Bkoutput']
         item.total_input = tr_total['Bkinput']
         item.total_output = tr_total['Bkoutput']
+
         if budget != None:
             item.budget = budget.price
         else:
             item.budget = 0
-        item.balance = item.budget - item.total_input - item.total_output
+        item.balance = item.budget - item.cumulative_input - item.cumulative_output
 
     return render(request,'accounting/print_general_ledger.html', {'settlement_management': 'active', 'master_login': request.session['master_login'], 'business': business, 'year': year, 'month': month, 'year2': year2, 'month2': month2, 'item_list': item_list})
 
