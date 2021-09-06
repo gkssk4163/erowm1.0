@@ -3241,9 +3241,20 @@ def monthly_print_all(request):
         paragraph__subsection__institution = business.type3
     ).exclude(paragraph__subsection__code=0)
     for general_ledger in general_ledger_list :
+        # 거래내역 가져오기
         transaction = []
         tr_in_general_ledger = Transaction.objects.filter(business = business, Bkdate__gte = start_date, Bkdate__lt = end_date, item = general_ledger).order_by('Bkdate','Bkid','Bkdivision')
-        tr_total = Transaction.objects.filter(business = business, Bkdate__gte = start_date, Bkdate__lt = end_date, item = general_ledger).order_by('Bkdate','Bkid','Bkdivision').aggregate(Bkinput=Coalesce(Sum('Bkinput'),0), Bkoutput=Coalesce(Sum('Bkoutput'),0))
+
+        # 누계구하기
+        tr_cumulative_total = Transaction.objects.filter(
+            business = business, Bkdate__gte = sessionInfo['start_date'], Bkdate__lt = end_date, item = general_ledger
+        ).order_by('Bkdate', 'Bkid', 'Bkdivision').aggregate(Bkinput = Coalesce(Sum('Bkinput'), 0), Bkoutput=Coalesce(Sum('Bkoutput'), 0))
+
+        # 월계구하기
+        tr_total = Transaction.objects.filter(
+            business = business, Bkdate__gte = start_date, Bkdate__lt = end_date, item = general_ledger
+        ).order_by('Bkdate', 'Bkid', 'Bkdivision').aggregate(Bkinput = Coalesce(Sum('Bkinput'),0), Bkoutput=Coalesce(Sum('Bkoutput'), 0))
+
         tr_paginator = Paginator(tr_in_general_ledger, 40)
         for tr_page in range(1, tr_paginator.num_pages+1):
             transaction.append(tr_paginator.page(tr_page))
@@ -3251,15 +3262,19 @@ def monthly_print_all(request):
             filter_type = "revenue"
         elif general_ledger.paragraph.subsection.type == "지출":
             filter_type = "expenditure"
+
+        # 예산액 가져오기
         budget = Budget.objects.filter(business = business, year = sessionInfo['year'], item=general_ledger, type__icontains=filter_type).order_by('type').last()
         general_ledger.transaction = transaction
+        general_ledger.cumulative_input = tr_cumulative_total['Bkinput']
+        general_ledger.cumulative_output = tr_cumulative_total['Bkoutput']
         general_ledger.total_input = tr_total['Bkinput']
         general_ledger.total_output = tr_total['Bkoutput']
         if budget != None:
             general_ledger.budget = budget.price
         else:
             general_ledger.budget = 0
-        general_ledger.balance = general_ledger.budget - general_ledger.total_input - general_ledger.total_output
+        general_ledger.balance = general_ledger.budget - general_ledger.cumulative_input - general_ledger.cumulative_output
 
     #--------수입결의서----------
     transaction_list = Transaction.objects.filter(business=business, Bkdate__gte=start_date, Bkdate__lt=end_date, Bkinput__gt=0)

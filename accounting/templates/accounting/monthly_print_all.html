@@ -253,10 +253,17 @@
 			</tr>
 			{% endfor %}
 			<tr style="font-weight:bold">
-				<td colspan="3" style="text-align:center;">누계</td>
+				<td colspan="3" style="text-align:center;">월 계</td>
 				<td></td>
 				<td style="text-align:right;">{{ item.total_input|intcomma }}</td>
 				<td style="text-align:right;">{{ item.total_output|intcomma }}</td>
+				<td></td>
+			</tr>
+			<tr style="font-weight:bold">
+				<td colspan="3" style="text-align:center;">누 계</td>
+				<td></td>
+				<td style="text-align:right;">{{ item.cumulative_input|intcomma }}</td>
+				<td style="text-align:right;">{{ item.cumulative_output|intcomma }}</td>
 				<td style="text-align:right;">{{ item.balance|intcomma }}</td>
 			</tr>
 		</tbody>
