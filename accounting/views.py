@@ -3606,14 +3606,14 @@ def _budget_content(request, year, budget_type):
         subsection.s_total = Budget.objects.filter(business=business, year=year, item__paragraph__subsection = subsection, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
         subsection.xs_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
         subsection.ds_total = subsection.s_total - subsection.xs_total
-        print("관(", subsection.code, ") : ", subsection.s_total, subsection.xs_total, subsection.ds_total)
+        # print("관(", subsection.code, ") : ", subsection.s_total, subsection.xs_total, subsection.ds_total)
 
         paragraph_list = Paragraph.objects.filter(subsection=subsection)
         for paragraph in paragraph_list:
             paragraph.p_total = Budget.objects.filter(business=business, year=year, item__paragraph=paragraph, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
             paragraph.xp_total = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__code = subsection.code, item__paragraph__code = paragraph.code, type=budget_type).aggregate(total=Coalesce(Sum('price'), 0))['total']
             paragraph.dp_total = paragraph.p_total - paragraph.xp_total
-            print("관항(", subsection.code,paragraph.code, ") : ", paragraph.p_total, paragraph.xp_total, paragraph.dp_total)
+            # print("관항(", subsection.code,paragraph.code, ") : ", paragraph.p_total, paragraph.xp_total, paragraph.dp_total)
 
             item_list = Item.objects.filter(paragraph=paragraph)
             for item in item_list:
@@ -3624,7 +3624,7 @@ def _budget_content(request, year, budget_type):
                 except :
                     item.xi_total = 0
                 item.di_total = item.i_total - item.xi_total
-                print("관항목(", subsection.code, paragraph.code, item.code, ") : ", item.i_total, item.xi_total, item.di_total)
+                # print("관항목(", subsection.code, paragraph.code, item.code, ") : ", item.i_total, item.xi_total, item.di_total)
 
                 percent_list = []
                 sub_columns = ['item','context','unit_price','cnt','months','percent','sub_price']
@@ -4312,8 +4312,6 @@ def budget_spi_total(request):
     ).aggregate(
         total=Coalesce(Sum('price'), 0)
     )['total']
-
-    print("total: ", total)
 
     context = {'total': total}
     return HttpResponse(json.dumps(context), content_type="application/json")

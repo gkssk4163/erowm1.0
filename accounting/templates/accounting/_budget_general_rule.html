@@ -10,7 +10,7 @@
         
 
 
-        ○ 제1조 : 해당연도 년도 세입⦁세출 예산 총액은 다음과 같다.
+        ○ 제1조 : {{ year }} 년도 세입⦁세출 예산 총액은 다음과 같다.
 
         <table class="table table-sm table-bordered" style="margin-left: 30px;width: 90%;">
             <caption style="caption-side: top;text-align: right;">( 단위 : 천원 )</caption>
@@ -50,7 +50,7 @@
 
         ○ 제2조 : 세입⦁세출 예산의 명세서는 별첨“세입⦁세출예산”과 같다.
 
-        ○ 제3조 : 해당연도년도 일시 차입금은 <span id="span_borrowings"></span>원 한도 내에서 일시 차입할 수 있다.
+        ○ 제3조 : {{ year }}년도 일시 차입금은 <span id="span_borrowings"></span>원 한도 내에서 일시 차입할 수 있다.
 
         ○ 제4조 : 일반회계 예비비는 <span id="span_reserve"></span>원으로 한다.
     </span>
@@ -63,7 +63,6 @@
     });
 
     function getBorrowings() {
-        console.log("bbb");
         $.ajax({
 			type: "post"
 			,url: "{% url 'budget_spi_total' %}"
@@ -83,7 +82,6 @@
     }
 
     function getReserve() {
-        console.log("bbb");
         $.ajax({
 			type: "post"
 			,url: "{% url 'budget_spi_total' %}"
