@@ -137,8 +137,12 @@
 				var api = this.api(), data;
 
 				var intVal = function ( i ) {
+					console.log("intVal(" + i + "): " + (typeof i === 'string' ?
+						i.replace(/(<[^<>]+>)|,/g, '') * 1 :
+						typeof i === 'number' ?
+							i : 0));
 					return typeof i === 'string' ?
-						i.replace(/[\-<>/='a-zA-Z\$,]/g, '') * 1 :
+						i.replace(/(<[^<>]+>)|,/g, '') * 1 :
 						typeof i === 'number' ?
 							i : 0;
 				};
@@ -147,6 +151,7 @@
 					.column( 7 )
 					.data()
 					.reduce( function (a, b) {
+						console.log("input_total	a: " + a + "	b: " + b);
 						return intVal(a) + intVal(b);
 					}, 0 );
 
@@ -154,6 +159,7 @@
 					.column( 8 )
 					.data()
 					.reduce( function (a, b) {
+						console.log("output_total	a: " + a + "	b: " + b);
 						return intVal(a) + intVal(b);
 					}, 0 );
 
