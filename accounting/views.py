@@ -1630,11 +1630,11 @@ def annual_budget(request, budget_type):
 
     have_sub_bt = request.POST.get('have_sub_bt')
 
-    print("================ annual budget ====================")
-    print("business: ", business)
-    print("year: ", year)
-    print("have_sub_bt", have_sub_bt, type(have_sub_bt))
-    print("============== annual budget end ==================")
+    # print("================ annual budget ====================")
+    # print("business: ", business)
+    # print("year: ", year)
+    # print("have_sub_bt", have_sub_bt, type(have_sub_bt))
+    # print("============== annual budget end ==================")
 
     if budget_type == "revenue" or budget_type[:21] == "supplementary_revenue":
         if have_sub_bt == "1":

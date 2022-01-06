@@ -10,7 +10,7 @@
 
 <div class="row">
 	<div class="col-md-12">
-		<form name="searchForm" method="POST" action="{% url 'annual_budget' budget_type=budget_type %}">
+		<form name="searchForm" method="POST" onsubmit="setAction(this)">
 			{% csrf_token %}
 			<table class="table table-bordered table-sm text-nowrap">
 				<thead class="thead-light">
@@ -18,7 +18,7 @@
 						<th>검색</th>
 						{% if budget_type|slice:":13" == "supplementary" %}
 						<td>
-							<select name="budget_type" onchange="location = this.value;">
+							<select name="budget_type">
 								<option value="/budget/{{ budget_type|slice:":-2" }}_1/" {% if budget_type|slice:"-1:" == '1' %}selected{% endif %}>1차</option>
 								<option value="/budget/{{ budget_type|slice:":-2" }}_2/" {% if budget_type|slice:"-1:" == '2' %}selected{% endif %}>2차</option>
 							</select>
@@ -180,11 +180,17 @@
 	</div>
 </div>
 <script type="text/javascript">
+function setAction($this) {
+	var budget_type = $("select[name='budget_type']").val() === undefined ? '' : $("select[name='budget_type']").val();
+	var year = $("select[name='year']").val();
+	$this.action = budget_type + "?year=" + year;
+}
+
 function add_row(index) {
 	$(function () {
 	        $.ajax({
 			type: "POST",
-			url: {% url 'add_row' %},
+			url: "{% url 'add_row' %}",
 			data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'page': "annual_budget"},
 			dataType: "json",
 			success: function(response) {
@@ -201,7 +207,7 @@ function delete_row(index) {
 	$(function () {
 	        $.ajax({
 			type: "POST",
-			url: {% url 'delete_row' %},
+			url: "{% url 'delete_row' %}",
 			data: {'csrfmiddlewaretoken': '{{ csrf_token }}', 'page': "annual_budget"},
 			dataType: "json",
 			success: function(response) {
