@@ -1637,10 +1637,12 @@ def annual_budget(request, budget_type):
     # print("============== annual budget end ==================")
 
     if budget_type == "revenue" or budget_type[:21] == "supplementary_revenue":
-        if have_sub_bt == "1":
+        if have_sub_bt == "1":      # 본예산 불러오기
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="수입", type="revenue")
-        elif have_sub_bt == "2":
+        elif have_sub_bt == "2":    # 전년도예산 불러오기
+            print("전년도 세입 예산불러오기")
             budget_list = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type="수입", type="revenue")
+            print(budget_list)
         else:
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="수입", type=budget_type)
         spi_list = item_info(year, business.type3, 'i')
@@ -1652,7 +1654,9 @@ def annual_budget(request, budget_type):
         if have_sub_bt == "1":
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="지출", type="expenditure")
         elif have_sub_bt == "2":
+            print("전년도 세출 예산불러오기")
             budget_list = Budget.objects.filter(business=business, year=year-1, item__paragraph__subsection__type="지출", type="expenditure")
+            print(budget_list)
         else:
             budget_list = Budget.objects.filter(business=business, year=year, item__paragraph__subsection__type="지출", type=budget_type)
         spi_list = item_info(year, business.type3, 'o')
@@ -1671,7 +1675,8 @@ def annual_budget(request, budget_type):
         for spi in spi_list:
             spi.budget_row = 1
             for index, budget in enumerate(budget_list):
-                if spi.id == budget.item.id:
+                print(spi.code, budget.item.code)
+                if spi.code == budget.item.code and spi.paragraph.code == budget.item.paragraph.code and spi.paragraph.subsection.code == budget.item.paragraph.subsection.code:
                     sub_columns = ['item','context','unit_price','cnt','months','percent','sub_price']
                     context_list = budget.context.split("|")
                     unit_price_list = budget.unit_price.split("|")
@@ -1699,6 +1704,7 @@ def annual_budget(request, budget_type):
                     spi.budget_price = budget.price
                     spi.budget_row = budget.row
                     spi.sub_budget = sub_data
+                    print(sub_data)
                     sub_budget += sub_data
 
     return render(request, 'accounting/annual_budget.html', {'total_revenue': total_revenue, 'total_expenditure': total_expenditure, 'total_difference': total_difference,'budget_type': budget_type, 'sub_budget': sub_budget, 'spi_list': spi_list, 'budget_list': budget_list, 'budget_management': 'active', 'revenue_budget_page': revenue_budget_page, 'expenditure_budget_page': expenditure_budget_page, 'supplementary_revenue_page': supplementary_revenue_page, 'supplementary_expenditure_page': supplementary_expenditure_page, 'master_login': request.session['master_login'], 'business': business, 'year_range': range(this_year+1, 1999, -1), 'year': year})
