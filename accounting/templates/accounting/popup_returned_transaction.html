@@ -3,63 +3,261 @@
 {% block content %}
 {% load humanize %}
 <div class="table-responsive">
-	<form name="listForm" method="POST" action="{% url 'regist_returned_transaction' %}">
-	{% csrf_token %}
-		<input type="hidden" name="month" value="{{ month }}">
-		<input type="hidden" name="acctid" value="{{ acct.id }}">
-		<input type="hidden" name="Bkid" value="{{ transaction.Bkid }}">
-		<input type="hidden" name="Bkdate" value="{{ Bkdate }}">
-		<table id="tr-table" class="table table-bordered table-hover table-sm th-nowrap td-nowrap">
-			<thead class="thead-light text-center">
-				<tr>
-					<th>은행명</th>
-					<th>계좌번호</th>
-					<th>거래일자</th>
-					<th>계정명</th>
-					<th>적요</th>
-					<th>금액</th>
-				</tr>
-			</thead>
-			<tbody class="text-center" id="tr-tbody">
-				<tr>
-					<td>{{ acct.bank.name }}</td>
-					<td>{{ acct.account_number }}</td>
-					<td>{{ transaction.Bkdate|date:"Y-m-d" }}</td>
-					<td>
-						<select name="item">
-							<option value="">--------------------</option>
-							{% for item in item_list %}
-							<option value="{{ item.id }}">{{ item }}</option>
-							{% endfor %}
-						</select>
-					</td>
-					<td><input type="text" name="Bkjukyo" id="Bkjukyo" size="15" value="{{ transaction.Bkjukyo }}"></td>
-					<td class="text-right">{% if transaction.Bkinput %}{{ transaction.Bkinput|intcomma }}{% elif transaction.Bkoutput %}{{ transaction.Bkoutput|intcomma }}{% endif %}</td>
-				</tr>
-				<tr>
-					<td>비고</td>
-					<td colspan="5"><input type="text" name="remark" size="50"></td>
-			</tbody>
-		</table>
-	</form>
-</div>
-<button type="button" class="float-right" onclick="writeCheck();">등록</button>
-<script type="text/javascript">
-var index = 1;
-function writeCheck() {
-	var f = document.listForm;
+    <form id="listForm" name="listForm" method="POST" action="{% url 'regist_returned_transaction' %}">
+        {% csrf_token %}
+        <input type="hidden" name="month" value="{{ month }}">
+        <input type="hidden" name="acctid" value="{{ acct.id }}">
+        <input type="hidden" name="Bkid" value="{{ transaction.Bkid }}">
+        <input type="hidden" name="Bkdate" value="{{ Bkdate }}">
+        <input type="hidden" name="total" id="total" value="{% if transaction.Bkinput %}{{ transaction.Bkinput }}{% elif transaction.Bkoutput %}{{ transaction.Bkoutput }}{% endif %}">	<!-- 거래금액 -->
+        <input type="hidden" name="inoutType" value={% if transaction.Bkinput > 0 %}"output"{% elif transaction.Bkoutput > 0 %}"input"{% endif %}> <!-- 반대 -->
 
-	if(!f.item.value) {
-		alert("계정명을 선택해주세요");
-		f.item.focus();
-		return;
+        <!-- 어떤 경우에도 list로 처리(2개이상)되도록 하기 위해 임의로 추가해줌 -->
+		<input type="hidden" name="itemId_list">
+		<input type="hidden" name="item_list">
+		<input type="hidden" name="subdivisionId_list">
+		<input type="hidden" name="subdivision_list">
+		<input type="hidden" name="Bkjukyo_list">
+		<input type="hidden" name="Bkinout_list">
+
+        <table class="table table-bordered table-sm th-nowrap td-nowrap mb-1">
+            <colgroup>
+                <col width="15%">
+                <col width="20%">
+                <col width="15%">
+                <col width="20%">
+                <col width="15%">
+                <col width="15%">
+            </colgroup>
+            <tbody class="thead-light text-center">
+            <tr>
+                <th>은행명</th>
+                <td>{{ transaction.Bkname }}</td>
+                <th>계좌번호</th>
+                <td>{{ transaction.Bkacctno }}</td>
+                <th>거래일자</th>
+                <td>{{ transaction.Bkdate|date:"Y-m-d" }}</td>
+            </tr>
+            <tr>
+                <th>거래금액</th>
+                <td><span id="span_total">{% if transaction.Bkinput %}{{ transaction.Bkinput|intcomma }}{% elif transaction.Bkoutput %}{{ transaction.Bkoutput|intcomma }}{% endif %}</span>
+                </td>
+                <th>분할합계</th>
+                <td><span id="span_division_total"></span></td>
+                <th>차액</th>
+                <td><span id="span_difference"></span></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <table id="frmList" class="table table-bordered table-hover table-sm th-nowrap td-nowrap"
+               style="table-layout: fixed;">
+            <colgroup>
+                <col width="20%">
+                <col width="20%">
+                <col width="35%">
+                <col width="17%">
+                <col width="8%">
+            </colgroup>
+            <thead class="thead-light text-center">
+            <tr>
+                <th>계정명</th>
+                <th>세목</th>
+                <th>적요</th>
+                <th>금액</th>
+                <th><input type="button" id="btn-add-row" value="추가" class="btn btn-sm btn-primary py-0"
+                           onclick="addItemRow();"/></th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button type="button" class="float-right btn btn-sm btn-primary" onclick="writeCheck();">등록</button>
+    </form>
+</div>
+
+{% verbatim %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.7/handlebars.min.js"></script>
+<script id="frmTemplate" type="text/x-handlebars-template">
+    <tr class="row_{{numb}}">
+        <td>
+            <select class="form-control-sm" name="itemId_list" style="width: 100%;" data-numb="{{numb}}">
+                {% endverbatim %}
+                <option value="">계정선택</option>
+                {% for item in item_list %}
+                <option value="{{ item.id }}">{{ item }}</option>
+                {% endfor %}
+                {% verbatim %}
+            </select>
+        </td>
+        <td>
+            <select class="form-control-sm" name="subdivisionId_list" id="subdivisionId_list_{{numb}}"
+                    style="width: 100%;">
+                <option value="-1">세목선택</option>
+            </select>
+        </td>
+        <td>
+            <input type="text" class="form-control-sm" name="Bkjukyo_list" style="width: 100%;">
+        </td>
+        <td class="text-right">
+            <input type="text" class="form-control-sm type-number" name="Bkinout_list" onchange="calc();"
+                   style="width: 100%;" autocomplete="off">
+        </td>
+        <td class="text-center">
+            <input type="button" id="btn-delete-row" value="삭제" class="btn btn-sm btn-danger py-0"
+                   onclick="deleteRow('{{numb}}');"/>
+        </td>
+    </tr>
+</script>
+{% endverbatim %}
+
+<script type="text/javascript">
+    $(function () {
+		addItemRow();
+		calc();
+	});
+    //
+    // function writeCheck() {
+    //     var f = document.listForm;
+    //
+    //     if (!f.item.value) {
+    //         alert("계정명을 선택해주세요");
+    //         f.item.focus();
+    //         return;
+    //     }
+    //     if (!f.Bkjukyo.value) {
+    //         alert("적요를 입력해주세요");
+    //         f.Bkjukyo.focus();
+    //         return;
+    //     }
+    //     f.submit();
+    // }
+
+    function writeCheck() {
+		var valid = true;
+
+		$("#frmList tbody tr").each(function(index, tr) {
+			if (valid) {
+				var itemId = $(this).find("select[name=itemId_list]");
+				if (!itemId.val()) {
+					alert("계정을 선택해주세요");
+					itemId.focus();
+					valid = false;
+					return;
+				}
+				var Bkjukyo = $(this).find("input[name=Bkjukyo_list]");
+				if (!Bkjukyo.val()) {
+					alert("적요를 입력해주세요");
+					Bkjukyo.focus();
+					valid = false;
+					return;
+				}
+				var Bkinout = $(this).find("input[name=Bkinout_list]");
+				if (!Bkinout.val() || Bkinout.val() == 0) {
+					alert("금액을 입력해주세요");
+					Bkinout.focus();
+					valid = false;
+					return;
+				}
+			}
+		});
+
+		if (!valid) return;
+
+		if ($("#span_difference").html() != 0) {
+			alert("거래금액과 분할합계의 차액이 0이 아닙니다.\n확인 후 다시 등록해주세요.");
+			return;
+		}
+
+		$("#listForm").submit();
 	}
-	if(!f.Bkjukyo.value) {
-		alert("적요를 입력해주세요");
-		f.Bkjukyo.focus();
-		return;
+
+	// 계정 선택 시 하위세목 불러오기
+	$(document).on("change", "select[name='itemId_list']", function() {
+		var numb = $(this).data("numb");
+		$.ajax({
+			type: "POST"
+			,url: "{% url 'select_subdivision' %}"
+			,data: {
+				'csrfmiddlewaretoken': '{{ csrf_token }}',
+				'item_id' : $(this).val()
+			}
+			,dataType: "json"
+			,success: function(data) {
+				var options = '<option value="-1">세목선택</option>';
+				$.each(data, function(index, item) {
+					options += '<option value="'+item.pk+'">'+item.fields.context+'('+item.fields.code+')</option>';
+				})
+				$("#subdivisionId_list_" + numb).html(options);
+			}
+			,error: function() {
+				alert($(this).val());
+			}
+		});
+	});
+
+	// 행 추가
+	var row_numb = 0;
+	function addItemRow() {
+		var source = $("#frmTemplate").html();
+		var frmTemplate = Handlebars.compile(source);
+
+		var inner = {
+			numb: ++row_numb
+		};
+
+		$("#frmList tbody").append(frmTemplate(inner));
+
+		$(".type-number")
+			.css("text-align", "right")
+			.on("keyup", function (event) {
+				$(this).val($(this).val().number());
+			})
+			.on("blur", function (event) {
+				$(this).val($(this).val().number());
+			});
+
+		$("input[name='Bkjukyo_list']").on("keydown", function (e) {
+			if ((e.shiftKey && e.keyCode == "13") || e.keyCode == 38) {	// shift+enter, 방향키(위) 클릭 시 이전 요소로 이동
+				$(this).parent().parent().prev().find("input[name='Bkjukyo_list']").focus();
+			} else if (e.keyCode === 13 || e.keyCode == 40) {	// enter, 방향키(아래) 클릭 시 다음 요소로 이동
+				$(this).parent().parent().next().find("input[name='Bkjukyo_list']").focus();
+			}
+		});
+
+		$("input[name='Bkinout_list']").on("keydown", function (e) {
+			if ((e.shiftKey && e.keyCode == "13") || e.keyCode == 38) {	// shift+enter, 방향키(위) 클릭 시 이전 요소로 이동
+				$(this).parent().parent().prev().find("input[name='Bkinout_list']").focus();
+			} else if (e.keyCode === 13 || e.keyCode == 40) {	// enter, 방향키(아래) 클릭 시 다음 요소로 이동
+				$(this).parent().parent().next().find("input[name='Bkinout_list']").focus();
+			}
+		});
 	}
-	f.submit();
-}
+
+	// 행 삭제
+	function deleteRow(numb) {
+		var len = $("#frmList tbody tr").length;
+		if (len == 1) {
+			alert("항목이 1개인 경우 삭제할 수 없습니다.");
+			return;
+		}
+		$("#frmList tbody tr.row_" + numb).remove();
+		calc();
+	}
+
+	// 분할금액 합계 및 차액 계산
+	function calc() {
+		var sum = 0;
+		var total = $("#total").val();
+
+
+		$("#frmList tbody tr input[name='Bkinout_list']").each(function() {
+			var price = $(this).val() ? parseInt($(this).val().replace(/,/g, "")) : 0;
+			sum += price;
+		});
+
+		$("#span_division_total").html(sum.comma());
+		$("#span_difference").html((total - sum).comma());
+
+	}
 </script>
 {% endblock %}

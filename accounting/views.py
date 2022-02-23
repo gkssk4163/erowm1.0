@@ -2753,99 +2753,117 @@ def popup_returned_transaction(request):
 def regist_returned_transaction(request):
     business = get_object_or_404(Business, pk=request.session['business'])
     today = datetime.datetime.now()
-    month = request.POST.get('month')
-    Bkid = request.POST.get('Bkid')
-    acctid = request.POST.get('acctid')
-    Bkdate = request.POST.get('Bkdate')
-    remark = request.POST.get('remark')
-    item = Item.objects.get(id=request.POST.get('item'))
-    tr = TBLBANK.objects.get(Mid=business.owner.profile.user.username, Bkid=Bkid)
-    acct = get_object_or_404(Account, business=business, id=acctid)
 
-    sessionInfo = session_info(Bkdate[:4], Bkdate[5:7], business.session_month)
+    if request.method == "POST":
+        Bkid = request.POST.get('Bkid')
+        tblbank_tr = TBLBANK.objects.get(Bkid=Bkid)
+        Mid = request.user.username
+        inoutType = request.POST.get('inoutType')
+        itemId_list = request.POST.getlist('itemId_list')
+        # print(len(itemId_list))
+        subdivisionId_list = request.POST.getlist('subdivisionId_list')
+        # print(len(subdivisionId_list))
+        month = request.POST.get('month')
+        Bkjukyo_list = request.POST.getlist('Bkjukyo_list')
+        # print(len(Bkjukyo_list))
+        Bkinout_list = request.POST.getlist('Bkinout_list')
+        # print(len(Bkinout_list))
+        Bkdate = request.POST.get('Bkdate')
+        row = len(itemId_list) - 1
 
-    try:
-        close = Deadline.objects.get(business=business,year=Bkdate[:4],month=Bkdate[5:7])
-        if close.regdatetime:
-            return HttpResponse("<script>alert('해당월은 마감완료되었습니다.');history.back();</script>")
-    except:
-        pass
+        try:
+            close = Deadline.objects.get(business=business,year=Bkdate[:4],month=Bkdate[5:7])
+            if close.regdatetime:
+                return HttpResponse("<script>alert('해당월은 마감완료되었습니다.');history.back();</script>")
+        except:
+            pass
 
-    #--해당날짜 전월이월금 유무확인--
-    start_date = datetime.datetime.strptime(Bkdate[:8]+'01', "%Y-%m-%d")
-    a_month_ago = start_date - relativedelta(months=1)
-    a_month_later = start_date + relativedelta(months=1)
+        sessionInfo = session_info(Bkdate[:4], Bkdate[5:7], business.session_month)
+        start_date = datetime.datetime.strptime(Bkdate[:8] + '01', "%Y-%m-%d")
+        a_month_ago = start_date - relativedelta(months=1)
+        a_month_later = start_date + relativedelta(months=1)
 
-    try :
-        carryover_tr = Transaction.objects.filter(business=business, Bkdate=start_date).get(Bkdivision=0)
-    except IndexError:
-        return HttpResponse("<script>alert('IndexError');history.back();</script>")
-    except Transaction.DoesNotExist:
-        #--전월이월금 없는 경우 주계좌의 이전달 마지막 내역을 전월이월금으로 등록
-        main_acct = Account.objects.filter(business=business).get(main=True)
-        last_tr = TBLBANK.objects.filter(Bkacctno=main_acct.account_number, Bkdivision=1,Bkdate__gte=a_month_ago, Bkdate__lt=start_date).order_by('Bkdate', 'Bkid').last()
-        if last_tr == None:
-            return HttpResponse("<script>alert('주계좌의 전월 거래내역이 없습니다. 전월거래내역이 있는 계좌를 주계좌로 변경하세요.');history.back();</script>")
-        Transaction.objects.create(
-            Bkid=last_tr.Bkid,
-            Bkdivision=0,
-            Mid=business.owner.profile.user.username,
-            business=business,
-            Bkacctno=main_acct.account_number,
-            Bkname=main_acct.bank.name,
-            Bkdate=start_date,
-            Bkjukyo="전월이월금",
-            Bkinput=last_tr.Bkjango,
-            Bkoutput=0,
-            Bkjango=last_tr.Bkjango,
-            item=Item.objects.get(
-                paragraph__subsection__year = sessionInfo['year'],
-                paragraph__subsection__institution=business.type3,
-                paragraph__subsection__code=0, paragraph__code=0, code=0),
-            regdatetime=today
-        )
+        #--해당날짜 전월이월금 유무확인--
+        try :
+            premonth_transfer = Transaction.objects.filter(business=business, Bkdate=start_date).get(Bkdivision=0)
+        except IndexError:
+            return HttpResponse("<script>alert('IndexError');history.back();</script>")
+        except Transaction.DoesNotExist:
+            #--전월이월금 없는 경우 주계좌의 이전달 마지막 내역을 전월이월금으로 등록
+            main = Account.objects.filter(business=business).get(main=True)
+            data = TBLBANK.objects.filter(Bkacctno=main.account_number).filter(Bkdate__gte=a_month_ago).filter(Bkdate__lt=start_date).order_by('-Bkdate', '-Bkid').first()
+            if data == None:
+                return HttpResponse("<script>alert('주계좌의 전월잔액이 없습니다.');history.back();</script>")
+            Transaction.objects.create(
+                Bkid=data.Bkid,
+                Bkdivision=0,
+                Mid=Mid,
+                business=business,
+                Bkacctno=main.account_number,
+                Bkname=main.bank.name,
+                Bkdate=start_date,
+                Bkjukyo="전월이월금",
+                Bkinput=data.Bkjango,
+                Bkoutput=0,
+                Bkjango=data.Bkjango,
+                item=Item.objects.get(
+                    paragraph__subsection__year = sessionInfo['year'],
+                    paragraph__subsection__institution=business.type3,
+                    paragraph__subsection__code=0, paragraph__code=0, code=0),
+                regdatetime=today
+            )
 
-    latest_tr = Transaction.objects.filter(business=business, Bkdate__lte=Bkdate).order_by('-Bkdate','-id').first()
-    if tr.Bkinput > 0 :
-        Bkinput = 0
-        Bkoutput = tr.Bkinput * -1
-        Bkjango = latest_tr.Bkjango - Bkoutput
-    else :
-        Bkinput = tr.Bkoutput * -1
-        Bkoutput = 0
-        Bkjango = latest_tr.Bkjango + Bkinput
+        for r in range(row, 0, -1):
+            latest_tr = Transaction.objects.filter(business=business, Bkdate__lte=Bkdate).order_by('-Bkdate', '-id').first()
+            jango = latest_tr.Bkjango
+            Bkinput = 0
+            Bkoutput = 0
+            Bkjango = 0
+            if inoutType == "input":
+                Bkinput = int(Bkinout_list[r]) * -1
+                Bkjango = jango + Bkinput
+            elif inoutType == "output":
+                Bkoutput = int(Bkinout_list[r]) * -1
+                Bkjango = jango - Bkoutput
 
-    transaction = Transaction(
-        Bkid=tr.Bkid,
-        Bkdivision=1,
-        Mid=business.owner.profile.user.username,
-        business=business,
-        Bkacctno=acct.account_number,
-        Bkname=acct.bank.name,
-        Bkdate=Bkdate,
-        Bkjukyo=request.POST.get('Bkjukyo'),
-        Bkinput=Bkinput,
-        Bkoutput=Bkoutput,
-        Bkjango=Bkjango,
-        regdatetime=today,
-        item = item,
-        remark = remark+"[반납결의서]"
-    )
-    transaction.save()
+            item = Item.objects.get(id=itemId_list[r])
 
-    update_list = Transaction.objects.filter(business=business, Bkdate__gt=Bkdate, Bkdate__lt=a_month_later)
-    for update in update_list:
-        if transaction.Bkinput < 0:
-            update.Bkjango = update.Bkjango + transaction.Bkinput
-        elif transaction.Bkoutput < 0:
-            update.Bkjango = update.Bkjango - transaction.Bkoutput
-        update.save()
+            try:
+                subdivision = Subdivision.objects.get(id=subdivisionId_list[r])
+            except Subdivision.DoesNotExist:
+                subdivision = None
 
-    tr_update = TBLBANK.objects.get(Bkid=Bkid)
-    tr_update.sub_Bkjukyo=request.POST.get('Bkjukyo')+' - '+remark+'[반납결의서]'
-    tr_update.item = item
-    tr_update.regdatetime=today
-    tr_update.save()
+            Transaction.objects.create(
+                Bkid=Bkid,
+                Bkdivision = r,
+                Mid = Mid,
+                Bkacctno = tblbank_tr.Bkacctno,
+                Bkname = tblbank_tr.Bkname,
+                Bkdate = Bkdate,
+                Bkjukyo = "[분할]"+Bkjukyo_list[r],
+                Bkinput = Bkinput,
+                Bkoutput = Bkoutput,
+                Bkjango = Bkjango,
+                regdatetime = today,
+                item = item,
+                subdivision = subdivision,
+                business = business,
+            )
+
+            update_list = Transaction.objects.filter(business=business, Bkdate__gt=Bkdate, Bkdate__lt=a_month_later)
+            for update in update_list:
+                if inoutType == "input":
+                    update.Bkjango = int(update.Bkjango) + int(Bkinput)
+                if inoutType == "output":
+                    update.Bkjango = int(update.Bkjango) - int(Bkoutput)
+                update.save()
+
+            tr, created = TBLBANK.objects.get_or_create(business=business, Bkid=Bkid, Bkdivision=r, Mid=Mid, Bkacctno=tblbank_tr.Bkacctno, Bkname=tblbank_tr.Bkname, Bkdate=tblbank_tr.Bkdate)
+            tr.sub_Bkjukyo="[분할]"+Bkjukyo_list[r]
+            tr.regdatetime=today
+            tr.item = item
+            tr.subdivision = subdivision
+            tr.save()
 
     return HttpResponse('<script type="text/javascript">window.close(); window.opener.parent.location.reload(); window.parent.location.href="/";</script>')
 
