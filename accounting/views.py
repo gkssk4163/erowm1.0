@@ -953,77 +953,76 @@ def transaction_list(request):
 
         return JsonResponse(data, safe=False)  # safe=False 필수
 
-@login_required(login_url='/')
-def regist_transaction(request):
-    business = get_object_or_404(Business, pk=request.session['business'])
-    acctid = request.POST.get('acctid')
-    acct = get_object_or_404(Account, business=business, id=acctid)
-    Mid = request.user.username
-    year = request.POST.get('year')
-    month = request.POST.get('month')
-    page = request.POST.get('page')
-    page2 = request.POST.get('page2')
-    tr_check_list = request.POST.getlist('tr_check_list')
-    tr_list = request.POST.getlist('transaction_list')
-    Bkdate_list = request.POST.getlist('Bkdate_list')
-    Bkjukyo_list = request.POST.getlist('Bkjukyo_list')
-    item_list = request.POST.getlist('item_list')
-    subdivision_list = request.POST.getlist('subdivision_list')
-    relative_subsection_list = request.POST.getlist('input_subsection_list')
-    relative_item_list = request.POST.getlist('input_subdivision_list')
-
-    if tr_check_list == []:
-        return HttpResponse("<script>alert('선택된 거래가 없습니다.');history.back();</script>")
-    for check in tr_check_list:
-        if item_list[int(check)] == '':
-            return HttpResponse("<script>alert('계정명을 선택해주세요.');history.back();</script>")
-
-    tr_check_list.reverse()
-
-    if request.method == "POST":
-        # from django.db import transaction
-        # with transaction.atomic():
-        try:
-            for check in tr_check_list:
-                Bkid = tr_list[int(check)]
-                tblbank_tr = TBLBANK.objects.get(Bkid=Bkid)
-                try:
-                    subdivision = Subdivision.objects.get(id=subdivision_list[int(check)])
-                except Subdivision.DoesNotExist:
-                    subdivision = None
-                try:
-                    relative_subsection = Subsection.objects.get(id=relative_subsection_list[int(check)])
-                except Subsection.DoesNotExist:
-                    relative_subsection = None
-                try:
-                    relative_item = Item.objects.get(id=relative_item_list[int(check)])
-                except Item.DoesNotExist:
-                    relative_item = None
-
-                tr = Transaction(
-                    Bkid=Bkid,
-                    Mid=Mid,
-                    business=business,
-                    Bkacctno=acct.account_number,
-                    Bkname=acct.bank.name,
-                    Bkdate=datetime.datetime.strptime(Bkdate_list[int(check)], "%Y-%m-%d"),
-                    Bkjukyo=Bkjukyo_list[int(check)],
-                    Bkinput=tblbank_tr.Bkinput,
-                    Bkoutput=tblbank_tr.Bkoutput,
-                    item=Item.objects.get(id=item_list[int(check)]),
-                    subdivision=subdivision,
-                    relative_subsection=relative_subsection,
-                    relative_item=relative_item
-                )
-                registTransaction(business, tr)
-        except DeadlineCompletionError as e:
-            return HttpResponse("<script>alert('" + e.__str__() + "');history.back();</script>")
-        except NoTransactionHistoryForPreviousMonth as e:
-            return HttpResponse("<script>alert('" + e.__str__() + "');history.back();</script>")
-
-    response = redirect('transaction_history')
-    response['Location'] += '?page='+page+'&page2='+page2+'&year='+year+'&month='+month+'&acctid='+acctid
-    return response
+# @login_required(login_url='/')
+# def regist_transaction(request):
+#     business = get_object_or_404(Business, pk=request.session['business'])
+#     acctid = request.POST.get('acctid')
+#     acct = get_object_or_404(Account, business=business, id=acctid)
+#     Mid = request.user.username
+#     year = request.POST.get('year')
+#     month = request.POST.get('month')
+#     page = request.POST.get('page')
+#     page2 = request.POST.get('page2')
+#     tr_check_list = request.POST.getlist('tr_check_list')
+#     tr_list = request.POST.getlist('transaction_list')
+#     Bkdate_list = request.POST.getlist('Bkdate_list')
+#     Bkjukyo_list = request.POST.getlist('Bkjukyo_list')
+#     item_list = request.POST.getlist('item_list')
+#     subdivision_list = request.POST.getlist('subdivision_list')
+#     relative_subsection_list = request.POST.getlist('input_subsection_list')
+#     relative_item_list = request.POST.getlist('input_subdivision_list')
+#
+#     # for check in tr_check_list:
+#     #     if int(check) != 0 and item_list[int(check)] == '':
+#     #         return HttpResponse("<script>alert('계정명을 선택해주세요.');history.back();</script>")
+#
+#     tr_check_list.reverse()
+#
+#     if request.method == "POST":
+#         print("views.py regist_transaction")
+#         # from django.db import transaction
+#         # with transaction.atomic():
+#         try:
+#             for check in tr_check_list:
+#                 Bkid = tr_list[int(check)]
+#                 tblbank_tr = TBLBANK.objects.get(Bkid=Bkid)
+#                 try:
+#                     subdivision = Subdivision.objects.get(id=subdivision_list[int(check)])
+#                 except Subdivision.DoesNotExist:
+#                     subdivision = None
+#                 try:
+#                     relative_subsection = Subsection.objects.get(id=relative_subsection_list[int(check)])
+#                 except Subsection.DoesNotExist:
+#                     relative_subsection = None
+#                 try:
+#                     relative_item = Item.objects.get(id=relative_item_list[int(check)])
+#                 except Item.DoesNotExist:
+#                     relative_item = None
+#
+#                 tr = Transaction(
+#                     Bkid=Bkid,
+#                     Mid=Mid,
+#                     business=business,
+#                     Bkacctno=acct.account_number,
+#                     Bkname=acct.bank.name,
+#                     Bkdate=datetime.datetime.strptime(Bkdate_list[int(check)], "%Y-%m-%d"),
+#                     Bkjukyo=Bkjukyo_list[int(check)],
+#                     Bkinput=tblbank_tr.Bkinput,
+#                     Bkoutput=tblbank_tr.Bkoutput,
+#                     item=Item.objects.get(id=item_list[int(check)]),
+#                     subdivision=subdivision,
+#                     relative_subsection=relative_subsection,
+#                     relative_item=relative_item
+#                 )
+#                 registTransaction(business, tr)
+#         except DeadlineCompletionError as e:
+#             return HttpResponse("<script>alert('" + e.__str__() + "');history.back();</script>")
+#         except NoTransactionHistoryForPreviousMonth as e:
+#             return HttpResponse("<script>alert('" + e.__str__() + "');history.back();</script>")
+#
+#     response = redirect('transaction_history')
+#     response['Location'] += '?page='+page+'&page2='+page2+'&year='+year+'&month='+month+'&acctid='+acctid
+#     return response
 
 @login_required(login_url='/')
 def transaction_delete(request):
@@ -4308,3 +4307,64 @@ def item_list(request):
         data = list(item.values())  # JsonResponse를 사용하여 전달하기 위해 QuerySet을 list 타입으로 변경
 
         return JsonResponse(data, safe=False)  # safe=False 필수
+
+@login_required(login_url='/')
+def regist_transaction(request):
+    business = get_object_or_404(Business, pk=request.session['business'])
+    acctid = request.POST.get('acctid')
+    acct = get_object_or_404(Account, business=business, id=acctid)
+    Mid = request.user.username
+    tr_list = request.POST.get('transaction_list').split(",")
+    Bkdate_list = request.POST.get('Bkdate_list').split(",")
+    Bkjukyo_list = request.POST.get('Bkjukyo_list').split(",")
+    item_list = request.POST.get('item_list').split(",")
+    subdivision_list = request.POST.get('subdivision_list').split(",")
+    relative_subsection_list = request.POST.get('input_subsection_list').split(",")
+    relative_item_list = request.POST.get('input_subdivision_list').split(",")
+
+    if request.method == "POST":
+        # from django.db import transaction
+        # with transaction.atomic():
+        try:
+            for index, tr in enumerate(tr_list):
+                Bkid = tr_list[index]
+                tblbank_tr = TBLBANK.objects.get(Bkid=Bkid)
+                try:
+                    subdivision = Subdivision.objects.get(id=subdivision_list[index])
+                except Exception as e:
+                    print(e)
+                    subdivision = None
+                try:
+                    relative_subsection = Subsection.objects.get(id=relative_subsection_list[index])
+                except Exception as e:
+                    print(e)
+                    relative_subsection = None
+                try:
+                    relative_item = Item.objects.get(id=relative_item_list[index])
+                except Exception as e:
+                    print(e)
+                    relative_item = None
+
+                tr = Transaction(
+                    Bkid=Bkid,
+                    Mid=Mid,
+                    business=business,
+                    Bkacctno=acct.account_number,
+                    Bkname=acct.bank.name,
+                    Bkdate=datetime.datetime.strptime(Bkdate_list[index], "%Y-%m-%d"),
+                    Bkjukyo=Bkjukyo_list[index],
+                    Bkinput=tblbank_tr.Bkinput,
+                    Bkoutput=tblbank_tr.Bkoutput,
+                    item=Item.objects.get(id=item_list[index]),
+                    subdivision=subdivision,
+                    relative_subsection=relative_subsection,
+                    relative_item=relative_item
+                )
+                registTransaction(business, tr)
+        except DeadlineCompletionError as e:
+            print(e.__str__())
+            return JsonResponse(e.__str__(), safe=False)  # safe=False 필수
+        except NoTransactionHistoryForPreviousMonth as e:
+            print(e.__str__())
+            return JsonResponse(e.__str__(), safe=False)  # safe=False 필수
+    return JsonResponse("SUCCESS", safe=False)  # safe=False 필수

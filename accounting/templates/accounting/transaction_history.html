@@ -17,7 +17,7 @@
 
 <div class="row" style="font-size: 9pt;">
 	<div class="col-md-12">
-		<form name="TransactionForm" method="POST" action="{% url 'regist_transaction' %}" onSubmit="return submitCheck(this);">
+		<form name="TransactionForm" method="POST" action="{% url 'regist_transaction' %}">
 			{% csrf_token %}
 			<div class="col-md-3 mb-2">
 				<select name="year" onchange="location='{% url "transaction_history" %}?page=1&page2=1&year='+this.value+'&month={{month}}&acctid={{acctid}}';">
@@ -253,7 +253,7 @@
 					</tbody>
 				</table>
 			</div>
-			<input type="submit" class="btn btn-primary btn-sm px-3" value="등록">
+			<input onclick="registTransaction()" class="btn btn-primary btn-sm px-3" value="등록">
 		</form>
 
 		<ul class="pagination justify-content-center">
@@ -454,27 +454,91 @@
 </div>
 
 <script type="text/javascript">
-function submitCheck(f) {
-	var cnt = $("input[name=tr_check_list]:checkbox:checked").length;
-	if( cnt == 0 ) {
+function registTransaction() {
+	var tr_check_list = $("input:checkbox[name=tr_check_list]:checked");
+	if( tr_check_list.length == 0 ) {
 		alert('선택된 거래가 없습니다.');
 		return false;
 	}
 
-	var checkElements = $("input[name=tr_check_list]:checkbox:checked");
-	for(var i=0; checkElements[i]; i++) {
-		if ( !f.item_list[checkElements[i].value].value ) {
-			alert("계정명을 선택해주세요.");
-			f.item_list[checkElements[i].value].focus();
-			return false;
+	var valid = true;
+	tr_check_list.each(function () {
+		if (!valid) return;
+		var item = $(this).closest("tr").find("select[name='item_list']");
+		if (item.val() === undefined || item.val() == '') {
+			item.focus();
+			valid = false;
 		}
-		
-		if ( !f.Bkjukyo_list[checkElements[i].value].value ) {
-			alert("적요를 입력해주세요.");
-			f.Bkjukyo_list[checkElements[i].value].focus();
-			return false;
-		}
+	});
+	if (!valid) {
+		alert('계정명을 선택해주세요.');
+		return false;
 	}
+
+	valid = true;
+	tr_check_list.each(function () {
+		if (!valid) return;
+		var Bkjukyo = $(this).closest("tr").find("input[name='Bkjukyo_list']");
+		if (Bkjukyo.val() === undefined || Bkjukyo.val() == '') {
+			Bkjukyo.focus();
+			valid = false;
+		}
+	});
+	if (!valid) {
+		alert('적요를 입력해주세요.');
+		return false;
+	}
+
+	var transaction_list = new Array();
+	var Bkdate_list = [];
+	var Bkjukyo_list = [];
+	var item_list = [];
+	var subdivision_list = [];
+	var input_subsection_list = [];
+	var input_subdivision_list = [];
+	var valid = true;
+	$(tr_check_list.get().reverse()).each(function () {
+		transaction_list.push($(this).closest("tr").find("input[name='transaction_list']").val());
+		Bkdate_list.push($(this).closest("tr").find("input[name='Bkdate_list']").val());
+		Bkjukyo_list.push($(this).closest("tr").find("input[name='Bkjukyo_list']").val());
+		item_list.push($(this).closest("tr").find("select[name='item_list']").val());
+		subdivision_list.push($(this).closest("tr").find("select[name='subdivision_list']").val());
+		input_subsection_list.push($(this).closest("tr").find("select[name='input_subsection_list']").val());
+		input_subdivision_list.push($(this).closest("tr").find("select[name='input_subdivision_list']").val());
+	});
+
+	if (!valid) {
+		alert('입력항목을 확인해주세요.');
+		return false;
+	}
+
+	$.ajax({
+		type: "POST"
+		,url: "{% url 'regist_transaction' %}"
+		,data: {
+			'csrfmiddlewaretoken': '{{ csrf_token }}',
+				'acctid': $("select[name='acctid']").val(),
+				'transaction_list': transaction_list.join(","),
+				'Bkdate_list': Bkdate_list.join(","),
+				'Bkjukyo_list': Bkjukyo_list.join(","),
+				'item_list': item_list.join(","),
+				'subdivision_list': subdivision_list.join(","),
+				'input_subsection_list': input_subsection_list.join(","),
+				'input_subdivision_list': input_subdivision_list.join(",")
+		}
+		,dataType: "json"
+		,success: function(data) {
+			if (data == "SUCCESS") {
+				location.href = '?page={{ page }}&page2={{ page2 }}&year={{ year }}&month={{ month }}&=acctid{{ acctid }}';
+			} else {
+				alert(data);
+			}
+		}
+		,error: function() {
+			alert("error");
+			alert($(this).val());
+		}
+	});
 }
 
 function goAction() {

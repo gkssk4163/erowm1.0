@@ -42,10 +42,12 @@ def registTransaction(business, transaction):
         # 회기 첫월이면 전월이월금 0으로 설정
         if transaction.Bkdate.month == int(business.session_month):
             carryover_Bkjango = 0
+            carryover_Bkid = first_tr.Bkid
         else:
             # 전월이월금 없는 경우 주계좌 전월 마지막거래 잔액을 전월이월금으로 등록
             if last_tr != None:
                 carryover_Bkjango = last_tr.Bkjango
+                carryover_Bkid = last_tr.Bkid
             else:  # 주계좌 전월 마지막거래 잔액가 없는 경우
                 # if first_tr.Bkjango == 0:  # 주계좌 당월 첫거래가 0이면 (처음개설계좌)
                 #     carryover_Bkjango = 0  # 전월이월금 0으로 설정
@@ -53,7 +55,7 @@ def registTransaction(business, transaction):
                 raise NoTransactionHistoryForPreviousMonth()
 
         Transaction.objects.create(
-            Bkid=last_tr.Bkid,
+            Bkid=carryover_Bkid,
             Bkdivision=0,
             Mid=transaction.Mid,
             business=business,
