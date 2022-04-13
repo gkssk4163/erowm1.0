@@ -24,7 +24,7 @@
 					<tr>
 						<th>년도</th>
 						<th>월</th>
-						<th>전송여부</th>
+						<th>전송</th>
 						<th>기록</th>
 					</tr>
 				</thead>
@@ -35,7 +35,7 @@
 						<td>{{ ym.year }}</td>
 						<td>{{ ym.month }}</td>
 						<td>
-							{% if ym.year == this_y and ym.month == this_m %}
+							{% if request.session.master_login is True or master_login or ym.year == this_y and ym.month == this_m %}
 							<input type="button" class="btn btn-primary btn-sm py-0" value="전송" onClick="submitReport('{{ym.year}}', '{{ym.month}}', '{{ym.recorded}}');"/>
 							{% endif %}
 						</td><!--이미전송됐을경우 비활성화 조건 추가-->
