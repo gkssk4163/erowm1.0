@@ -2576,6 +2576,8 @@ def print_general_ledger(request):
 
         # 예산액 가져오기
         budget = Budget.objects.filter(business = business, year = sessionInfo['year'], item=item, type__icontains=filter_type).order_by('type').last()
+        prev_tr_total = Transaction.objects.filter(business=business, Bkdate__gte=sessionInfo['start_date'],
+                                                   Bkdate__lt=start_date, item=item).aggregate(Bkinput=Coalesce(Sum('Bkinput'), 0), Bkoutput=Coalesce(Sum('Bkoutput'), 0))
         item.transaction = transaction
         item.cumulative_input = tr_cumulative_total['Bkinput']
         item.cumulative_output = tr_cumulative_total['Bkoutput']
@@ -2583,10 +2585,10 @@ def print_general_ledger(request):
         item.total_output = tr_total['Bkoutput']
 
         if budget != None:
-            item.budget = budget.price
+            item.budget = budget.price - prev_tr_total['Bkinput'] - prev_tr_total['Bkoutput']
         else:
             item.budget = 0
-        item.balance = item.budget - item.cumulative_input - item.cumulative_output
+        item.balance = item.budget - item.total_input - item.total_output
 
     return render(request,'accounting/print_general_ledger.html', {'settlement_management': 'active', 'master_login': request.session['master_login'], 'business': business, 'year': year, 'month': month, 'year2': year2, 'month2': month2, 'item_list': item_list})
 
@@ -2843,107 +2845,137 @@ def regist_transaction_direct(request):
     tblbankform = TblbankDirectForm(request.POST)
     Bkdate = request.POST.get('Bkdate')
 
-    try:
-        close = Deadline.objects.get(business=business,year=Bkdate[:4],month=Bkdate[5:7])
-        if close.regdatetime:
-            return HttpResponse("<script>alert('해당월은 마감완료되었습니다.');history.back();</script>")
-    except:
-        pass
+    # try:
+    #     close = Deadline.objects.get(business=business,year=Bkdate[:4],month=Bkdate[5:7])
+    #     if close.regdatetime:
+    #         return HttpResponse("<script>alert('해당월은 마감완료되었습니다.');history.back();</script>")
+    # except:
+    #     pass
 
-    Bkid = TBLBANK.objects.all().order_by('-Bkid').first().Bkid + 1
+    ### TBLBANK 임의거래 생성
+    # Bkid = TBLBANK.objects.all().order_by('-Bkid').first().Bkid + 1
     if tblbankform.is_valid():
-        tr = tblbankform.save(commit=False)
-        tr.business = business
-        tr.Bkid = Bkid
-        if tr.item.context == "전월이월금":
-            Bkdivision = 0
-        else:
-            Bkdivision = 1
-        tr.Bkdivision = Bkdivision
-        tr.Mid = business.owner.profile.user.username
-        tr.regdatetime = today
-        tr.direct = True
-        tr.save()
+        tblbank = tblbankform.save(commit=False)
+        # tblbank.business = business
+        # tblbank.Bkid = Bkid
+        # if tblbank.item.context == "전월이월금":
+        #     Bkdivision = 0
+        # else:
+        #     Bkdivision = 1
+        # tblbank.Bkdivision = Bkdivision
+        # tblbank.Mid = business.owner.profile.user.username
+        # tblbank.regdatetime = today
+        # tblbank.direct = True
+        # tblbank.save()
 
-        Bkdate =  tr.Bkdate
-        sessionInfo = session_info(str(tr.Bkdate.year), str(tr.Bkdate.month), business.session_month)
-        start_date = datetime.datetime.strptime(DateFormat(tr.Bkdate).format("Y-m-01"), '%Y-%m-%d')
-        #print(start_date) #2018-09-01 00:00:00
-        #start_date2 = tr.Bkdate
-        #print(start_date2) #2019-02-13 00:00:00+09:00
-        a_month_ago = start_date - relativedelta(months=1)
-        a_month_later = start_date + relativedelta(months=1)
+        try:
+            # if tr.item.context == "전월이월금":
+            #     Bkjukyo = "전월이월금"
+            # else:
+            #     Bkjukyo = tr.Bkjukyo
+            tr = Transaction(
+                # Bkid=Bkid,
+                Bkdivision=tblbank.Bkdivision,
+                Mid=business.owner.profile.user.username,
+                business=business,
+                # Bkacctno=acct.account_number,
+                # Bkname=acct.bank.name,
+                Bkdate=tblbank.Bkdate,
+                Bkjukyo="전월이월금" if tblbank.item.context == "전월이월금" else tblbank.Bkjukyo,
+                Bkinput=tblbank.Bkinput,
+                Bkoutput=tblbank.Bkoutput,
+                item=tblbank.item,
+                remark = remark
+            )
+            registTransaction(business, tr)
+        except DeadlineCompletionError as e:
+            # tblbank.delete()
+            print(e.__str__())
+            return HttpResponse("<script>alert('" + e.__str__() + "');history.back();</script>")
+        except NoTransactionHistoryForPreviousMonth as e:
+            # tblbank.delete()
+            print(e.__str__())
+            return HttpResponse("<script>alert('" + e.__str__() + "');history.back();</script>")
 
-        #--전월 이월금 등록--
-        try :
-            carryover_tr = Transaction.objects.filter(business=business, Bkdate=start_date).get(Bkdivision=0)
-        #--전월이월금 없는 경우
-        except Transaction.DoesNotExist:
-            #--등록되는 거래가 전월이월금이면 transaction테이블에 등록 후 창닫기
-            if tr.item.context == "전월이월금":
-                Transaction.objects.create(
-                    Bkid=Bkid,                  Bkdivision=0,
-                    Mid=business.owner.profile.user.username,  business=business,
-                    Bkdate=start_date,          Bkjukyo="전월이월금",
-                    Bkinput=tr.Bkinput,         Bkoutput=0,
-                    Bkjango=tr.Bkinput,         regdatetime=today,
-                    item=Item.objects.get(
-                        paragraph__subsection__year = sessionInfo['year'],
-                        paragraph__subsection__institution=business.type3,
-                        paragraph__subsection__code=0, paragraph__code=0, code=0),
-                    remark=remark
-                )
-                return HttpResponse('<script type="text/javascript">window.close(); window.opener.parent.location.reload(); window.parent.location.href="/";</script>')
-            #--주계좌의 이전달 마지막 내역을 전월이월금으로 등록
-            else:
-                main_acct = Account.objects.filter(business=business).get(main=True)
-                last_tr = TBLBANK.objects.filter(Bkacctno=main_acct.account_number, Bkdivision=1,Bkdate__gte=a_month_ago, Bkdate__lt=start_date).order_by('Bkdate', 'Bkid').last()
-                #--전월 주계좌 거래내역 없으면 메시지 출력
-                if last_tr == None:
-                    tr.delete()
-                    return HttpResponse("<script>alert('주계좌의 전월 거래내역이 없습니다. 전월이월금을 등록해주세요.');history.back();</script>")
-                Transaction.objects.create(
-                    Bkid=last_tr.Bkid,          Bkdivision=0,
-                    Mid=business.owner.profile.user.username,  business=business,
-                    Bkacctno=main_acct.account_number,
-                    Bkname=main_acct.bank.name, Bkdate=start_date,
-                    Bkjukyo="전월이월금",       Bkinput=last_tr.Bkjango,
-                    Bkoutput=0,                 Bkjango=last_tr.Bkjango,
-                    item=Item.objects.get(
-                        paragraph__subsection__year = sessionInfo['year'],
-                        paragraph__subsection__institution=business.type3,
-                        paragraph__subsection__code=0, paragraph__code=0, code=0),
-                    regdatetime=today
-                )
-        #--전월이월금 등록 완료
-
-        #--거래등록
-        if tr.item.context == "전월이월금":
-            return HttpResponse("<script>alert('해당월의 전년도 이월금은 이미 등록되었습니다.');history.back();</script>")
-
-        latest_tr = Transaction.objects.filter(business=business, Bkdate__lte=Bkdate).order_by('-Bkdate','-id').first()
-        if inout_type == "input":
-            Bkjango = latest_tr.Bkjango + tr.Bkinput
-        elif inout_type == "output":
-            Bkjango = latest_tr.Bkjango - tr.Bkoutput
-
-        transaction = Transaction(
-            Bkid=Bkid,                  Bkdivision=Bkdivision,
-            Mid=business.owner.profile.user.username,    business=business,
-            Bkdate=Bkdate,              Bkjukyo=tr.Bkjukyo,
-            Bkinput=tr.Bkinput,         Bkoutput=tr.Bkoutput,
-            Bkjango=Bkjango,            regdatetime=today,
-            item = tr.item,             remark = remark
-        )
-        transaction.save()
-
-        update_list = Transaction.objects.filter(business=business, Bkdate__gt=Bkdate, Bkdate__lt=a_month_later)
-        for update in update_list:
-            if transaction.Bkinput > 0:
-                update.Bkjango = update.Bkjango + transaction.Bkinput
-            elif transaction.Bkoutput > 0:
-                update.Bkjango = update.Bkjango - transaction.Bkoutput
-            update.save()
+        # Bkdate =  tr.Bkdate
+        # sessionInfo = session_info(str(tr.Bkdate.year), str(tr.Bkdate.month), business.session_month)
+        # start_date = datetime.datetime.strptime(DateFormat(tr.Bkdate).format("Y-m-01"), '%Y-%m-%d')
+        # #print(start_date) #2018-09-01 00:00:00
+        # #start_date2 = tr.Bkdate
+        # #print(start_date2) #2019-02-13 00:00:00+09:00
+        # a_month_ago = start_date - relativedelta(months=1)
+        # a_month_later = start_date + relativedelta(months=1)
+        #
+        # #--전월 이월금 등록--
+        # try :
+        #     carryover_tr = Transaction.objects.filter(business=business, Bkdate=start_date).get(Bkdivision=0)
+        # #--전월이월금 없는 경우
+        # except Transaction.DoesNotExist:
+        #     #--등록되는 거래가 전월이월금이면 transaction테이블에 등록 후 창닫기
+        #     if tr.item.context == "전월이월금":
+        #         Transaction.objects.create(
+        #             Bkid=Bkid,                  Bkdivision=0,
+        #             Mid=business.owner.profile.user.username,  business=business,
+        #             Bkdate=start_date,          Bkjukyo="전월이월금",
+        #             Bkinput=tr.Bkinput,         Bkoutput=0,
+        #             Bkjango=tr.Bkinput,         regdatetime=today,
+        #             item=Item.objects.get(
+        #                 paragraph__subsection__year = sessionInfo['year'],
+        #                 paragraph__subsection__institution=business.type3,
+        #                 paragraph__subsection__code=0, paragraph__code=0, code=0),
+        #             remark=remark
+        #         )
+        #         return HttpResponse('<script type="text/javascript">window.close(); window.opener.parent.location.reload(); window.parent.location.href="/";</script>')
+        #     #--주계좌의 이전달 마지막 내역을 전월이월금으로 등록
+        #     else:
+        #         main_acct = Account.objects.filter(business=business).get(main=True)
+        #         last_tr = TBLBANK.objects.filter(Bkacctno=main_acct.account_number, Bkdivision=1,Bkdate__gte=a_month_ago, Bkdate__lt=start_date).order_by('Bkdate', 'Bkid').last()
+        #         #--전월 주계좌 거래내역 없으면 메시지 출력
+        #         if last_tr == None:
+        #             tr.delete()
+        #             return HttpResponse("<script>alert('주계좌의 전월 거래내역이 없습니다. 전월이월금을 등록해주세요.');history.back();</script>")
+        #         Transaction.objects.create(
+        #             Bkid=last_tr.Bkid,          Bkdivision=0,
+        #             Mid=business.owner.profile.user.username,  business=business,
+        #             Bkacctno=main_acct.account_number,
+        #             Bkname=main_acct.bank.name, Bkdate=start_date,
+        #             Bkjukyo="전월이월금",       Bkinput=last_tr.Bkjango,
+        #             Bkoutput=0,                 Bkjango=last_tr.Bkjango,
+        #             item=Item.objects.get(
+        #                 paragraph__subsection__year = sessionInfo['year'],
+        #                 paragraph__subsection__institution=business.type3,
+        #                 paragraph__subsection__code=0, paragraph__code=0, code=0),
+        #             regdatetime=today
+        #         )
+        # #--전월이월금 등록 완료
+        #
+        # #--거래등록
+        # if tr.item.context == "전월이월금":
+        #     return HttpResponse("<script>alert('해당월의 전년도 이월금은 이미 등록되었습니다.');history.back();</script>")
+        #
+        # latest_tr = Transaction.objects.filter(business=business, Bkdate__lte=Bkdate).order_by('-Bkdate','-id').first()
+        # if inout_type == "input":
+        #     Bkjango = latest_tr.Bkjango + tr.Bkinput
+        # elif inout_type == "output":
+        #     Bkjango = latest_tr.Bkjango - tr.Bkoutput
+        #
+        # transaction = Transaction(
+        #     Bkid=Bkid,                  Bkdivision=Bkdivision,
+        #     Mid=business.owner.profile.user.username,    business=business,
+        #     Bkdate=Bkdate,              Bkjukyo=tr.Bkjukyo,
+        #     Bkinput=tr.Bkinput,         Bkoutput=tr.Bkoutput,
+        #     Bkjango=Bkjango,            regdatetime=today,
+        #     item = tr.item,             remark = remark
+        # )
+        # transaction.save()
+        #
+        # update_list = Transaction.objects.filter(business=business, Bkdate__gt=Bkdate, Bkdate__lt=a_month_later)
+        # for update in update_list:
+        #     if transaction.Bkinput > 0:
+        #         update.Bkjango = update.Bkjango + transaction.Bkinput
+        #     elif transaction.Bkoutput > 0:
+        #         update.Bkjango = update.Bkjango - transaction.Bkoutput
+        #     update.save()
 
     return HttpResponse('<script type="text/javascript">window.close(); window.opener.parent.location.reload(); window.parent.location.href="/";</script>')
 
