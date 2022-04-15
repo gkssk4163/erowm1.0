@@ -62,7 +62,7 @@
 						<tr>
 							<td colspan="12">
 								은행계좌 :
-								<select name="acctid" onchange="location='{% url "transaction_history" %}?page=1&page2=1&year={{year}}&month={{month}}&acctid='+this.value;">
+								<select name="acctid" style="min-width: 120px;" onchange="location='{% url "transaction_history" %}?page=1&page2=1&year={{year}}&month={{month}}&acctid='+this.value;">
 									{% for acct in acct_list %}
 									<option value="{{ acct.id }}" {% if acct.id == acctid %}selected{% endif %}>[{{ acct.bank.name }}]{{ acct.account_number }}</option>
 									{% endfor %}
@@ -517,14 +517,14 @@ function registTransaction() {
 		,url: "{% url 'regist_transaction' %}"
 		,data: {
 			'csrfmiddlewaretoken': '{{ csrf_token }}',
-				'acctid': $("select[name='acctid']").val(),
-				'transaction_list': transaction_list.join(","),
-				'Bkdate_list': Bkdate_list.join(","),
-				'Bkjukyo_list': Bkjukyo_list.join(","),
-				'item_list': item_list.join(","),
-				'subdivision_list': subdivision_list.join(","),
-				'input_subsection_list': input_subsection_list.join(","),
-				'input_subdivision_list': input_subdivision_list.join(",")
+			'acctid': $("select[name='acctid']").val(),
+			'transaction_list': transaction_list.join(","),
+			'Bkdate_list': Bkdate_list.join(","),
+			'Bkjukyo_list': Bkjukyo_list.join(","),
+			'item_list': item_list.join(","),
+			'subdivision_list': subdivision_list.join(","),
+			'input_subsection_list': input_subsection_list.join(","),
+			'input_subdivision_list': input_subdivision_list.join(",")
 		}
 		,dataType: "json"
 		,success: function(data) {

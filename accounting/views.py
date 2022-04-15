@@ -790,7 +790,7 @@ def transaction_history(request):
     try:
         main_acctid = Account.objects.get(business=business, main=True).id
     except:
-        return HttpResponse("<script>alert('등록된 계좌가 없습니다. 계좌를 먼저 등록해주세요.');window.location.href='/account/list/'</script>")
+        main_acctid = 0
 
     acctid = request.GET.get('acctid', main_acctid)
     year = request.GET.get('year', DateFormat(today).format("Y"))
@@ -800,7 +800,11 @@ def transaction_history(request):
 
     sessionInfo = session_info(year, month, business.session_month)
 
-    acct = get_object_or_404(Account, business=business, id=acctid)
+    if main_acctid == 0:
+        account_number = None
+    else:
+        account_number = get_object_or_404(Account, business=business, id=acctid).account_number
+
     start_date = datetime.datetime.strptime(year+'-'+month+'-01', '%Y-%m-%d')
     end_date = start_date + relativedelta(months=1)
 
@@ -849,7 +853,7 @@ def transaction_history(request):
         else:
             selected_input_subdivision_list.append(0)
 
-    data_list = TBLBANK.objects.filter(Bkacctno=acct.account_number, Bkdate__gte=start_date, Bkdate__lt=end_date).order_by('-Bkdate', '-Bkid', 'Bkdivision')
+    data_list = TBLBANK.objects.filter(business=business, Bkacctno=account_number, Bkdate__gte=start_date, Bkdate__lt=end_date).order_by('-Bkdate', '-Bkid', 'Bkdivision')
     transaction_list = Transaction.objects.filter(business=business, Bkdate__gte=start_date, Bkdate__lt=end_date).exclude(item__code=0).order_by('-Bkdate', '-id', 'Bkdivision')
     #print(start_date, data_list[0].Bkdate)
 
