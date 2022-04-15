@@ -25,6 +25,7 @@
 						<th>계좌상태</th>
 						<th>계좌상세</th>
 						<th>삭제</th>
+						<th>BANKDA연결</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -50,6 +51,9 @@
 							<input type="hidden" id="account_{{ forloop.counter }}" value="{{ account.account_number }}"/>
 							<input type="hidden" id="account_pk_{{ forloop.counter }}" value="{{ account.pk }}"/>
 							<input type="button" class="btn btn-sm btn-danger" name="btnDelete" value="삭제" onclick="accountDelete('{{ forloop.counter }}');">
+						</td>
+						<td>
+							<input type="button" class="btn btn-sm btn-danger" name="btnDisconnect" value="연결해제" onclick="accountDisconnect('{{ forloop.counter }}');">
 						</td>
 					</tr>
 					{% endfor %}
@@ -81,6 +85,40 @@ function accountDelete(index) {
 		success: function(data) {
 			if( data.result == "OK" ) {
 				alert("계좌가 정상적으로 삭제되었습니다.");
+			}
+			else {
+				alert(data.result);
+			}
+			window.location.reload();
+		},
+		error: function(request, status, error) {
+			alert(request.status);
+		}
+	});
+}
+
+function accountDisconnect(index) {
+	var user = $("#user_" + index).val();
+	var user_pk = $("#user_pk_" + index).val();
+	var account = $("#account_" + index).val();
+	var account_pk = $("#account_pk_" + index).val();
+
+	if(!confirm("뱅크다 계좌연동이 해제됩니다.\n" + user + "의 계좌(" + account + ")를 해제하시겠습니까?")) {
+		return false;
+	}
+
+	$.ajax({
+		type: "POST",
+		url: "{% url 'account_disconnect' %}",
+		data: {
+			'csrfmiddlewaretoken': '{{ csrf_token }}'
+			, 'user_pk': user_pk
+			, 'account_pk': account_pk
+		},
+		dataType: "json",
+		success: function(data) {
+			if( data.result == "OK" ) {
+				alert("계좌연동이 정상적으로 해제되었습니다.");
 			}
 			else {
 				alert(data.result);

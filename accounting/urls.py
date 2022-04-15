@@ -35,6 +35,7 @@ urlpatterns = [
     url(r'^account/create/$', views.account_create, name='account_create'),
     url(r'^account/edit/(?P<pk>\d+)/$', views.account_edit, name='account_edit'),
     url(r'^account/delete/$', views.account_delete, name='account_delete'),
+    url(r'^account/disconnect/$', views.account_disconnect, name='account_disconnect'),
     url(r'^transaction/history/$', views.transaction_history, name='transaction_history'),
     url(r'^transaction/list/$', views.transaction_list, name='transaction_list'),
 

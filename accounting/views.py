@@ -522,6 +522,25 @@ def account_delete(request):
     return JsonResponse(data, safe=False)  # safe=False 필수
 
 @login_required(login_url='/')
+def account_disconnect(request):
+    user = get_object_or_404(User, pk = request.POST.get('user_pk'))
+    account = get_object_or_404(Account, pk = request.POST.get('account_pk'))
+
+    # 연결해제권한 확인
+    if request.user.profile.level_id < LOCAL:
+        return HttpResponse("<script>alert('권한이 없습니다.');history.back();</script>")
+
+    param = {
+        'user_id': user.username
+        , 'user_pw': user.profile.owner.bankda_password
+        , 'bkacctno': account.account_number
+    }
+    result = account_del(param)
+
+    data = {'result': result}
+    return JsonResponse(data, safe=False)  # safe=False 필수
+
+@login_required(login_url='/')
 def user_list(request):
     if request.user.is_staff:
         owners = Owner.objects.all()
