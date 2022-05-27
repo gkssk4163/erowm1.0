@@ -1,5 +1,7 @@
 {% extends 'accounting/base.html' %}
 
+{% load static %}
+
 {% block menu %}
         {% include 'accounting/menu.html' %}
 {% endblock %}
@@ -405,7 +407,63 @@
 	</div>
 </div>
 
+<div class="modal" id="exampleModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="font-weight-bold"><span class="text-danger">[필독]</span> 시스템 데이터 이전 안내</h3>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    데이터 이전 관련하여 안내드립니다.<br>
+                    <br>
+                    기존 회계프로그램에서 신규 회계프로그램으로 데이터 이전을 진행합니다.<br>
+                    기존 회계프로그램에 등록되어 있는 계좌는 신규 프로그램에 등록이 불가하여 아래와 같은 절차로 데이터 이전이 진행됩니다.
+                </p>
+                <img src="{% static 'image/popup_img.png' %}">
+                <p>
+                    데이터 이전을 위해 회원가입과 사업등록을 진행하신 다음 데이터 이전 담당자에게 연락바랍니다.<br>
+                    6월 중으로 데이터 이전작업이 완료될 수 있도록 협조 부탁드립니다.<br>
+					감사합니다 : )<br>
+                    <br>
+                    <span class="font-weight-bold">신규 회계프로그램 URL : <a href="http://jbeca.kr" target="_blank">jbeca.kr</a></span><br>
+                    <span class="font-weight-bold">데이터 이전 담당자 : 최한나 (010-9120-1581)</span>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="setCookie('popupYN', 'N', 1);" class="btn btn-primary" data-dismiss="modal">하루동안 보지 않기</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="text/javascript">
+ function getCookie(name) {
+    var cookie = document.cookie;
+
+    if (document.cookie != "") {
+        var cookie_array = cookie.split("; ");
+        for ( var index in cookie_array) {
+            var cookie_name = cookie_array[index].split("=");
+
+            if (cookie_name[0] == "popupYN") {
+                return cookie_name[1];
+            }
+        }
+    }
+    return ;
+}
+
+function setCookie(name, value, expiredays) {
+    var date = new Date();
+    date.setDate(date.getDate() + expiredays);
+    document.cookie = escape(name) + "=" + escape(value) + "; expires=" + date.toUTCString();
+}
+
 $(document).ready(function() {
 	$(".tr_slide").on('click', function() {
 		if($("#slide_"+this.id).css('display') == 'none') {
@@ -418,6 +476,15 @@ $(document).ready(function() {
 		}
 		return false;
 	});
+
+	$('.modal-dialog').draggable({
+      handle: ".modal-header"
+    });
+
+	var cookieCheck = getCookie("popupYN");
+    if (cookieCheck != "N") {
+        $('#exampleModal').modal("show");
+    }
 });
 </script>
 
